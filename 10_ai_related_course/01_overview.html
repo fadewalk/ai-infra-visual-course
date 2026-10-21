@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>导读 · 上游课程章怎么用 —— 90 分钟讲座与配套课</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--purple);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{color:var(--muted);font-weight:500;font-size:12px}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+  .note{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 系列导读 · 课程与杂项章</div>
+  <h1>上游课程章怎么用</h1>
+  <p class="subtitle">上游 <code>10_ai_related_course/</code> 的内容本身就是入门向——本站不重复造轮子，只告诉你每份材料适合在哪个阶段用。</p>
+
+  <h2>一、材料 × 使用时机</h2>
+  <div class="stage" style="padding:0;overflow:auto">
+    <table>
+      <thead><tr><th>材料</th><th>是什么</th><th>建议使用时机</th></tr></thead>
+      <tbody>
+        <tr><td><b>AI Infra 入门讲座（90 分钟）</b></td><td>围绕"一切优化为了降低每 token 成本"的四层杠杆主线（架构/硬件/引擎/生态）</td><td>刷完本站十课后看一遍——用讲座串起你学过的所有点（本站第 10 课成本页是它的数字版）</td></tr>
+        <tr><td><b>Token Factory 图文讲解</b></td><td>24 页逐页配图的对外演讲：token 工厂、成本革命</td><td>需要向管理层/团队布道时直接引用——"用 CFO 语言说话"的范本</td></tr>
+        <tr><td><b>ZOMI 酱 AISystem 课程</b></td><td>外部仓库：AI 系统全栈（芯片→编译器→推理→框架）配 B 站视频</td><td>想补编译器视角时的延伸（本站未覆盖）</td></tr>
+        <tr><td><b>Trae / 多智能体培训</b></td><td>工具向课程</td><td>按需，优先级低</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>二、入口</h2>
+  <div class="stage">
+    <ul style="font-size:13px;margin:0;padding-left:20px">
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/10_ai_related_course/README.md">10 课程章目录</a></li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/99_misc/token_factory_talk/talk-illustrated.md">Token Factory 图文讲解</a></li>
+      <li><a href="https://github.com/chenzomi12/AISystem">ZOMI 酱 AISystem（外部）</a></li>
+    </ul>
+  </div>
+
+  <div class="foot">
+    <div class="nav"><a href="../01_hardware_architecture/06_chips.html">← 上一页：芯片三路线</a><a href="../98_llm_programming/01_overview.html">下一页：LLM 编程章导读 →</a></div>
+  </div>
+</div>
+</body>
+</html>

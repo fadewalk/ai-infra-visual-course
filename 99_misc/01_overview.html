@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>导读 · 杂项章（99）—— 上手机会与书单</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--green);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  .tl{display:grid;gap:12px;grid-template-columns:1fr}
+  @media(min-width:760px){.tl.c3{grid-template-columns:repeat(3,1fr)}}
+  .taskcard{background:var(--chip);border:1px solid var(--border);border-radius:10px;padding:12px 14px;font-size:13px}
+  .taskcard b{display:block;margin-bottom:6px;color:var(--green)}
+  .taskcard .do{color:var(--muted);font-size:12px;margin-bottom:6px}
+  .taskcode{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:6px 8px;overflow:auto;white-space:pre}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .foot ul{margin:6px 0;padding-left:18px}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+  .note{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 系列导读 · 杂项与上手</div>
+  <h1>99 杂项章导读</h1>
+  <p class="subtitle">99 章里藏着"从学到做"的入口：本地跑模型、Ollama 架构、书单。本页把其中能直接上手的排成三张任务卡——按你的节奏做。</p>
+
+  <h2>一、三张上手任务卡（无 GPU 也能做）</h2>
+  <div class="tl c3">
+    <div class="taskcard">
+      <b>卡 1 · 在 Mac 上跑一个 7B 模型</b>
+      <div class="do">目标：亲眼看 TTFT 和 TPOT（第 3 课的两个指标）。装 Ollama，跑 qwen2.5:7b，用 --verbose 观察每次生成的耗时构成。</div>
+      <div class="taskcode">brew install ollama
+ollama run qwen2.5:7b --verbose
+# 关注: total duration / prompt eval / eval rate</div>
+    </div>
+    <div class="taskcard">
+      <b>卡 2 · 用 Tiktokenizer 建立数字感</b>
+      <div class="do">目标：token 数量直觉（第 7 课）。打开 tiktokenizer.vercel.app，粘一段中文/英文/代码，记下"1 段落 ≈ 多少 token"，再对照 API 定价心算一遍成本。</div>
+      <div class="taskcode">tiktokenizer.vercel.app/?model=gpt-4o
+# 练习：估算"一份 10 页文档进上下文
+# 每天问 100 次"的月成本</div>
+    </div>
+    <div class="taskcard">
+      <b>卡 3 · 读一遍 nvidia-smi 全量输出</b>
+      <div class="do">目标：把加餐速查变成肌肉记忆。有 GPU 机器最好；没有就用上游文档里的输出示例逐字段读懂，再对照排障模拟器复盘。</div>
+      <div class="taskcode">nvidia-smi -q | head -80
+# 逐字段：Persistence / ECC / Remapped
+# Rows / Temp / Pwr / Clocks</div>
+    </div>
+  </div>
+
+  <h2>二、99 章其他内容</h2>
+  <div class="stage">
+    <ul style="font-size:13px;margin:0;padding-left:20px">
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/99_misc/mac-deepseek-r1.md">动手跑大模型（Mac 版）</a> —— 卡 1 的图文版</li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/99_misc/ollama/README.md">Ollama 架构详解</a> —— 跑通后读，理解它和 vLLM 的定位差异</li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/99_misc/book-recommendations.md">从芯片到 Agent 的阅读地图</a> —— 按本仓库章节组织的书单，阶段化阅读</li>
+    </ul>
+  </div>
+
+  <div class="foot">
+    <div class="nav"><a href="../11_ai_native_everything/01_overview.html">← 上一页：AI Native 章导读</a><a href="../index.html">完成全部课程 → 回目录</a></div>
+  </div>
+</div>
+</body>
+</html>

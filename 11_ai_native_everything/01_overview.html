@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>导读 · AI Native 章（11）—— 方法论与 FDE 实践</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--purple);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{color:var(--muted);font-weight:500;font-size:12px}
+  .grid{display:grid;gap:12px;grid-template-columns:1fr}
+  @media(min-width:700px){.grid.c2{grid-template-columns:repeat(2,1fr)}}
+  .kcard{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+  .kcard h4{margin:0 0 6px;font-size:14px;color:var(--purple)}
+  .kcard .def{font-size:13px;margin:0 0 8px}
+  .kcard .ana{font-size:12px;color:var(--muted);border-top:1px dashed var(--border);padding-top:6px}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+  .note{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 系列导读 · 方法论章</div>
+  <h1>AI Native 章导读（11）</h1>
+  <p class="subtitle">上游 11 章讲的是"AI 时代怎么交付软件"：AI Native 架构方法论与 FDE（驻场交付工程师）实践。和 Infra 关系最远、和职业发展最近的一章。</p>
+
+  <h2>一、两篇核心文章在讲什么</h2>
+  <div class="stage" style="padding:0;overflow:auto">
+    <table>
+      <thead><tr><th>文章</th><th>核心观点</th></tr></thead>
+      <tbody>
+        <tr><td><b>模型不稀缺了，稀缺的是把模型塞进业务的人（FDE）</b></td><td>AI 交付的瓶颈从模型能力转向"进客户业务流程"的能力：派驻、语义层沉淀、交付模式设计。80/95/99 规律——最后 1% 的业务贴合最贵也最值钱。</td></tr>
+        <tr><td><b>AI Native 架构方法论</b></td><td>认知性质决定技术分层：Agent / Skill / Tool 三层 + 工程治理；DevOps 是"AI 增强而非替代"的全流程协同。</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>二、对转岗者的一句话</h2>
+  <div class="grid c2">
+    <div class="kcard"><h4>AI SRE 的下一站</h4><p class="def">"懂 Infra + 能进业务现场"的组合最稀缺：推理系统的稳定性、成本、容量问题，最终都要在客户业务里定优先级。</p><p class="ana">🧠 SRE 的业务敏感度 × AI 负载理解 = FDE 型 Infra 工程师。</p></div>
+    <div class="kcard"><h4>阅读建议</h4><p class="def">这一章不着急读——刷完技术主线（阶段 1-5）后再回来，会发现每句"稀缺"都能对上你刚学的某个优化点。</p><p class="ana">🧠 方法论是总结，不是入口。</p></div>
+  </div>
+
+  <h2>三、上游入口</h2>
+  <div class="stage">
+    <ul style="font-size:13px;margin:0;padding-left:20px">
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/11_ai_native_everything/README.md">11 章目录</a></li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/11_ai_native_everything/fde/forward-deployed-engineer.md">FDE：模型不稀缺了</a></li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/11_ai_native_everything/vibe_coding/docs/ai-code-review-three-gates.md">AI 代码评审的三道闸门</a></li>
+    </ul>
+  </div>
+
+  <div class="foot">
+    <div class="nav"><a href="../98_llm_programming/01_overview.html">← 上一页：LLM 编程章</a><a href="../99_misc/01_overview.html">下一页：99 杂项章导读 →</a></div>
+  </div>
+</div>
+</body>
+</html>

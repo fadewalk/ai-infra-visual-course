@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>导读 · LLM 编程章（98）—— 应用层开发怎么切入</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--blue);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{color:var(--muted);font-weight:500;font-size:12px}
+  .grid{display:grid;gap:12px;grid-template-columns:1fr}
+  @media(min-width:700px){.grid.c2{grid-template-columns:repeat(2,1fr)}}
+  .kcard{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+  .kcard h4{margin:0 0 6px;font-size:14px;color:var(--blue)}
+  .kcard .def{font-size:13px;margin:0 0 8px}
+  .kcard .ana{font-size:12px;color:var(--muted);border-top:1px dashed var(--border);padding-top:6px}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+  .note{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 系列导读 · 应用开发章</div>
+  <h1>LLM 编程章导读（98）</h1>
+  <p class="subtitle">上游 98 章是"应用层怎么用 LLM"：Spring AI（Java 系）、LangGraph（有状态多智能体）、工作流编排。与 Infra 主线互补——读完知道"上面在等什么"。</p>
+
+  <h2>一、三个方向 × SRE 视角</h2>
+  <div class="stage" style="padding:0;overflow:auto">
+    <table>
+      <thead><tr><th>方向</th><th>是什么</th><th>为什么 Infra 人员也该看</th></tr></thead>
+      <tbody>
+        <tr><td>Spring AI / Java 接入</td><td>企业级 Java 应用接 LLM 的工程框架</td><td>企业客户的应用长这样——你优化的推理服务最终被它调用</td></tr>
+        <tr><td>LangGraph</td><td>有状态多智能体图框架：循环、持久化、人工介入</td><td>Agent 负载（第 9 课）的上下文模式直接决定 KV/路由的优化方向</td></tr>
+        <tr><td>工作流编排（Coze/n8n/Dify）</td><td>低代码编排平台横评与私有化</td><td>私有化部署编排平台=你的客户；平台自身也是要运维的服务</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>二、关键词卡</h2>
+  <div class="grid c2">
+    <div class="kcard"><h4>Agent First / Software 3.0</h4><p class="def">以自然语言驱动、Agent 自主决策的开发范式——应用层正在向"会调工具的程序"迁移。</p><p class="ana">🧠 上游 11 章与 98 章共同的主叙事。</p></div>
+    <div class="kcard"><h4>有状态 vs 无状态</h4><p class="def">LangGraph 给"无状态的 LLM 调用"补上了状态机——这正是 SRE 处理长事务的老问题换了语言。</p><p class="ana">🧠 Saga/工作流引擎思想的 LLM 版。</p></div>
+  </div>
+
+  <h2>三、上游入口</h2>
+  <div class="stage">
+    <ul style="font-size:13px;margin:0;padding-left:20px">
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/98_llm_programming/README.md">98 章目录</a>（Spring AI / LangGraph / Agent First / Harness Engineering）</li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/98_llm_programming/langgraph/langgraph_intro.md">LangGraph 简介</a> · <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/98_llm_programming/Agent_First.md">Agent First</a></li>
+    </ul>
+  </div>
+
+  <div class="foot">
+    <div class="nav"><a href="../10_ai_related_course/01_overview.html">← 上一页：课程章导读</a><a href="../11_ai_native_everything/01_overview.html">下一页：AI Native 章导读 →</a></div>
+  </div>
+</div>
+</body>
+</html>

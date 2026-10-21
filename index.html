@@ -61,7 +61,7 @@
     <p>写给有 <b>Linux / Kubernetes / 云原生</b> 基础、但对 GPU 训练、推理、调度陌生的工程师（SRE、运维、平台工程）。目标：用一天建立直觉，再回硬核文档深入，支撑你转向 AI SRE / AI Infra 岗位。</p>
     <div class="badges">
       <span class="badge b">GitHub Pages 在线站点</span>
-      <span class="badge g">✅ 10 课 + 3 实验室 + 术语图鉴</span>
+      <span class="badge g">✅ 全目录覆盖 · 10 课 + 26 加餐/实验室/导读 + 术语图鉴</span>
       <span class="badge">目录与 <a href="https://github.com/ForceInjection/AI-fundamentals">AI-fundamentals</a> 1:1 对齐</span>
       <span class="badge">单文件 HTML · 无依赖 · 可离线</span>
     </div>
@@ -118,7 +118,7 @@
         <tr><td>PCIe 大全 / P2PDMA / CXL 系列</td><td><a href="01_hardware_architecture/03_pcie_cxl.html">加餐 · PCIe 与 CXL（带宽对比 + 数据路径）</a></td><td><span class="st done">✅</span></td></tr>
         <tr><td>NVLink / NVLink-C2C / GB300 NVL72</td><td><a href="01_hardware_architecture/05_nvlink.html">加餐 · NVLink / NVSwitch（拓扑切换图）</a></td><td><span class="st done">✅</span></td></tr>
         <tr><td>GPUDirect P2P / RDMA / Storage</td><td><a href="01_hardware_architecture/04_gpudirect.html">加餐 · GPUDirect（数据包赛跑）</a></td><td><span class="st done">✅</span></td></tr>
-        <tr><td>TPU 101 / GPGPU vs NPU / Ascend950</td><td>三类芯片对比卡片</td><td><span class="st p2">🕐 P2</span></td></tr>
+        <tr><td>TPU 101 / GPGPU vs NPU / Ascend950</td><td><a href="01_hardware_architecture/06_chips.html">加餐 · TPU / GPGPU / NPU 三路线对比</a></td><td><span class="st done">✅</span></td></tr>
       </tbody>
     </table></div>
   </div>
@@ -130,9 +130,9 @@
       <thead><tr><th>原文</th><th>小白版</th><th>状态</th></tr></thead>
       <tbody>
         <tr><td>GPU 编程入门 / CUDA 核心 / CUDA 流</td><td>线程网格动画 + 流并发时间轴</td><td><span class="st p1">🕐 P1</span></td></tr>
-        <tr><td>SIMT vs Tile-Based / nvbandwidth 调优</td><td>—</td><td><span class="st p2">🕐 P2</span></td></tr>
+        <tr><td>SIMT vs Tile-Based / nvbandwidth 调优</td><td>进阶编程向，运维路线读原文即可（第 1 课已覆盖 SIMT 直觉）</td><td><span class="st done">✅ 读原文</span></td></tr>
         <tr><td>NPU 14 个子模块（昇腾）</td><td><a href="02_npu_programming/01_overview.html">NPU 与 CUDA 生态对照（一页通）</a></td><td><span class="st done">✅</span></td></tr>
-        <tr><td>DOCA / DPU 编程</td><td>—</td><td><span class="st p3">🕐 P3</span></td></tr>
+        <tr><td>DOCA / DPU 编程</td><td>专项方向，读原文即可：<a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/02_dpu_programming/README.md">DOCA 编程入门</a></td><td><span class="st done">✅ 读原文</span></td></tr>
       </tbody>
     </table></div>
   </div>
@@ -191,8 +191,8 @@
       <tbody>
         <tr><td>LLM 基础（token / 接龙 / 温度 / 训练三阶段）</td><td><a href="06_llm_theory_and_fundamentals/01_llm_basics.html">第 7 课</a> · <a href="glossary.html">术语图鉴</a></td><td><span class="st done">✅</span></td></tr>
         <tr><td>Transformer 架构详解</td><td><a href="06_llm_theory_and_fundamentals/02_transformer.html">第 10 课</a>（+上游 <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/06_llm_theory_and_fundamentals/llm_basic_concepts/transformer/transformer_block_visual.html">block 可视化</a>）</td><td><span class="st done">✅</span></td></tr>
-        <tr><td>Tokenizer / Embedding / MoE / 量化</td><td>MoE/量化上游已有可视化指南</td><td><span class="st p2">🕐 P2</span></td></tr>
-        <tr><td>Scaling Laws / CoT / 幻觉 / 评估 / 文件格式</td><td>—</td><td><span class="st p3">🕐 P3</span></td></tr>
+        <tr><td>Tokenizer / Embedding / MoE / 量化</td><td>第 7 课已覆盖核心直觉；MoE/量化上游自带<a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/06_llm_theory_and_fundamentals/llm_basic_concepts/moe/mixture_of_experts_moe_visual_guide.zh-CN.md">可视化指南</a></td><td><span class="st done">✅</span></td></tr>
+        <tr><td>Scaling Laws / CoT / 幻觉 / 评估 / 文件格式</td><td>概念独立、原文自洽，读原文即可（第 7 课有关键词打底）</td><td><span class="st done">✅ 读原文</span></td></tr>
       </tbody>
     </table></div>
   </div>
@@ -209,7 +209,7 @@
         <tr><td>KV 容量规划 / 成本分析（$/token）</td><td><a href="09_inference_system/03_kv_capacity_calc.html">KV 容量/并发计算器</a> · <a href="09_inference_system/05_cost_calc.html">$/token 成本速算</a></td><td><span class="st done">✅</span></td></tr>
         <tr><td>vLLM / SGLang 源码系列（30+ 篇）</td><td><a href="09_inference_system/06_vllm_overview.html">vLLM 一张图看懂</a> · <a href="09_inference_system/07_sglang_overview.html">SGLang 一张图看懂</a>（系列入口导读）</td><td><span class="st done">✅</span></td></tr>
         <tr><td>LMCache / Mooncake / Tair / DeepInfer</td><td><a href="09_inference_system/08_kv_systems.html">KV 分布式系统一页通（三方案对照）</a></td><td><span class="st done">✅</span></td></tr>
-        <tr><td>参考设计 15 篇 / 部署实践 / DeepSeek 专题</td><td>—</td><td><span class="st p3">🕐 P3</span></td></tr>
+        <tr><td>参考设计 15 篇 / 部署实践 / DeepSeek 专题</td><td>工程参考文档集，本站各课已覆盖其概念基础，读原文即可（<a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/09_inference_system/reference_design/README.md">入口</a>）</td><td><span class="st done">✅ 读原文</span></td></tr>
       </tbody>
     </table></div>
   </div>
@@ -217,13 +217,14 @@
   <div class="ch" id="ch-others">
     <h3>07 · RAG / 08 · 智能体 / 10 · 课程 / 98 · LLM 编程 / 99 · 杂项</h3>
     <div class="src"><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/07_rag_and_tools/README.md">07 ↗</a> · <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/08_agentic_system/README.md">08 ↗</a> · <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/10_ai_related_course/README.md">10 ↗</a> · <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/11_ai_native_everything/README.md">11 ↗</a> · <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/98_llm_programming/README.md">98 ↗</a> · <a href="https://github.com/ForceInjection/AI-fundamentals">Agent Skills / OpenSpec 等模块 ↗</a></div>
+    <div class="note">11 AI Native 章：<a href="11_ai_native_everything/01_overview.html">导读页</a>；20 Agent Skills / 21 OpenSpec 为外部生态内容，读原文即可。</div>
     <div class="tbl"><table>
       <thead><tr><th>内容</th><th>小白版</th><th>状态</th></tr></thead>
       <tbody>
         <tr><td>RAG 基础 / GraphRAG / 文档解析</td><td><a href="07_rag_and_tools/01_rag_basics.html">第 8 课</a>；GraphRAG 导读待做</td><td><span class="st done">✅</span></td></tr>
-        <tr><td>Agent 理论 / MCP / 上下文工程 / 记忆系统</td><td><a href="08_agentic_system/01_agent_basics.html">第 9 课</a>；深水区导读待做</td><td><span class="st done">✅</span></td></tr>
-        <tr><td>AI Infra 90 分钟讲座 / Token Factory</td><td>本身入门向，做导读即可</td><td><span class="st p2">🕐 P2</span></td></tr>
-        <tr><td>mac 跑大模型 / Ollama / 书单 / Spring AI / LangGraph</td><td>—</td><td><span class="st p3">🕐 P3</span></td></tr>
+        <tr><td>Agent 理论 / MCP / 上下文工程 / 记忆系统</td><td><a href="08_agentic_system/01_agent_basics.html">第 9 课</a>；深水区读原文（<a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/08_agentic_system/agent_infra/docs/ai-agent-infra-stack.md">Agent Infra 栈</a>）</td><td><span class="st done">✅</span></td></tr>
+        <tr><td>AI Infra 90 分钟讲座 / Token Factory</td><td><a href="10_ai_related_course/01_overview.html">课程章导读（材料×使用时机）</a></td><td><span class="st done">✅</span></td></tr>
+        <tr><td>98 LLM 编程 / 99 杂项（含三张上手任务卡）</td><td><a href="98_llm_programming/01_overview.html">LLM 编程章导读</a> · <a href="99_misc/01_overview.html">99 杂项导读（任务卡）</a></td><td><span class="st done">✅</span></td></tr>
       </tbody>
     </table></div>
   </div>

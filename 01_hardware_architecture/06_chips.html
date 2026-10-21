@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>加餐 · TPU / GPGPU / NPU —— 三条芯片路线一张表</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--purple);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{color:var(--muted);font-weight:500;font-size:12px;white-space:nowrap}
+  td:first-child{font-weight:500}
+  .grid{display:grid;gap:12px;grid-template-columns:1fr}
+  @media(min-width:700px){.grid.c3{grid-template-columns:repeat(3,1fr)}}
+  .kcard{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+  .kcard h4{margin:0 0 6px;font-size:14px;color:var(--purple)}
+  .kcard .def{font-size:13px;margin:0 0 8px}
+  .kcard .ana{font-size:12px;color:var(--muted);border-top:1px dashed var(--border);padding-top:6px}
+  .quiz{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin:10px 0}
+  .quiz p{margin:0 0 10px;font-size:14px}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:8px 12px}
+  .opt.right{border-color:var(--green);color:var(--green)}
+  .opt.wrong{border-color:var(--red);color:var(--red)}
+  .verdict{font-size:13px;margin-left:8px}
+  .verdict.ok{color:var(--green)} .verdict.bad{color:var(--red)}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .foot ul{margin:6px 0;padding-left:18px}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+  .note{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 加餐 · 芯片三路线 · 承接第 1 课</div>
+  <h1>TPU / GPGPU / NPU 对比</h1>
+  <p class="subtitle">第 1 课学了 NVIDIA 路线，这里把三条路线并排放：通用性、专用性与软件生态的三角取舍。</p>
+
+  <h2>一、一张表看三条路线</h2>
+  <div class="stage" style="padding:0;overflow:auto">
+    <table>
+      <thead><tr><th>维度</th><th>GPGPU（NVIDIA）</th><th>TPU（Google）</th><th>NPU（昇腾等）</th></tr></thead>
+      <tbody>
+        <tr><td>设计哲学</td><td>通用并行 + Tensor Core 特化，兼顾图形/HPC/AI</td><td>脉动阵列（Systolic Array）极致专用于矩阵乘</td><td>Cube+Vector 分工，面向 AI 场景的专用加速</td></tr>
+        <tr><td>灵活性</td><td>最高（CUDA 生态什么都能写）</td><td>低（围绕 XLA 编译器路线）</td><td>中（Ascend C 可编程，但生态独立）</td></tr>
+        <tr><td>软件生态</td><td>CUDA——事实标准，护城河核心</td><td>XLA/JAX，云内闭环</td><td>CANN——对标 CUDA 的追赶者</td></tr>
+        <tr><td>能效方向</td><td>均衡</td><td>矩阵能效极致</td><td>AI 场景能效优先</td></tr>
+        <tr><td>典型场景</td><td>训练+推理通吃、生态迁移成本低</td><td>Google 内部大规模训练/推理</td><td>国产化合规场景、推理成本敏感负载</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>二、关键词卡</h2>
+  <div class="grid c3">
+    <div class="kcard"><h4>脉动阵列</h4><p class="def">数据像流水线一样在阵列中"流动"，每一步完成一次乘加——TPU 的核心设计，矩阵吞吐极高但只擅长这一件事。</p><p class="ana">🧠 流水线专机 vs 通用机床。</p></div>
+    <div class="kcard"><h4>生态护城河</h4><p class="def">芯片性能可以追赶，十几年的 CUDA 软件生态最难追——这正是 NPU 路线的主战场（见 NPU 对照页）。</p><p class="ana">🧠 硬件是冰山，生态在水下。</p></div>
+    <div class="kcard"><h4>DSA 趋势</h4><p class="def">Domain-Specific Architecture：通用芯片向专用让步是大方向（Ascend950 的 DSA 稀疏注意力即一例）。</p><p class="ana">🧠 "专用硬件吃掉确定性负载"的产业规律。</p></div>
+  </div>
+
+  <h2>三、小测验</h2>
+  <div class="quiz"><p>Q1 · TPU 的核心架构是什么？</p>
+    <button class="opt" type="button">SIMT 多线程</button>
+    <button class="opt" data-ok="1" type="button">脉动阵列——数据流动中完成乘加</button>
+    <button class="opt" type="button">冯诺依曼通用核</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q2 · 三条路线里生态迁移成本最低的是？</p>
+    <button class="opt" data-ok="1" type="button">GPGPU——CUDA 生态什么都能跑</button>
+    <button class="opt" type="button">TPU</button>
+    <button class="opt" type="button">NPU</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q3 · "DSA"指的是？</p>
+    <button class="opt" type="button">一种存储协议</button>
+    <button class="opt" data-ok="1" type="button">面向特定领域的专用架构——用灵活性换能效</button>
+    <button class="opt" type="button">分布式调度算法</button>
+    <span class="verdict"></span>
+  </div>
+
+  <div class="foot">
+    <b>延伸阅读（上游硬核版）</b>
+    <ul>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/01_hardware_architecture/tpu/tpu%20101.md">TPU 101：脉动阵列架构解析</a></li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/01_hardware_architecture/nvidia/GPGPU_vs_NPU_大模型推理训练对比.md">GPGPU vs NPU 大模型对比</a></li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/01_hardware_architecture/ascend/Ascend950_微架构速查.md">Ascend950 微架构速查</a></li>
+    </ul>
+    <div class="nav"><a href="../05_model_training_and_fine_tuning/03_70b_lessons.html">← 上一页：70B 复盘导读</a><a href="../10_ai_related_course/01_overview.html">下一页：AI Infra 讲座导读 →</a></div>
+  </div>
+</div>
+</body>
+</html>

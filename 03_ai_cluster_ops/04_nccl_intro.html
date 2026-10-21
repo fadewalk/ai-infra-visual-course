@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>加餐 · NCCL 调优导读 —— AllReduce 快不快，谁说了算</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--blue);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  .ringwrap{text-align:center}
+  svg text{fill:var(--fg);font-size:11px}
+  .ctl{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:10px}
+  button{font:inherit;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--fg);border-radius:8px;padding:6px 14px}
+  button:hover{border-color:var(--blue)}
+  button.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .say{margin-top:12px;padding:10px 14px;border-radius:8px;background:var(--chip);font-size:14px;min-height:24px;text-align:left}
+  .cmd{font-family:ui-monospace,Menlo,monospace;font-size:12px;background:var(--chip);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin:6px 0;overflow:auto;white-space:pre}
+  .grid{display:grid;gap:12px;grid-template-columns:1fr}
+  @media(min-width:700px){.grid.c2{grid-template-columns:repeat(2,1fr)}.grid.c3{grid-template-columns:repeat(3,1fr)}}
+  .kcard{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+  .kcard h4{margin:0 0 6px;font-size:14px;color:var(--blue)}
+  .kcard .def{font-size:13px;margin:0 0 8px}
+  .kcard .ana{font-size:12px;color:var(--muted);border-top:1px dashed var(--border);padding-top:6px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{color:var(--muted);font-weight:500;font-size:12px}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .foot ul{margin:6px 0;padding-left:18px}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+  .note{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 加餐 · 集群通信 · 承接 IB/RDMA 页与第 2 课 AllReduce 动画</div>
+  <h1>NCCL 调优导读</h1>
+  <p class="subtitle">NCCL 是分布式训练的"通信中间件"：第 2 课那个环形 AllReduce 就由它在 NVLink/IB 上执行。本页是导读——怎么测、看什么、常见旋钮。</p>
+
+  <h2>一、温习：环形 AllReduce 为什么这么设计</h2>
+  <div class="stage ringwrap">
+    <svg id="ring" viewBox="0 0 380 240" width="320" role="img" aria-label="环形 AllReduce"></svg>
+    <div class="ctl"><button id="go" class="primary" type="button">跑一遍（8 卡）</button></div>
+    <div class="say" id="say">8 卡环形：每卡把梯度的 1/8 依次传给下一环。总通信量 2(N-1)/N × 数据量——<b>与卡数几乎无关</b>，这就是环形的优雅之处。点按钮重温流动过程。</div>
+  </div>
+
+  <h2>二、怎么测：nccl-tests 是第一工具</h2>
+  <div class="stage">
+    <div class="cmd"># 单机 8 卡 allreduce 带宽（总线带宽视角最关键）<br>./build/all_reduce_perf -b 8 -e 512M -f 2 -g 8</div>
+    <div class="cmd"># 双机 16 卡（先确保 IB 通，见上一页）<br>mpirun -np 16 -H node01:8,node02:8 ./build/all_reduce_perf -b 8 -e 512M -f 2</div>
+    <p class="note">看结果别看 algbw（算法带宽），要看 <b>busbw（总线带宽）</b>——它剔除了环形算法的冗余系数，才能和硬件上限（NVLink 900GB/s / IB 400Gbps×卡数）直接对比。经验判断：单机 busbw 达到 NVLink 上限的 80%+ 算健康；明显低于 50% 就有拓扑/配置问题。</p>
+  </div>
+
+  <h2>三、常见旋钮与排查顺序</h2>
+  <div class="grid c2">
+    <div class="kcard"><h4>NCCL_P2P_LEVEL / 环境变量族</h4><p class="def">NCCL_P2P_DISABLE、NCCL_IB_DISABLE、NCCL_DEBUG=INFO 是排障三板斧：先看日志选了哪条路径，再谈调优。</p><p class="ana">🧠 类比：先看路由表，再调拥塞参数。</p></div>
+    <div class="kcard"><h4>拓扑感知自动选路</h4><p class="def">NCCL 启动时会探测 NVLink/PCIe/IB 拓扑自动选算法（Ring/Tree）。日志里的 "NCCL INFO Channel" 与拓扑不符时优先查 BIOS/NUMA 绑定。</p><p class="ana">🧠 类比：LB 自动探测后端健康度——探测错了，转发就错。</p></div>
+    <div class="kcard"><h4>通信量小的作业别硬凑多机</h4><p class="def">AllReduce 有固定延迟项；小模型/小梯度时跨机通信占比飙升，扩展效率骤降——先算通信/计算比。</p><p class="ana">🧠 类比：RPC 打得太碎，延迟吃光收益。</p></div>
+    <div class="kcard"><h4>定位"变慢"的思路</h4><p class="def">先分清是通信慢还是计算慢：Nsight Systems 时间轴里看 AllReduce kernel 的等待占比；再回到 IB/拓扑层找根因（上一页的检查清单）。</p><p class="ana">🧠 经典分层排障：应用 → 中间件 → 网络 → 硬件。</p></div>
+  </div>
+
+  <h2>四、导读边界声明</h2>
+  <div class="stage">
+    <p style="font-size:13px;margin:0">NCCL 内部算法选择、channel 划分、与调度器的协同属于深水区，本站不展开——上游有一篇完整的 <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/03_ai_cluster_ops/03_nccl/README.md">NCCL 实战指南（基准测试与多节点部署）</a> 以及 <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/03_ai_cluster_ops/03_nccl/01_nccl_theory.md">理论教程</a>，看完本页后直接去读。运维向读者把 nccl-tests + busbw 对照法练熟即可覆盖 80% 场景。</p>
+  </div>
+
+  <h2>五、小测验</h2>
+  <div class="quiz"><p>Q1 · 评估 NCCL 性能优先看哪个指标？</p>
+    <button class="opt" type="button">algbw（算法带宽）</button>
+    <button class="opt" data-ok="1" type="button">busbw（总线带宽）——剔除算法冗余，可与硬件上限直接比</button>
+    <button class="opt" type="button">GPU 温度</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q2 · 环形 AllReduce 的总通信量随卡数怎么变？</p>
+    <button class="opt" data-ok="1" type="button">≈ 2(N-1)/N 倍数据量，几乎与卡数无关</button>
+    <button class="opt" type="button">随卡数平方增长</button>
+    <button class="opt" type="button">与卡数无关到 0</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q3 · NCCL 排障第一步？</p>
+    <button class="opt" type="button">直接调 NCCL_ALGO 环境变量</button>
+    <button class="opt" data-ok="1" type="button">NCCL_DEBUG=INFO 看它实际选了哪条路径与算法</button>
+    <button class="opt" type="button">升级 CUDA 版本</button>
+    <span class="verdict"></span>
+  </div>
+
+  <div class="foot">
+    <b>延伸阅读（上游硬核版）</b>
+    <ul>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/03_ai_cluster_ops/03_nccl/01_nccl_theory.md">NCCL 教程（理论）</a></li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/03_ai_cluster_ops/03_nccl/README.md">NCCL 基准测试与多节点部署实战</a></li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/03_ai_cluster_ops/02_infiniband/README.md">IB 健康检查实战</a>——NCCL 变慢时的下层根因清单</li>
+    </ul>
+    <div class="nav"><a href="03_ib_rdma.html">← 上一页：IB 与 RDMA</a><a href="../09_inference_system/06_vllm_overview.html">下一页：vLLM 一张图看懂 →</a></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var svg=document.getElementById('ring'),NS='http://www.w3.org/2000/svg';
+  var N=8,cx=190,cy=110,R=80;
+  var nodes=[],edges=[];
+  for(var e=0;e<N;e++){
+    var a1=pos(e),a2=pos((e+1)%N);
+    var l=document.createElementNS(NS,'line');
+    l.setAttribute('x1',a1.x);l.setAttribute('y1',a1.y);l.setAttribute('x2',a2.x);l.setAttribute('y2',a2.y);
+    l.setAttribute('stroke','var(--border)');l.setAttribute('stroke-width','2');
+    svg.appendChild(l);edges.push(l);
+  }
+  for(var i=0;i<N;i++){
+    var p=pos(i);
+    var c=document.createElementNS(NS,'circle');
+    c.setAttribute('cx',p.x);c.setAttribute('cy',p.y);c.setAttribute('r',17);
+    c.setAttribute('fill','var(--blue)');c.setAttribute('fill-opacity','.18');c.setAttribute('stroke','var(--border)');
+    svg.appendChild(c);nodes.push(c);
+    var t=document.createElementNS(NS,'text');
+    t.setAttribute('x',p.x);t.setAttribute('y',p.y+4);t.setAttribute('text-anchor','middle');
+    t.textContent='C'+i;
+    svg.appendChild(t);
+  }
+  function pos(i){var a=-Math.PI/2+i*2*Math.PI/N;return {x:cx+R*Math.cos(a),y:cy+R*Math.sin(a)};}
+  var busy=false;
+  document.getElementById('go').addEventListener('click',function(){
+    if(busy)return;busy=true;this.disabled=true;
+    var say=document.getElementById('say'),t=0;
+    var timer=setInterval(function(){
+      t++;
+      edges.forEach(function(l,idx){
+        var on=idx===((t-1)%N);
+        l.setAttribute('stroke',on?'var(--orange)':'var(--border)');
+        l.setAttribute('stroke-width',on?'4':'2');
+      });
+      say.innerHTML='第 '+t+'/8 步：C'+((t-1)%N)+' → C'+(t%N)+'（高亮边）。全部走完后人人拿到平均值——真实集群由 NCCL 在 NVLink/IB 上自动完成，含多环并发与树形优化。';
+      if(t>=8){
+        clearInterval(timer);busy=false;
+        document.getElementById('go').disabled=false;
+        edges.forEach(function(l){l.setAttribute('stroke','var(--border)');l.setAttribute('stroke-width','2');});
+        say.innerHTML='✅ 走完。记住数字：<b>2(N-1)/N × 数据量</b>的总通信量——8 卡时约 1.75×，与 64 卡时约 1.97× 差别不大，这就是环形算法可扩展的关键。';
+      }
+    },420);
+  });
+  document.querySelectorAll('.quiz').forEach(function(q){
+    q.addEventListener('click',function(e){
+      var b=e.target.closest('button.opt');
+      if(!b||q.dataset.done==='1')return;
+      var ok=b.dataset.ok==='1';
+      q.querySelectorAll('.opt').forEach(function(x){x.disabled=true;if(x.dataset.ok==='1')x.classList.add('right');});
+      if(!ok)b.classList.add('wrong');
+      var v=q.querySelector('.verdict');
+      v.textContent=ok?'✓ 答对了':'✗ 正确答案已标绿';
+      v.className='verdict '+(ok?'ok':'bad');
+      q.dataset.done='1';
+    });
+  });
+})();
+</script>
+</body>
+</html>

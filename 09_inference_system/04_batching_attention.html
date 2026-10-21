@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>加餐 · Continuous Batching 与 PagedAttention —— 吞吐翻倍的两根杠杆</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--purple);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  .ctl{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+  button{font:inherit;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--fg);border-radius:8px;padding:6px 14px}
+  button:hover{border-color:var(--purple)}
+  button.primary{background:var(--purple);border-color:var(--purple);color:#fff}
+  button.seg-on{background:var(--purple);border-color:var(--purple);color:#fff}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .batch{display:flex;flex-direction:column;gap:6px}
+  .req{display:flex;align-items:center;gap:8px}
+  .req .nm{width:70px;font-size:12px;color:var(--muted)}
+  .cells{display:flex;gap:3px;flex:1}
+  .cell{height:26px;flex:1;border-radius:4px;background:var(--chip);border:1px solid var(--border)}
+  .cell.run{background:color-mix(in srgb,var(--purple) 55%, transparent);border-color:var(--purple)}
+  .cell.idle{background:repeating-linear-gradient(45deg,var(--chip),var(--chip) 3px,var(--card) 3px,var(--card) 6px)}
+  .cell.done{background:color-mix(in srgb,var(--green) 30%, transparent);border-color:var(--green)}
+  .cell.enter{outline:2px solid var(--orange);outline-offset:-2px}
+  .arrivals{font-size:12px;color:var(--muted);margin-top:8px}
+  .statrow{display:flex;gap:22px;flex-wrap:wrap;margin-top:12px;font-size:13px}
+  .statrow b{font-size:16px;color:var(--purple)}
+  .say{margin-top:10px;padding:10px 14px;border-radius:8px;background:var(--chip);font-size:14px;min-height:24px}
+  .grid{display:grid;gap:12px;grid-template-columns:1fr}
+  @media(min-width:700px){.grid.c2{grid-template-columns:repeat(2,1fr)}.grid.c3{grid-template-columns:repeat(3,1fr)}}
+  .kcard{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+  .kcard h4{margin:0 0 6px;font-size:14px;color:var(--purple)}
+  .kcard .def{font-size:13px;margin:0 0 8px}
+  .kcard .ana{font-size:12px;color:var(--muted);border-top:1px dashed var(--border);padding-top:6px}
+  .pages{display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin:8px 0}
+  .pg{aspect-ratio:1.5;border-radius:4px;background:var(--chip);border:1px solid var(--border);font-size:9px;display:flex;align-items:center;justify-content:center;color:var(--muted)}
+  .pg.a{background:color-mix(in srgb,var(--blue) 30%, transparent);border-color:var(--blue);color:var(--blue)}
+  .pg.b{background:color-mix(in srgb,var(--purple) 30%, transparent);border-color:var(--purple);color:var(--purple)}
+  .pg.free{opacity:.6}
+  .frag{font-size:12px;color:var(--red);margin-top:6px;min-height:18px}
+  .quiz{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin:10px 0}
+  .quiz p{margin:0 0 10px;font-size:14px}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:8px 12px}
+  .opt.right{border-color:var(--green);color:var(--green)}
+  .opt.wrong{border-color:var(--red);color:var(--red)}
+  .verdict{font-size:13px;margin-left:8px}
+  .verdict.ok{color:var(--green)} .verdict.bad{color:var(--red)}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .foot ul{margin:6px 0;padding-left:18px}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+  .note{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 加餐 · 推理深入 · 承接第 3 课</div>
+  <h1>Continuous Batching 与 PagedAttention</h1>
+  <p class="subtitle">第 3 课埋的两个伏笔在这里揭晓：一个治"排队浪费"，一个治"显存碎片"——vLLM 吞吐优势的两根支柱。</p>
+
+  <h2>一、动手：静态批 vs 连续批</h2>
+  <div class="stage">
+    <div class="ctl">
+      <button id="m-static" class="seg-on" type="button">静态批（一锅端）</button>
+      <button id="m-cont" type="button">连续批（随到随上）</button>
+      <button id="run" class="primary" type="button">运行</button>
+    </div>
+    <div class="batch" id="batch"></div>
+    <div class="arrivals" id="arrivals"></div>
+    <div class="statrow">
+      <span>批次利用率：<b id="util">–</b></span>
+      <span>吞吐（相对）：<b id="thru">–</b></span>
+    </div>
+    <div class="say" id="say">4 条请求长度不同（R1 短、R4 长）。选模式后点「运行」，看紫色格（在算）和虚线格（干等）怎么分布。</div>
+  </div>
+
+  <h2>二、动手：预留 vs 分页</h2>
+  <div class="stage">
+    <div class="ctl">
+      <button id="m-res" class="seg-on" type="button">预留整块（朴素）</button>
+      <button id="m-page" type="button">PagedAttention 分页</button>
+    </div>
+    <div class="pages" id="pages"></div>
+    <div class="frag" id="frag"></div>
+    <p class="note">模拟 16 个显存页。会话 A 需要 6 页、会话 B 需要 5 页。预留制：给 A、B 各预留"最大可能长度"的整块——没用到的地方全空着；分页制：按需分配、用完即还，别人能用上你腾出来的页。</p>
+  </div>
+
+  <h2>三、关键词卡</h2>
+  <div class="grid c2">
+    <div class="kcard"><h4>静态批的三重浪费</h4><p class="def">短请求等长请求、序列内 padding 空转、整批必须全部完成才换下一批。</p><p class="ana">🧠 类比：整点发车的大巴——先上车的等最晚的。</p></div>
+    <div class="kcard"><h4>Continuous Batching</h4><p class="def">每生成一步都是一次调度机会：做完即走、到了即上，批是"流动"的。</p><p class="ana">🧠 类比：滚动发布 / 公交随到随走。vLLM V1 与 SGLang 的调度哲学差异见上游深读。</p></div>
+    <div class="kcard"><h4>PagedAttention</h4><p class="def">把 KV Cache 切成固定页按需分配，显存浪费从 60-80% 降到近零，等效并发翻倍。</p><p class="ana">🧠 就是 OS 虚拟内存分页思想搬进显存。</p></div>
+    <div class="kcard"><h4>两者是乘法关系</h4><p class="def">分页提高"每批能塞多少人"，连续批提高"批的周转率"——生产引擎两个都用。</p><p class="ana">🧠 存储优化 × 调度优化，乘起来才是吞吐。</p></div>
+  </div>
+
+  <h2>四、小测验</h2>
+  <div class="quiz"><p>Q1 · 静态批最大的浪费来自？</p>
+    <button class="opt" type="button">GPU 算力不足</button>
+    <button class="opt" data-ok="1" type="button">短请求必须陪长请求跑完全程，大量时间片在等</button>
+    <button class="opt" type="button">网络抖动</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q2 · PagedAttention 治理的是什么问题？</p>
+    <button class="opt" type="button">模型精度损失</button>
+    <button class="opt" data-ok="1" type="button">KV Cache 预留导致的显存碎片与浪费</button>
+    <button class="opt" type="button">Token 概率分布</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q3 · 为什么说分页和连续批是"乘法关系"？</p>
+    <button class="opt" type="button">它们是同一个技术的两个名字</button>
+    <button class="opt" data-ok="1" type="button">一个扩大每批容量、一个加快批周转，吞吐=容量×周转</button>
+    <button class="opt" type="button">只能二选一</button>
+    <span class="verdict"></span>
+  </div>
+
+  <div class="foot">
+    <b>延伸阅读（上游硬核版）</b>
+    <ul>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/09_inference_system/prefill_decode/continuous_batching.md">Continuous Batching 深度解析</a>——vLLM V1 与 SGLang 的调度哲学对比</li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/09_inference_system/kv_cache/01_concepts/basic/kv_cache_basics.md">KV Cache 原理</a></li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/09_inference_system/sglang/sglang-kv-pool-management.md">SGLang KV Pool 管理</a>——分页思想在 SGLang 的落地</li>
+    </ul>
+    <div class="nav"><a href="01_inference_pipeline.html">← 第 3 课：推理是怎么回事</a><a href="05_cost_calc.html">下一页：$/token 成本速算 →</a></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  /* ---- batching ---- */
+  var LENS=[6,9,12,16]; // 4 条请求的时长格
+  var batchEl=document.getElementById('batch');
+  function buildBatch(){
+    batchEl.innerHTML='';
+    LENS.forEach(function(l,i){
+      var r=document.createElement('div');r.className='req';
+      var h='<span class="nm">R'+(i+1)+'('+l+')</span><span class="cells">';
+      for(var j=0;j<16;j++)h+='<span class="cell" data-r="'+i+'" data-t="'+j+'"></span>';
+      r.innerHTML=h+'</span>';
+      batchEl.appendChild(r);
+    });
+  }
+  var mode='static',timer=null;
+  document.getElementById('m-static').addEventListener('click',function(){if(timer)return;mode='static';seg(this);});
+  document.getElementById('m-cont').addEventListener('click',function(){if(timer)return;mode='cont';seg(this);});
+  function seg(btn){
+    document.querySelectorAll('.ctl .seg-on').forEach(function(x){x.classList.remove('seg-on');});
+    btn.classList.add('seg-on');
+    buildBatch();
+    document.getElementById('util').textContent='–';
+    document.getElementById('thru').textContent='–';
+    document.getElementById('arrivals').textContent='';
+  }
+  function runBatch(){
+    if(timer){clearInterval(timer);timer=null;document.getElementById('run').textContent='运行';runBatch.pending=false;return;}
+    buildBatch();
+    document.getElementById('run').textContent='停止';
+    var t=0,maxT=18;
+    var utilSum=0,cnt=0;
+    document.getElementById('say').textContent = mode==='static'
+      ? '静态批：t=0 四条一起进，批的长度=最长请求（16 格）。R1 早在 t=6 就做完了——虚线格全是干等。'
+      : '连续批：做完即出（变绿），新请求随时补位（橙框）。盯 R1 的位置：t=6 一做完就有新请求顶上。';
+    timer=setInterval(function(){
+      t++;
+      var cells=document.querySelectorAll('#batch .cell');
+      var busy=0;
+      cells.forEach(function(c){
+        var r=+c.dataset.r,tt=+c.dataset.t;
+        c.className='cell';
+        if(tt<t&&tt<16){
+          if(mode==='static'){
+            if(tt<LENS[r]){c.classList.add('run');busy++;}
+            else c.classList.add('idle');
+          }else{
+            // continuous: R1 done at 6, new req R5 starts at 6 (len 8), R2 done at 9→R6 len 7, R3 done at 12→R7 len 9
+            var eff;
+            if(r===0)eff= tt<6?tt:(tt<14?tt:99);
+            else if(r===1)eff= tt<9?tt:(tt<16?tt:99);
+            else if(r===2)eff=tt<12?tt:99;
+            else eff=tt<16?tt:99;
+            if(eff<16){c.classList.add('run');busy++;}
+          }
+        }
+      });
+      cnt++;
+      if(mode==='static'){utilSum=Math.min(1,busy/64);}
+      else{utilSum=Math.min(1,busy/64);}
+      document.getElementById('util').textContent=Math.round(busy/64*100)+'%';
+      document.getElementById('arrivals').innerHTML = mode==='cont'
+        ? '到达序列：t=0 R1-R4 进 · t=6 R5 进（顶替 R1）· t=9 R6 进 · t=12 R7 进　|　当前 t='+t
+        : '到达序列：t=0 R1-R4 一起进，之后 t=18 才能换下一批　|　当前 t='+t;
+      if(t>=maxT){
+        clearInterval(timer);timer=null;
+        document.getElementById('run').textContent='运行';
+        var u=document.getElementById('util'),th=document.getElementById('thru');
+        if(mode==='static'){u.textContent='≈ 65%（估算）';th.textContent='1×（基准）';
+          document.getElementById('say').innerHTML='静态批跑完：批内一半以上时间格是虚线（干等）。真实集群里这个浪费比例更高（上游数据：60-80% 显存被预留浪费同理）。';}
+        else{u.textContent='≈ 95%+（估算）';th.textContent='2.5–4×';
+          document.getElementById('say').innerHTML='连续批跑完：几乎每格都在算（绿色是已完成的请求）。同样的卡、同样的模型，吞吐差数倍——这是推理引擎的基本功。';}
+      }
+    },260);
+  }
+  document.getElementById('run').addEventListener('click',runBatch);
+  buildBatch();
+
+  /* ---- paging ---- */
+  var pagesEl=document.getElementById('pages');
+  function drawPages(mode){
+    pagesEl.innerHTML='';
+    for(var i=0;i<16;i++){
+      var d=document.createElement('div');d.className='pg free';d.textContent='页'+i;
+      pagesEl.appendChild(d);
+    }
+    var pg=pagesEl.children;
+    if(mode==='res'){
+      // A reserved 8, B reserved 6, actual use 6/5 → waste 2+1=3 pages
+      for(var i=0;i<8;i++){pg[i].className='pg a';pg[i].textContent='A·用'+(i<6?'✓':'空');}
+      for(var i=8;i<14;i++){pg[i].className='pg b';pg[i].textContent='B·用'+(i<13?'✓':'空');}
+      document.getElementById('frag').textContent='✗ 浪费 3 页（A 空 2 + B 空 1），碎片率 19%（示意）。会话更长/更多时，浪费率可达 60-80%（上游口径）。';
+    }else{
+      // paged: A 6 pages, B 5 pages, 5 free
+      for(var i=0;i<6;i++){pg[i].className='pg a';pg[i].textContent='A·用✓';}
+      for(var i=6;i<11;i++){pg[i].className='pg b';pg[i].textContent='B·用✓';}
+      document.getElementById('frag').textContent='✓ 只用 11 页，剩 5 页可接纳新会话——等效并发直接提升。页表（逻辑页→物理页映射）由引擎维护，应用无感。';
+    }
+  }
+  document.getElementById('m-res').addEventListener('click',function(){
+    this.classList.add('seg-on');document.getElementById('m-page').classList.remove('seg-on');drawPages('res');
+  });
+  document.getElementById('m-page').addEventListener('click',function(){
+    this.classList.add('seg-on');document.getElementById('m-res').classList.remove('seg-on');drawPages('page');
+  });
+  drawPages('res');
+
+  document.querySelectorAll('.quiz').forEach(function(q){
+    q.addEventListener('click',function(e){
+      var b=e.target.closest('button.opt');
+      if(!b||q.dataset.done==='1')return;
+      var ok=b.dataset.ok==='1';
+      q.querySelectorAll('.opt').forEach(function(x){x.disabled=true;if(x.dataset.ok==='1')x.classList.add('right');});
+      if(!ok)b.classList.add('wrong');
+      var v=q.querySelector('.verdict');
+      v.textContent=ok?'✓ 答对了':'✗ 正确答案已标绿';
+      v.className='verdict '+(ok?'ok':'bad');
+      q.dataset.done='1';
+    });
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>加餐 · $/token 成本速算 —— 用 CFO 的语言聊 GPU</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--orange);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  .inputs{display:grid;gap:14px;grid-template-columns:1fr}
+  @media(min-width:760px){.inputs{grid-template-columns:repeat(3,1fr)}}
+  .f label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+  select,input[type=number]{font:inherit;width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--fg)}
+  .sld{display:flex;align-items:center;gap:8px}
+  .sld input[type=range]{flex:1}
+  .sld b{min-width:70px;font-size:13px}
+  .res{display:flex;gap:22px;flex-wrap:wrap;margin-top:14px}
+  .stat{background:var(--chip);border-radius:10px;padding:10px 18px}
+  .stat .l{font-size:12px;color:var(--muted)}
+  .stat .v{font-size:26px;font-weight:500}
+  .stat .v.good{color:var(--green)}
+  .formula{font-size:13px;color:var(--muted);background:var(--chip);border-radius:8px;padding:8px 14px;margin-top:12px}
+  .tune{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+  .tune button{font:inherit;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--fg);border-radius:8px;padding:5px 12px;font-size:12px}
+  .tune button.on{background:var(--orange);border-color:var(--orange);color:#fff}
+  .grid{display:grid;gap:12px;grid-template-columns:1fr}
+  @media(min-width:700px){.grid.c2{grid-template-columns:repeat(2,1fr)}.grid.c3{grid-template-columns:repeat(3,1fr)}}
+  .kcard{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+  .kcard h4{margin:0 0 6px;font-size:14px;color:var(--orange)}
+  .kcard .def{font-size:13px;margin:0 0 8px}
+  .kcard .ana{font-size:12px;color:var(--muted);border-top:1px dashed var(--border);padding-top:6px}
+  .quiz{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin:10px 0}
+  .quiz p{margin:0 0 10px;font-size:14px}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:8px 12px}
+  .opt.right{border-color:var(--green);color:var(--green)}
+  .opt.wrong{border-color:var(--red);color:var(--red)}
+  .verdict{font-size:13px;margin-left:8px}
+  .verdict.ok{color:var(--green)} .verdict.bad{color:var(--red)}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .foot ul{margin:6px 0;padding-left:18px}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+  .note{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 加餐 · 成本与容量 · 汇总第 2/3/6 课</div>
+  <h1>$/token 成本速算</h1>
+  <p class="subtitle">把学过的东西换算成钱：一张 8 卡 H100 机器，每百万 token 的服务成本是多少？调杠杆看什么最能省钱。</p>
+
+  <h2>一、算一算</h2>
+  <div class="stage">
+    <div class="inputs">
+      <div class="f">
+        <label>硬件（月租，含托管折算）</label>
+        <select id="hw">
+          <option value="18000">8×H100 · ≈ $18,000/月（市场租金中位，估算）</option>
+          <option value="32000">8×H200 · ≈ $32,000/月（估算）</option>
+          <option value="55000">8×B200 · ≈ $55,000/月（估算）</option>
+          <option value="4500">单机 2×L40S · ≈ $4,500/月（估算）</option>
+        </select>
+      </div>
+      <div class="f">
+        <label>服务模式（决定单机吞吐）</label>
+        <select id="mode">
+          <option value="5000">7B · 高并发短会话 ≈ 5K token/s</option>
+          <option value="1500" selected>70B · 典型业务 ≈ 1.5K token/s</option>
+          <option value="350">405B · 大模型长上下文 ≈ 350 token/s</option>
+          <option value="8000">7B · vLLM 满血调优 ≈ 8K token/s（乐观口径）</option>
+        </select>
+      </div>
+      <div class="f">
+        <label>利用率（排除了空闲时段）</label>
+        <div class="sld"><input type="range" id="util" min="10" max="90" value="60"><b id="utilv">60%</b></div>
+      </div>
+    </div>
+    <div class="res">
+      <div class="stat"><div class="l">$/M token（服务成本）</div><div class="v" id="cost">–</div></div>
+      <div class="stat"><div class="l">月产出 token</div><div class="v" id="out">–</div></div>
+    </div>
+    <div class="formula" id="formula"></div>
+    <p class="note">口径：纯算力成本（电费/带宽/运维未计入），吞吐为行业常见量级的粗估，非实测。上游 <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/09_inference_system/cost_analysis/llm_api_pricing_analysis.md">推理成本分析</a> 有基于 OpenRouter 的真实价格抓取。</p>
+  </div>
+
+  <h2>二、拧哪个杠杆最省钱？</h2>
+  <div class="stage">
+    <p style="font-size:13px;margin-top:0">成本公式里只有三个变量：<b>月租 ÷ (吞吐 × 利用率)</b>。点下面三个优化手段，看它们各自拧哪个变量、典型能拧多少。</p>
+    <div class="tune">
+      <button data-k="q" type="button">FP8/INT8 量化</button>
+      <button data-k="b" type="button">Continuous Batching</button>
+      <button data-k="u" type="button">错峰调度 + 前缀缓存</button>
+    </div>
+    <div class="say" id="tuneinfo" style="padding:10px 14px;border-radius:8px;background:var(--chip);font-size:14px;min-height:24px">点一个手段看解释。</div>
+  </div>
+
+  <h2>三、为什么"每 token 成本"是这个行业的第一性指标</h2>
+  <div class="grid c3">
+    <div class="kcard"><h4>价格战的锚点</h4><p class="def">API 定价即成本+毛利；四年 token 价格降了约百倍，靠的正是第 6/7 课那些架构与系统优化。</p><p class="ana">🧠 对应上游 12.2《AI Infra 入门讲座》的四层杠杆主线。</p></div>
+    <div class="kcard"><h4>缓存命中是隐藏大杀器</h4><p class="def">Prefix Caching 命中时，输入 token 按折扣计费（部分厂商 1 折起）——Agent 多轮场景收益巨大。</p><p class="ana">🧠 类似 CDN 命中：不回源就几乎免费。</p></div>
+    <div class="kcard"><h4>SRE 的翻译职责</h4><p class="def">把"SM Active 低/预留浪费/利用率 30%"翻译成"每月多烧 $X"——这是推动优化立项的最有效语言。</p><p class="ana">🧠 容量规划报告的最后一列永远是钱。</p></div>
+  </div>
+
+  <h2>四、小测验</h2>
+  <div class="quiz"><p>Q1 · $/M token 成本公式的三个变量？</p>
+    <button class="opt" type="button">模型大小、batch、温度</button>
+    <button class="opt" data-ok="1" type="button">月租成本、吞吐、利用率</button>
+    <button class="opt" type="button">TTFT、TPOT、并发</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q2 · 利用率从 30% 提到 60%，成本怎么变？</p>
+    <button class="opt" type="button">不变</button>
+    <button class="opt" data-ok="1" type="button">减半——同样的租金刚产出翻倍</button>
+    <button class="opt" type="button">翻倍</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q3 · Agent 多轮对话场景，最划算的成本优化通常是？</p>
+    <button class="opt" type="button">换更大的模型</button>
+    <button class="opt" type="button">提高温度</button>
+    <button class="opt" data-ok="1" type="button">前缀缓存（Prefix Caching）——多轮共享前缀命中率高</button>
+    <span class="verdict"></span>
+  </div>
+
+  <div class="foot">
+    <b>延伸阅读（上游硬核版）</b>
+    <ul>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/09_inference_system/cost_analysis/llm_api_pricing_analysis.md">推理成本分析（OpenRouter 数据）</a></li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/09_inference_system/cost_analysis/deepseek_inference_cluster_unit_economics.md">DeepSeek 推理集群单卡经济学</a>——真实生产口径的算账范本</li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/99_misc/token_factory_talk/talk-illustrated.md">Token Factory 图文讲解</a>——成本革命的完整叙事</li>
+    </ul>
+    <div class="nav"><a href="04_batching_attention.html">← 上一页：Batching 与 PagedAttention</a><a href="../04_cloud_native_ai_platform/03_hami_kueue.html">下一页：HAMi / Kueue 切分 →</a></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var hw=document.getElementById('hw'),mode=document.getElementById('mode'),util=document.getElementById('util');
+  function calc(){
+    document.getElementById('utilv').textContent=util.value+'%';
+    var rent=+hw.value, tps=+mode.value, u=+util.value/100;
+    var monthlyTokens=tps*86400*30*u; // 月产出
+    var cost=rent/(monthlyTokens/1e6);
+    document.getElementById('cost').textContent='$'+cost.toFixed(2);
+    document.getElementById('out').textContent=(monthlyTokens/1e9).toFixed(2)+' B';
+    document.getElementById('formula').textContent='$/M = '+rent.toLocaleString()+' ÷ ('+tps.toLocaleString()+' token/s × 2,592,000s × '+u.toFixed(2)+') = $'+cost.toFixed(2)+' / 百万 token';
+  }
+  [hw,mode].forEach(function(e){e.addEventListener('change',calc);});
+  util.addEventListener('input',calc);
+  calc();
+  var TUNES={
+    q:'<b>量化</b>：拧"吞吐"变量。FP8/INT8 让权重变薄 → Decode 每步搬运量减半 → 吞吐约 +50%~100%（视负载），精度需回归测试兜底。',
+    b:'<b>Continuous Batching</b>：拧"吞吐"变量。配合 PagedAttention 把 GPU 灌满，吞吐 2.5-4×（第 3 课/加餐演示）。一次改造，长期复利。',
+    u:'<b>错峰 + 前缀缓存</b>：拧"利用率"和"有效吞吐"。离线批任务填谷；Prefix Caching 让重复前缀不重算——Agent/RAG 场景等效吞吐再 +30% 起步（负载相关）。'
+  };
+  document.querySelectorAll('.tune button').forEach(function(b){
+    b.addEventListener('click',function(){
+      document.querySelectorAll('.tune button').forEach(function(x){x.classList.remove('on');});
+      b.classList.add('on');
+      document.getElementById('tuneinfo').innerHTML=TUNES[b.dataset.k];
+    });
+  });
+  document.querySelectorAll('.quiz').forEach(function(q){
+    q.addEventListener('click',function(e){
+      var b=e.target.closest('button.opt');
+      if(!b||q.dataset.done==='1')return;
+      var ok=b.dataset.ok==='1';
+      q.querySelectorAll('.opt').forEach(function(x){x.disabled=true;if(x.dataset.ok==='1')x.classList.add('right');});
+      if(!ok)b.classList.add('wrong');
+      var v=q.querySelector('.verdict');
+      v.textContent=ok?'✓ 答对了':'✗ 正确答案已标绿';
+      v.className='verdict '+(ok?'ok':'bad');
+      q.dataset.done='1';
+    });
+  });
+})();
+</script>
+</body>
+</html>

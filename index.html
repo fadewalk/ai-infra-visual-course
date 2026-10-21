@@ -146,6 +146,7 @@
         <tr><td>GPU 运维系列（nvidia-smi / nvtop / DCGM / 健康检查 / 驱动）</td><td><a href="03_ai_cluster_ops/01_gpu_ops.html">加餐 · 单机运维速查</a></td><td><span class="st done">✅</span></td></tr>
         <tr><td>健康检查实操（fuser / XID / SM Active）</td><td><a href="03_ai_cluster_ops/02_gpu_troubleshoot_sim.html">GPU 排障模拟器（伪终端）</a></td><td><span class="st done">✅</span></td></tr>
         <tr><td>IB 网络理论 / 健康检查</td><td><a href="03_ai_cluster_ops/03_ib_rdma.html">加餐 · IB 与 RDMA（TCP vs RDMA 路径）</a></td><td><span class="st done">✅</span></td></tr>
+        <tr><td>NCCL 理论 / 实战</td><td><a href="03_ai_cluster_ops/04_nccl_intro.html">加餐 · NCCL 调优导读（环形温习 + busbw 对照法）</a></td><td><span class="st done">✅</span></td></tr>
         <tr><td>NCCL 理论 / 实战</td><td>第 2 课 AllReduce 动画已打底，调优导读待做</td><td><span class="st p1">🕐 P1</span></td></tr>
         <tr><td>GPU 调度问题总览 / Gang Scheduling</td><td>第 4 课已打底，调度决策树待做</td><td><span class="st p1">🕐 P1</span></td></tr>
         <tr><td>中国数据中心模型精读</td><td>—</td><td><span class="st p3">🕐 P3</span></td></tr>
@@ -161,7 +162,7 @@
       <tbody>
         <tr><td>K8s GPU 管理 / Device Plugin / Container Toolkit</td><td><a href="04_cloud_native_ai_platform/01_k8s_gpu.html">第 4 课</a></td><td><span class="st done">✅</span></td></tr>
         <tr><td>Gang Scheduling / Volcano / Kueue（实操演示）</td><td><a href="04_cloud_native_ai_platform/02_scheduling_demo.html">Gang 调度演示</a></td><td><span class="st done">✅</span></td></tr>
-        <tr><td>Kueue + HAMi / GPU 虚拟化四部曲 / KAI vs HAMi</td><td>切分模式交互（第 4 课四模式扩展）</td><td><span class="st p1">🕐 P1</span></td></tr>
+        <tr><td>Kueue + HAMi / GPU 虚拟化四部曲 / KAI vs HAMi</td><td><a href="04_cloud_native_ai_platform/03_hami_kueue.html">加餐 · HAMi 与 Kueue（配额交互 + 组件对照）</a></td><td><span class="st done">✅</span></td></tr>
         <tr><td>LWS / llm-d 分布式推理调度</td><td>—</td><td><span class="st p2">🕐 P2</span></td></tr>
         <tr><td>JuiceFS / 3FS / ICMS 存储三篇</td><td>—</td><td><span class="st p2">🕐 P2</span></td></tr>
       </tbody>
@@ -204,8 +205,8 @@
       <tbody>
         <tr><td>Prefill / Decode / KV Cache 基础</td><td><a href="09_inference_system/01_inference_pipeline.html">第 3 课</a></td><td><span class="st done">✅</span></td></tr>
         <tr><td>并行策略系列</td><td><a href="09_inference_system/02_parallelism.html">第 6 课</a></td><td><span class="st done">✅</span></td></tr>
-        <tr><td>PagedAttention / Prefix Caching / Continuous Batching</td><td>第 3 课已打底，深入版待做</td><td><span class="st p1">🕐 P1</span></td></tr>
-        <tr><td>KV 容量规划 / 成本分析（$/token）</td><td><a href="09_inference_system/03_kv_capacity_calc.html">KV 容量/并发计算器</a></td><td><span class="st done">✅</span></td></tr>
+        <tr><td>PagedAttention / Prefix Caching / Continuous Batching</td><td><a href="09_inference_system/04_batching_attention.html">加餐 · Batching 与 PagedAttention（双交互）</a></td><td><span class="st done">✅</span></td></tr>
+        <tr><td>KV 容量规划 / 成本分析（$/token）</td><td><a href="09_inference_system/03_kv_capacity_calc.html">KV 容量/并发计算器</a> · <a href="09_inference_system/05_cost_calc.html">$/token 成本速算</a></td><td><span class="st done">✅</span></td></tr>
         <tr><td>vLLM / SGLang 源码系列（30+ 篇）</td><td>每系列先做"一张图看懂引擎架构"</td><td><span class="st p2">🕐 P2</span></td></tr>
         <tr><td>LMCache / Mooncake / Tair / DeepInfer</td><td>—</td><td><span class="st p2">🕐 P2</span></td></tr>
         <tr><td>参考设计 15 篇 / 部署实践 / DeepSeek 专题</td><td>—</td><td><span class="st p3">🕐 P3</span></td></tr>

@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>加餐 · HAMi 与 Kueue —— 显存配额与作业队列的实战拼图</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--green);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  .ctl{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+  button{font:inherit;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--fg);border-radius:8px;padding:6px 14px}
+  button:hover{border-color:var(--green)}
+  button.primary{background:var(--green);border-color:var(--green);color:#fff}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .duo{display:grid;gap:16px;grid-template-columns:1fr}
+  @media(min-width:820px){.duo{grid-template-columns:5fr 6fr}}
+  .gpucard{border:2px solid var(--muted);border-radius:10px;padding:12px;min-height:170px;position:relative;background:var(--chip)}
+  .gpucard .tag{position:absolute;top:-11px;left:12px;background:var(--card);padding:0 8px;font-size:11px;color:var(--muted)}
+  .alloc{display:flex;flex-direction:column;gap:4px;margin-top:8px}
+  .alloc .row{height:26px;border-radius:6px;font-size:11px;display:flex;align-items:center;padding:0 8px;color:#fff;white-space:nowrap;overflow:hidden}
+  .pa{background:var(--blue)}.pb{background:var(--purple)}.pc{background:var(--orange)}.pf{background:var(--muted);opacity:.4;color:var(--fg)}
+  .warnline{color:var(--red);font-size:12px;margin-top:8px;min-height:18px}
+  .yq{border:1px dashed var(--border);border-radius:8px;padding:8px 12px;font-size:12px;margin:6px 0;background:var(--chip);color:var(--muted)}
+  .yq b{color:var(--fg)}
+  .say{margin-top:12px;padding:10px 14px;border-radius:8px;background:var(--chip);font-size:14px;min-height:24px}
+  .grid{display:grid;gap:12px;grid-template-columns:1fr}
+  @media(min-width:700px){.grid.c2{grid-template-columns:repeat(2,1fr)}.grid.c3{grid-template-columns:repeat(3,1fr)}}
+  .kcard{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+  .kcard h4{margin:0 0 6px;font-size:14px;color:var(--green)}
+  .kcard .def{font-size:13px;margin:0 0 8px}
+  .kcard .ana{font-size:12px;color:var(--muted);border-top:1px dashed var(--border);padding-top:6px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{color:var(--muted);font-weight:500;font-size:12px}
+  .quiz{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin:10px 0}
+  .quiz p{margin:0 0 10px;font-size:14px}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:8px 12px}
+  .opt.right{border-color:var(--green);color:var(--green)}
+  .opt.wrong{border-color:var(--red);color:var(--red)}
+  .verdict{font-size:13px;margin-left:8px}
+  .verdict.ok{color:var(--green)} .verdict.bad{color:var(--red)}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .foot ul{margin:6px 0;padding-left:18px}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+  .note{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 加餐 · 云原生深入 · 承接第 4 课与 Gang 调度演示</div>
+  <h1>HAMi 与 Kueue</h1>
+  <p class="subtitle">第 4 课说过"K8s 对 GPU 没有硬隔离"。HAMi 补的是<b>显存配额</b>，Kueue 补的是<b>队列与配额管理</b>——两个问题，两层拼图。</p>
+
+  <h2>一、动手：没有配额 vs 有配额</h2>
+  <div class="stage">
+    <div class="ctl">
+      <button id="mode1" class="primary" type="button">提交 Pod B（申请 10GB）</button>
+      <button id="reset" type="button">重置</button>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px"><input type="checkbox" id="hami" checked> 启用 HAMi 显存配额</label>
+    </div>
+    <div class="duo">
+      <div>
+        <div class="gpucard"><span class="tag">GPU0 · 80GB（HAMi 池化视角）</span>
+          <div class="alloc" id="alloc">
+            <div class="row pa" style="width:62%">Pod A · 实际使用 12GB（申请 50GB）</div>
+            <div class="row pf" style="width:38%">空闲 30GB</div>
+          </div>
+        </div>
+        <div class="warnline" id="warnline"></div>
+      </div>
+      <div>
+        <p style="font-size:13px;margin-top:0">GPU0 现状：Pod A 只申请了 50GB 里的 12GB，还剩 30GB 空闲。现在 Pod B 申请 <b>10GB</b>。</p>
+        <div class="yq" id="yq"><b>原生 K8s 视角</b>：nvidia.com/gpu 资源里 GPU0 已被 A 整卡占走（没有细粒度），B 排队等下一张整卡。</div>
+        <div class="say" id="say">点「提交 Pod B」，分别看开/关 HAMi 的结果。建议先关掉提交一次，再开着提交一次。</div>
+      </div>
+    </div>
+  </div>
+
+  <h2>二、Kueue：队列与配额管理</h2>
+  <div class="stage">
+    <div class="grid c2">
+      <div class="kcard"><h4>Kueue 是什么</h4><p class="def">K8s 原生思路的作业队列：作业先进队列，按<b>配额（ResourceFlavor / ClusterQueue）</b>和优先级决定何时放行；配合调度器支持 Gang。</p><p class="ana">🧠 类比：CI 的 runner 池 + 团队配额，不让一个大作业吃光全队额度。</p></div>
+      <div class="kcard"><h4>和 HAMi 怎么配合</h4><p class="def">Kueue 管"什么时候上、用哪个池子（整卡池/共享池）"，HAMi 管"上了之后一张卡怎么分"。上游有两者集成的完整方案。</p><p class="ana">🧠 门卫管放行，管家管分房——各司其职。</p></div>
+    </div>
+  </div>
+
+  <h2>三、组件对照表</h2>
+  <div class="stage" style="padding:0;overflow:auto">
+    <table>
+      <thead><tr><th>组件</th><th>解决的问题</th><th>一句话定位</th></tr></thead>
+      <tbody>
+        <tr><td>原生 Device Plugin</td><td>整卡上报与分配</td><td>只能数"几张卡"，管不了"一张卡怎么分"</td></tr>
+        <tr><td>HAMi</td><td>显存配额 + 算力切分 + vGPU 调度</td><td>给 GPU 补 cgroup 式的硬约束（用户态拦截实现）</td></tr>
+        <tr><td>Kueue</td><td>队列、优先级、团队配额、Gang 放行</td><td>"谁先跑、能用多少"的资源治理层</td></tr>
+        <tr><td>Volcano</td><td>批调度（Gang/公平性/队列）</td><td>与 Kueue 定位相近，生态不同（见上游对比文）</td></tr>
+        <tr><td>MIG（硬件）</td><td>硬件级隔离</td><td>隔离最强但切法固定——HAMi 与它互补而非替代</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>四、小测验</h2>
+  <div class="quiz"><p>Q1 · HAMi 的显存配额靠什么实现？</p>
+    <button class="opt" type="button">内核 cgroup 原生支持</button>
+    <button class="opt" data-ok="1" type="button">用户态拦截 CUDA 分配调用（LD_PRELOAD 注入），超额即失败</button>
+    <button class="opt" type="button">驱动热补丁</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q2 · 不开任何切分，Pod B 申请 10GB 会怎样？</p>
+    <button class="opt" type="button">GPU0 分它 10GB</button>
+    <button class="opt" data-ok="1" type="button">排队等下一张整卡——原生 nvidia.com/gpu 是整卡粒度</button>
+    <button class="opt" type="button">自动降级跑 CPU</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q3 · Kueue 与 Gang Scheduling 的关系？</p>
+    <button class="opt" type="button">完全无关</button>
+    <button class="opt" data-ok="1" type="button">Kueue 在队列层决定"整组资源够不够才放行"，与调度器配合实现 Gang 语义</button>
+    <button class="opt" type="button">Kueue 替代 kubelet</button>
+    <span class="verdict"></span>
+  </div>
+
+  <div class="foot">
+    <b>延伸阅读（上游硬核版）</b>
+    <ul>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/04_cloud_native_ai_platform/k8s/03_kueue_hami_integration.md">Kueue + HAMi 集成方案</a></li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/04_cloud_native_ai_platform/gpu_manager/hami/hmai-gpu-resources-guide.md">HAMi 资源管理使用手册</a></li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/04_cloud_native_ai_platform/gpu_manager/02_virtualization.md">GPU 虚拟化技术篇</a>——HAMi 用户态拦截的原理上下文</li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/04_cloud_native_ai_platform/gpu_manager/hami/KAI_vs_HAMi_Comparison.md">KAI vs HAMi 对比</a></li>
+    </ul>
+    <div class="nav"><a href="02_scheduling_demo.html">← 实验室：Gang 调度演示</a><a href="04_lws_llmd.html">下一页：LWS / llm-d 导读 →</a></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var alloc=document.getElementById('alloc'),warn=document.getElementById('warnline'),
+      yq=document.getElementById('yq'),say=document.getElementById('say'),
+      hami=document.getElementById('hami'),btn=document.getElementById('mode1');
+  var submitted=false;
+  function reset(){
+    submitted=false;
+    alloc.innerHTML='<div class="row pa" style="width:62%">Pod A · 实际使用 12GB（申请 50GB）</div><div class="row pf" style="width:38%">空闲 30GB</div>';
+    warn.textContent='';
+    yq.innerHTML='<b>原生 K8s 视角</b>：nvidia.com/gpu 资源里 GPU0 已被 A 整卡占走（没有细粒度），B 排队等下一张整卡。';
+    say.textContent='点「提交 Pod B」，分别看开/关 HAMi 的结果。建议先关掉提交一次，再开着提交一次。';
+    btn.disabled=false;
+  }
+  btn.addEventListener('click',function(){
+    if(submitted)return;
+    submitted=true;
+    if(hami.checked){
+      alloc.innerHTML='<div class="row pa" style="width:15%">Pod A · 12GB（池内扣减）</div><div class="row pb" style="width:12.5%">Pod B · 10GB（配额内）</div><div class="row pf" style="width:72.5%">空闲 ≈ 58GB（含 A 未用配额归还池）</div>';
+      yq.innerHTML='<b>HAMi 视角</b>：把 80GB 池化成虚拟 vGPU 资源，B 申请 10GB <b>直接落位</b>，显存配额由用户态拦截保证——B 超 10GB 的分配请求会失败，而不是挤爆 A。';
+      say.innerHTML='✅ B 直接跑起来了：池化让 80GB 被"薄切"成多份小额度，卡片利用率大幅提升。代价：用户态拦截有少量开销，且算力隔离弱于 MIG 硬件切分。';
+    }else{
+      alloc.innerHTML='<div class="row pa" style="width:62%">Pod A · 12GB（整卡独占中）</div><div class="row pc" style="width:38%">Pod B · Pending（排队等 GPU1）</div>';
+      warn.textContent='⚠️ B 的 10GB 需求其实放得下，但原生粒度是整卡——只能排队，GPU0 剩余 30GB 继续闲着。';
+      yq.innerHTML='<b>原生 K8s 视角</b>：nvidia.com/gpu 资源里 GPU0 已被 A 整卡占走（没有细粒度），B 排队等下一张整卡。';
+      say.innerHTML='❌ B 在排队。这就是"GPU 贵但大量浪费"的经典场景——HAMi/MIG 就是为它存在的。';
+    }
+  });
+  document.getElementById('reset').addEventListener('click',reset);
+  hami.addEventListener('change',reset);
+  document.querySelectorAll('.quiz').forEach(function(q){
+    q.addEventListener('click',function(e){
+      var b=e.target.closest('button.opt');
+      if(!b||q.dataset.done==='1')return;
+      var ok=b.dataset.ok==='1';
+      q.querySelectorAll('.opt').forEach(function(x){x.disabled=true;if(x.dataset.ok==='1')x.classList.add('right');});
+      if(!ok)b.classList.add('wrong');
+      var v=q.querySelector('.verdict');
+      v.textContent=ok?'✓ 答对了':'✗ 正确答案已标绿';
+      v.className='verdict '+(ok?'ok':'bad');
+      q.dataset.done='1';
+    });
+  });
+})();
+</script>
+</body>
+</html>

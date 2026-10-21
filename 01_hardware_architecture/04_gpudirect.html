@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>加餐 · GPUDirect —— 让数据绕开 CPU 直达显存</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--green);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  .ctl{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+  button{font:inherit;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--fg);border-radius:8px;padding:6px 14px}
+  button:hover{border-color:var(--green)}
+  button.primary{background:var(--green);border-color:var(--green);color:#fff}
+  .duo{display:grid;gap:16px;grid-template-columns:1fr}
+  @media(min-width:820px){.duo{grid-template-columns:1fr 1fr}}
+  .racetrack{border:1px solid var(--border);border-radius:10px;padding:12px;background:var(--chip)}
+  .racetrack h4{margin:0 0 10px;font-size:13px;display:flex;justify-content:space-between}
+  .racetrack h4 .tm{font-weight:500;color:var(--muted)}
+  .lane{display:flex;align-items:center;gap:6px;margin:8px 0;height:44px}
+  .node{border:1px solid var(--border);border-radius:8px;background:var(--card);padding:6px 10px;font-size:12px;text-align:center;min-width:78px}
+  .node.hot{border-color:var(--red)}
+  .wire{flex:1;height:3px;background:var(--border);border-radius:2px;position:relative;overflow:hidden}
+  .wire .pkt{position:absolute;top:-3.5px;width:10px;height:10px;border-radius:50%;background:var(--green);opacity:0}
+  .wire.red .pkt{background:var(--red)}
+  .res{margin-top:10px;font-size:13px}
+  .res b{color:var(--green)}
+  .res .bad{color:var(--red)}
+  .grid{display:grid;gap:12px;grid-template-columns:1fr}
+  @media(min-width:700px){.grid.c3{grid-template-columns:repeat(3,1fr)}.grid.c2{grid-template-columns:repeat(2,1fr)}}
+  .kcard{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+  .kcard h4{margin:0 0 6px;font-size:14px;color:var(--green)}
+  .kcard .def{font-size:13px;margin:0 0 8px}
+  .kcard .ana{font-size:12px;color:var(--muted);border-top:1px dashed var(--border);padding-top:6px}
+  .quiz{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin:10px 0}
+  .quiz p{margin:0 0 10px;font-size:14px}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:8px 12px}
+  .opt.right{border-color:var(--green);color:var(--green)}
+  .opt.wrong{border-color:var(--red);color:var(--red)}
+  .verdict{font-size:13px;margin-left:8px}
+  .verdict.ok{color:var(--green)} .verdict.bad{color:var(--red)}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .foot ul{margin:6px 0;padding-left:18px}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+  .note{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 加餐 · 硬件与互连 · 承接上一页 PCIe/CXL</div>
+  <h1>GPUDirect：绕开 CPU 的三条直通道</h1>
+  <p class="subtitle">P2P（卡对卡）、RDMA（网卡对卡）、Storage（盘对卡）——同一个思想的三种落地：<b>别让 CPU 当二传手</b>。点按钮看数据包赛跑。</p>
+
+  <h2>一、动手：数据包赛跑</h2>
+  <div class="stage">
+    <div class="ctl">
+      <button id="run" class="primary" type="button">同时发送 1 个数据包</button>
+      <button id="reset" type="button">重置</button>
+      <span class="note">红线 = 要过 CPU 的老路；绿线 = 直通路。看谁先到。</span>
+    </div>
+    <div class="duo">
+      <div class="racetrack">
+        <h4>老路：过 CPU（两次拷贝）<span class="tm" id="t-old">–</span></h4>
+        <div class="lane"><span class="node">网卡</span><span class="wire red"><span class="pkt" id="p1a"></span></span><span class="node hot" id="cpu1">CPU 内存</span></div>
+        <div class="lane"><span class="node hot">CPU</span><span class="wire red"><span class="pkt" id="p1b"></span></span><span class="node">GPU 显存</span></div>
+      </div>
+      <div class="racetrack">
+        <h4>直路：GPUDirect RDMA<span class="tm" id="t-new">–</span></h4>
+        <div class="lane"><span class="node">网卡</span><span class="wire"><span class="pkt" id="p2"></span></span><span class="node">GPU 显存</span></div>
+      </div>
+    </div>
+    <div class="res" id="res">两条路都还没发车。点「同时发送」。</div>
+  </div>
+
+  <h2>二、三个变体，一张表</h2>
+  <div class="grid c3">
+    <div class="kcard"><h4>P2P 卡对卡</h4><p class="def">同一台机上两块 GPU 直接互访显存（走 PCIe Switch 或 NVLink），不过 CPU 内存。</p><p class="ana">🧠 类比：同机房两台机器直连线，不过网关。</p></div>
+    <div class="kcard"><h4>RDMA 网卡对卡</h4><p class="def">远端机器的网卡直接写进本机 GPU 显存——多机训练 AllReduce 的底层高速路（配合 IB/RoCE，见集群章）。</p><p class="ana">🧠 类比：快递直送仓库月台，不经收发室登记。</p></div>
+    <div class="kcard"><h4>Storage 盘对卡</h4><p class="def">GPUDirect Storage（GDS）：存储数据经 DMA 直达显存。模型加载、训练读数据集的大文件场景收益明显。</p><p class="ana">🧠 类比：数据库直读磁盘页，不经过应用缓冲区。</p></div>
+  </div>
+
+  <h2>三、SRE 关心的三件事</h2>
+  <div class="grid c2">
+    <div class="kcard"><h4>怎么确认它在生效</h4><p class="def">P2P：nvidia-smi topo -m 看卡间拓扑（PIX/PHB/NODE 表示亲疏）；NCCL 日志会打印走了哪条路径。GDS：用 gsync/gdsio 基准工具对比开关前后的带宽。</p><p class="ana">🧠 类比：改了网络策略要 ping/traceroute 验证——这里用拓扑和基准验证。</p></div>
+    <div class="kcard"><h4>什么时候收益最大</h4><p class="def">大块、高频传输（训练数据流、多机通信、模型加载）。小而碎的 I/O 收益有限——直通也有建立成本。</p><p class="ana">🧠 类比：大文件走 P2P，碎文件批量打包更划算。</p></div>
+  </div>
+
+  <h2>四、小测验</h2>
+  <div class="quiz"><p>Q1 · GPUDirect RDMA 主要省掉了什么？</p>
+    <button class="opt" data-ok="1" type="button">CPU 内存中转（bounce buffer）与 CPU 拷贝开销</button>
+    <button class="opt" type="button">GPU 计算时间</button>
+    <button class="opt" type="button">网络带宽</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q2 · 多机训练里 AllReduce 的高速通信底层通常依赖？</p>
+    <button class="opt" type="button">GPUDirect Storage</button>
+    <button class="opt" data-ok="1" type="button">GPUDirect RDMA（配合 IB/RoCE 网络）</button>
+    <button class="opt" type="button">CXL.mem</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q3 · 排查"P2P 是否走了最优路径"的第一步？</p>
+    <button class="opt" type="button">重启节点</button>
+    <button class="opt" data-ok="1" type="button">nvidia-smi topo -m 看卡间拓扑亲疏</button>
+    <button class="opt" type="button">升级驱动</button>
+    <span class="verdict"></span>
+  </div>
+
+  <div class="foot">
+    <b>延伸阅读（上游硬核版）</b>
+    <ul>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/01_hardware_architecture/gpudirect/02_gpudirect_p2p.md">GPUDirect P2P 技术详解</a></li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/01_hardware_architecture/gpudirect/01_gpudirect_technology.md">GPUDirect RDMA 与 Storage 详解</a></li>
+    </ul>
+    <div class="nav"><a href="03_pcie_cxl.html">← 上一页：PCIe 与 CXL</a><a href="05_nvlink.html">下一页：NVLink / NVSwitch →</a></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var running=false;
+  function animatePkt(id,dur,hotId,done){
+    var p=document.getElementById(id);
+    p.style.transition='none';p.style.left='-10px';p.style.opacity='1';
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){
+        p.style.transition='left '+dur+'ms linear';
+        p.style.left='calc(100% - 2px)';
+      });
+    });
+    setTimeout(function(){
+      p.style.opacity='0';
+      if(hotId){var h=document.getElementById(hotId);h.style.borderColor='var(--green)';setTimeout(function(){h.style.borderColor='';},400);}
+      done&&done();
+    },dur);
+  }
+  document.getElementById('run').addEventListener('click',function(){
+    if(running)return;running=true;
+    var res=document.getElementById('res');
+    res.innerHTML='赛跑中…';
+    var oldDur=2600,newDur=900;
+    animatePkt('p1a',oldDur/2,'cpu1',function(){
+      animatePkt('p1b',oldDur/2,null);
+    });
+    animatePkt('p2',newDur,'',function(){
+      document.getElementById('t-new').textContent='到达 ✓';
+    });
+    setTimeout(function(){
+      document.getElementById('t-old').textContent='到达 ✓';
+      res.innerHTML='同一起点同时发车：直路 <b>'+(newDur/1000).toFixed(1)+'s"到"</b>，老路 '+(oldDur/1000).toFixed(1)+'s——差距就来自那次 CPU 中转（模拟比例，非实测）。';
+      running=false;
+    },oldDur+100);
+  });
+  document.getElementById('reset').addEventListener('click',function(){
+    ['p1a','p1b','p2'].forEach(function(id){
+      var p=document.getElementById(id);p.style.transition='none';p.style.opacity='0';p.style.left='-10px';
+    });
+    document.getElementById('t-old').textContent='–';
+    document.getElementById('t-new').textContent='–';
+    document.getElementById('res').textContent='两条路都还没发车。点「同时发送」。';
+  });
+  document.querySelectorAll('.quiz').forEach(function(q){
+    q.addEventListener('click',function(e){
+      var b=e.target.closest('button.opt');
+      if(!b||q.dataset.done==='1')return;
+      var ok=b.dataset.ok==='1';
+      q.querySelectorAll('.opt').forEach(function(x){x.disabled=true;if(x.dataset.ok==='1')x.classList.add('right');});
+      if(!ok)b.classList.add('wrong');
+      var v=q.querySelector('.verdict');
+      v.textContent=ok?'✓ 答对了':'✗ 正确答案已标绿';
+      v.className='verdict '+(ok?'ok':'bad');
+      q.dataset.done='1';
+    });
+  });
+})();
+</script>
+</body>
+</html>

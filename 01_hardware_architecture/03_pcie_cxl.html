@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>加餐 · PCIe 与 CXL —— GPU 和 CPU 之间那条"普通公路"</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--blue);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  .ctl{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  button{font:inherit;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--fg);border-radius:8px;padding:6px 14px}
+  button:hover{border-color:var(--blue)}
+  button.seg-on{background:var(--blue);border-color:var(--blue);color:#fff}
+  .bwrow{display:flex;align-items:center;gap:10px;margin:8px 0;font-size:13px}
+  .bwrow .nm{width:110px;font-weight:500}
+  .bwrow .track{flex:1;height:18px;border-radius:6px;background:var(--chip);overflow:hidden}
+  .bwrow .track i{display:block;height:100%;background:var(--blue);opacity:.85;transition:width .5s}
+  .bwrow .v{width:120px;font-size:12px;color:var(--muted);white-space:nowrap}
+  .bwrow.sel .track i{background:var(--green)}
+  .calc{margin-top:14px;padding:12px 14px;border:1px dashed var(--border);border-radius:10px;font-size:13px}
+  .calc b{color:var(--green)}
+  .path{margin:10px 0}
+  .pnode{display:flex;align-items:center;gap:8px;font-size:13px;margin:4px 0}
+  .pnode .box{border:1px solid var(--border);border-radius:8px;padding:6px 12px;background:var(--chip);min-width:120px;text-align:center}
+  .pnode .box.hot{border-color:var(--red);background:color-mix(in srgb,var(--red) 12%, var(--card))}
+  .pnode .ln{flex:1;height:2px;background:var(--border);position:relative;overflow:hidden}
+  .pnode .ln i{position:absolute;top:0;left:-30%;width:30%;height:100%;background:var(--green);animation:mv 1.2s linear infinite}
+  @keyframes mv{to{left:100%}}
+  .pnode.slow .ln i{animation-duration:2.4s;background:var(--red)}
+  .grid{display:grid;gap:12px;grid-template-columns:1fr}
+  @media(min-width:700px){.grid.c2{grid-template-columns:repeat(2,1fr)}.grid.c3{grid-template-columns:repeat(3,1fr)}}
+  .kcard{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+  .kcard h4{margin:0 0 6px;font-size:14px;color:var(--blue)}
+  .kcard .def{font-size:13px;margin:0 0 8px}
+  .kcard .ana{font-size:12px;color:var(--muted);border-top:1px dashed var(--border);padding-top:6px}
+  .cxldiag{display:flex;gap:8px;align-items:stretch;flex-wrap:wrap;justify-content:center;margin:10px 0}
+  .cxlnode{border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:12px;text-align:center;background:var(--chip);min-width:110px}
+  .cxlnode b{display:block;font-size:13px}
+  .cxllink{align-self:center;color:var(--muted);font-size:12px;text-align:center;min-width:90px}
+  .quiz{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin:10px 0}
+  .quiz p{margin:0 0 10px;font-size:14px}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:8px 12px}
+  .opt.right{border-color:var(--green);color:var(--green)}
+  .opt.wrong{border-color:var(--red);color:var(--red)}
+  .verdict{font-size:13px;margin-left:8px}
+  .verdict.ok{color:var(--green)} .verdict.bad{color:var(--red)}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .foot ul{margin:6px 0;padding-left:18px}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+  .note{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 加餐 · 硬件与互连 · 配合第 5 课延迟金字塔使用</div>
+  <h1>PCIe 与 CXL</h1>
+  <p class="subtitle">CPU 和 GPU 之间的"普通公路"。GPU 再快，数据过这条公路就得排队——看清它多窄、以及 CXL 想怎么拓宽它。</p>
+
+  <h2>一、点一代，看带宽差多少</h2>
+  <div class="stage">
+    <div class="ctl">
+      <button class="seg-on" data-g="3" type="button">Gen3</button>
+      <button data-g="4" type="button">Gen4</button>
+      <button data-g="5" type="button">Gen5</button>
+      <button data-g="6" type="button">Gen6</button>
+    </div>
+    <div class="bwrow"><span class="nm">PCIe x16</span><span class="track"><i id="bwi" style="width:25%"></i></span><span class="v" id="bwv">≈ 16 GB/s（单向）</span></div>
+    <div class="bwrow sel"><span class="nm">NVLink 5</span><span class="track"><i style="width:100%;background:var(--green)"></i></span><span class="v">≈ 900 GB/s 单向（H100，厂商口径）</span></div>
+    <div class="calc" id="calcbox">拷 1 GB 数据到 GPU：PCIe Gen3 单向 ≈ <b>0.6 s</b>；NVLink 5 ≈ <b>0.01 s</b>——差着几十倍。</div>
+    <p class="note">口径：PCIe x16 单向带宽 Gen3≈16 / Gen4≈32 / Gen5≈64 / Gen6≈128 GB/s（协议理论值，实际打 8-9 折）。这就是第 5 课金字塔里"过 PCIe 就掉一个量级"的数字来源。</p>
+  </div>
+
+  <h2>二、"绕不绕 CPU"：一条数据的两种走法</h2>
+  <div class="stage">
+    <div class="grid c2">
+      <div>
+        <h4 style="font-size:14px;margin:0 0 8px;color:var(--red)">默认走法：CPU 当中转站</h4>
+        <div class="path">
+          <div class="pnode slow"><span class="box">网卡 / 磁盘</span><span class="ln"><i></i></span><span class="box hot">CPU 内存（bounce buffer）</span></div>
+          <div class="pnode slow" style="margin-left:150px"><span class="ln"><i></i></span><span class="box hot">CPU（再拷一次）</span></div>
+          <div class="pnode slow" style="margin-left:150px"><span class="ln"><i></i></span><span class="box">GPU 显存</span></div>
+        </div>
+        <p class="note">数据先进 CPU 内存、CPU 再搬一次进 GPU：两次拷贝、两次占 CPU、带宽还只有 PCIe。</p>
+      </div>
+      <div>
+        <h4 style="font-size:14px;margin:0 0 8px;color:var(--green)">直通走法：绕开 CPU</h4>
+        <div class="path">
+          <div class="pnode"><span class="box">网卡 / 磁盘</span><span class="ln"><i></i></span><span class="box">PCIe Switch / P2P</span><span class="ln"><i></i></span><span class="box">GPU 显存</span></div>
+        </div>
+        <p class="note">GPUDirect P2P / RDMA / Storage 三兄弟干的就是这件事——下一页细讲。</p>
+      </div>
+    </div>
+  </div>
+
+  <h2>三、CXL：给"公路"装上内存语义</h2>
+  <div class="stage">
+    <p style="font-size:14px;margin-top:0">PCIe 的老问题：它只会"搬数据"，不懂"共享内存"。CXL（Compute Express Link）建立在 PCIe 物理层之上，加上了<b>缓存一致性</b>协议——让 CPU 和设备像访问自己内存一样访问对方的内存。</p>
+    <div class="cxldiag">
+      <div class="cxlnode"><b>CPU</b>自己的内存不够用</div>
+      <div class="cxllink">CXL.io<br>+<br>CXL.mem</div>
+      <div class="cxlnode"><b>内存扩展设备</b>额外的 512GB 挂进来</div>
+    </div>
+    <div class="grid c2" style="margin-top:10px">
+      <div class="kcard"><h4>为什么 AI 关心它</h4><p class="def">显存贵且不够：KV Cache 卸载到"CPU 内存/扩展内存"是推理系统的主流玩法（第 3 课），CXL 让这条卸载路径延迟更低、语义更干净。</p><p class="ana">🧠 类比：给内存不够的机器外接一根"一致性内存条"。</p></div>
+      <div class="kcard"><h4>SRE 视角</h4><p class="def">按内存用（CXL.mem 池化）时，延迟仍高于本地内存一个档位——放"温数据"合适，放热路径要测。</p><p class="ana">🧠 类比：远端内存池 ≈ 网盘：能放，但别当本地盘跑热数据。</p></div>
+    </div>
+  </div>
+
+  <h2>四、小测验</h2>
+  <div class="quiz"><p>Q1 · PCIe Gen5 x16 单向理论带宽大约是？</p>
+    <button class="opt" type="button">16 GB/s</button>
+    <button class="opt" data-ok="1" type="button">64 GB/s</button>
+    <button class="opt" type="button">512 GB/s</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q2 · 没有 GPUDirect 时，网卡数据到 GPU 显存要经过谁？</p>
+    <button class="opt" data-ok="1" type="button">CPU 内存（bounce buffer），要拷两次</button>
+    <button class="opt" type="button">直接到 GPU</button>
+    <button class="opt" type="button">经过 NVLink</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q3 · CXL 相对 PCIe 的核心增量是？</p>
+    <button class="opt" type="button">带宽翻倍</button>
+    <button class="opt" data-ok="1" type="button">缓存一致性与内存语义——设备内存能像本地内存一样被访问</button>
+    <button class="opt" type="button">取代 NVLink</button>
+    <span class="verdict"></span>
+  </div>
+
+  <div class="foot">
+    <b>延伸阅读（上游硬核版）</b>
+    <ul>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/01_hardware_architecture/pcie/01_pcie_comprehensive_guide.md">PCIe 总线技术大全</a></li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/01_hardware_architecture/pcie/08_cxl_interconnect_overview.md">CXL 互联协议全景解读</a></li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/01_hardware_architecture/pcie/09_cxl_cli_tools.md">CXL 命令行工具链</a>——运维实操</li>
+    </ul>
+    <div class="nav"><a href="02_latency_pyramid.html">← 第 5 课：延迟金字塔</a><a href="04_gpudirect.html">下一页：GPUDirect 数据路径 →</a></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var BW={3:{v:16,t:'≈ 16 GB/s（单向）',s:0.6},4:{v:32,t:'≈ 32 GB/s（单向）',s:0.3},5:{v:64,t:'≈ 64 GB/s（单向）',s:0.16},6:{v:128,t:'≈ 128 GB/s（单向）',s:0.08}};
+  var btns=document.querySelectorAll('[data-g]');
+  btns.forEach(function(b){
+    b.addEventListener('click',function(){
+      btns.forEach(function(x){x.classList.remove('seg-on');});
+      b.classList.add('seg-on');
+      var g=BW[b.dataset.g];
+      document.getElementById('bwi').style.width=(g.v/128*100)+'%';
+      document.getElementById('bwv').textContent=g.t;
+      document.getElementById('calcbox').innerHTML='拷 1 GB 数据到 GPU：PCIe Gen'+b.dataset.g+' 单向 ≈ <b>'+g.s.toFixed(2)+' s</b>；NVLink 5 ≈ <b>0.01 s</b>——'+(g.s/0.01).toFixed(0)+' 倍差距。';
+    });
+  });
+  document.querySelectorAll('.quiz').forEach(function(q){
+    q.addEventListener('click',function(e){
+      var b=e.target.closest('button.opt');
+      if(!b||q.dataset.done==='1')return;
+      var ok=b.dataset.ok==='1';
+      q.querySelectorAll('.opt').forEach(function(x){x.disabled=true;if(x.dataset.ok==='1')x.classList.add('right');});
+      if(!ok)b.classList.add('wrong');
+      var v=q.querySelector('.verdict');
+      v.textContent=ok?'✓ 答对了':'✗ 正确答案已标绿';
+      v.className='verdict '+(ok?'ok':'bad');
+      q.dataset.done='1';
+    });
+  });
+})();
+</script>
+</body>
+</html>

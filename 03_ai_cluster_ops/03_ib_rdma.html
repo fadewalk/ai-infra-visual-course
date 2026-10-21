@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>加餐 · InfiniBand 与 RDMA —— 让"跨机器"像"跨房间"</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--blue);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  .ctl{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  button{font:inherit;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--fg);border-radius:8px;padding:6px 14px}
+  button:hover{border-color:var(--blue)}
+  button.seg-on{background:var(--blue);border-color:var(--blue);color:#fff}
+  .pathviz{display:flex;justify-content:center;margin:6px 0}
+  svg text{fill:var(--fg);font-size:11px}
+  .tinfo{font-size:13px;color:var(--muted);min-height:48px;text-align:center}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{color:var(--muted);font-weight:500;font-size:12px}
+  .grid{display:grid;gap:12px;grid-template-columns:1fr}
+  @media(min-width:700px){.grid.c2{grid-template-columns:repeat(2,1fr)}.grid.c3{grid-template-columns:repeat(3,1fr)}}
+  .kcard{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+  .kcard h4{margin:0 0 6px;font-size:14px;color:var(--blue)}
+  .kcard .def{font-size:13px;margin:0 0 8px}
+  .kcard .ana{font-size:12px;color:var(--muted);border-top:1px dashed var(--border);padding-top:6px}
+  .cmd{font-family:ui-monospace,Menlo,monospace;font-size:12px;background:var(--chip);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin:6px 0;overflow:auto}
+  .quiz{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin:10px 0}
+  .quiz p{margin:0 0 10px;font-size:14px}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:8px 12px}
+  .opt.right{border-color:var(--green);color:var(--green)}
+  .opt.wrong{border-color:var(--red);color:var(--red)}
+  .verdict{font-size:13px;margin-left:8px}
+  .verdict.ok{color:var(--green)} .verdict.bad{color:var(--red)}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .foot ul{margin:6px 0;padding-left:18px}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+  .note{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 加餐 · 集群网络 · 承接 NVLink 页</div>
+  <h1>InfiniBand 与 RDMA</h1>
+  <p class="subtitle">出了单机就是 IB 的天下：μs 级延迟、无损传输、内核旁路——多机训练"莫名变慢"的答案常在这里。</p>
+
+  <h2>一、TCP vs RDMA：两种寄快递的方式</h2>
+  <div class="stage">
+    <div class="ctl">
+      <button id="m-tcp" class="seg-on" type="button">TCP（内核协议栈）</button>
+      <button id="m-rdma" type="button">RDMA（内核旁路）</button>
+    </div>
+    <div class="pathviz"><svg id="pv" viewBox="0 0 680 240" width="100%" role="img" aria-label="数据路径对比"></svg></div>
+    <div class="tinfo" id="tinfo">TCP：数据要往返内核协议栈，两端 CPU 都要参与拷贝和处理——CPU 又当搬运工又当登记员。</div>
+  </div>
+
+  <h2>二、IB 关键词卡</h2>
+  <div class="grid c2">
+    <div class="kcard"><h4>RDMA 远程直接内存访问</h4><p class="def">直接读写对端内存，绕过对端 CPU 与内核——延迟 μs 级，CPU 几乎零参与。</p><p class="ana">🧠 快递直送对方仓库，不劳收发室签收。</p></div>
+    <div class="kcard"><h4>InfiniBand vs RoCE</h4><p class="def">IB：专用网络（专用网卡+交换机），天生无损。RoCE：RDMA 跑在以太网上，便宜但依赖无损配置（PFC/ECN）。</p><p class="ana">🧠 专用高速路 vs 改造的普通高速路。</p></div>
+    <div class="kcard"><h4>无损网络</h4><p class="def">IB 用信用机制保证不丢包；集合通信一丢包就重传，训练吞吐立刻崩——"无损"是多机训练的生命线。</p><p class="ana">🧠 视频会议丢包能忍，分布式训练丢包全体重传。</p></div>
+    <div class="kcard"><h4>Subnet Manager 子网管理器</h4><p class="def">IB 网络的"控制面"：给每个端口分配 LID、算路由。SM 挂了整个 IB 子网瘫痪。</p><p class="ana">🧠 类比 SDN 控制器：数据面再快，控制面断了全瞎。</p></div>
+  </div>
+
+  <h2>三、健康检查最小集（运维视角）</h2>
+  <div class="stage">
+    <div class="cmd"># 端口状态与速率（LinkUp / 400 Gbps？）</div>
+    <div class="cmd">ibstat<br>ibstatus</div>
+    <div class="cmd"># 端到端连通与带宽（两台机器配对跑）</div>
+    <div class="cmd">ib_write_bw -d mlx5_0&nbsp;&nbsp;# 服务端<br>ib_write_bw -d mlx5_0 &lt;对端IP&gt;&nbsp;&nbsp;# 客户端</div>
+    <div class="cmd"># 错误计数与 SM 状态（排障第一线索）</div>
+    <div class="cmd">perfquery&nbsp;&nbsp;# 端口计数器：symbol error / link downed<br>sminfo&nbsp;&nbsp;# SM 是否在位</div>
+    <p class="note">上游有完整的《IB 健康检查与性能监控实战》，按 L1/L2/L3 分层组织——右边延伸阅读直达。</p>
+  </div>
+
+  <h2>四、小测验</h2>
+  <div class="quiz"><p>Q1 · RDMA 最大的卖点是？</p>
+    <button class="opt" type="button">带宽比 TCP 高 10 倍</button>
+    <button class="opt" data-ok="1" type="button">绕过两端内核与 CPU 直接读写内存：低延迟 + CPU 零负担</button>
+    <button class="opt" type="button">加密更强</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q2 · IB 网络里 Subnet Manager 挂了会怎样？</p>
+    <button class="opt" type="button">速度变慢但能跑</button>
+    <button class="opt" data-ok="1" type="button">新端口拿不到 LID、路由无法更新——子网功能瘫痪</button>
+    <button class="opt" type="button">没有影响</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q3 · 多机训练"莫名变慢"，为什么优先怀疑网络而不是算法？</p>
+    <button class="opt" type="button">算法不可能变</button>
+    <button class="opt" data-ok="1" type="button">IB 出问题常表现为变慢而非报错：丢包重传/降速链路/拥塞都静默吃掉吞吐</button>
+    <button class="opt" type="button">网络最便宜</button>
+    <span class="verdict"></span>
+  </div>
+
+  <div class="foot">
+    <b>延伸阅读（上游硬核版）</b>
+    <ul>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/03_ai_cluster_ops/02_infiniband/01_ib_network_theory.md">IB 网络架构与协议</a></li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/03_ai_cluster_ops/02_infiniband/README.md">IB 健康检查与性能监控实战</a></li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/03_ai_cluster_ops/03_nccl/01_nccl_theory.md">NCCL 教程</a>——跑在这些链路上的集合通信库（下一页）</li>
+    </ul>
+    <div class="nav"><a href="../01_hardware_architecture/05_nvlink.html">← 上一页：NVLink / NVSwitch</a><a href="04_nccl_intro.html">下一页：NCCL 调优导读 →</a></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var svg=document.getElementById('pv'),NS='http://www.w3.org/2000/svg';
+  var info=document.getElementById('tinfo');
+  function clear(){svg.innerHTML='';}
+  function box(x,y,label,w){
+    var g=document.createElementNS(NS,'g');
+    var r=document.createElementNS(NS,'rect');
+    r.setAttribute('x',x-(w||60)/2);r.setAttribute('y',y-16);r.setAttribute('width',w||60);r.setAttribute('height',32);
+    r.setAttribute('rx',6);r.setAttribute('fill','var(--chip)');r.setAttribute('stroke','var(--border)');
+    g.appendChild(r);
+    var t=document.createElementNS(NS,'text');
+    t.setAttribute('x',x);t.setAttribute('y',y+4);t.setAttribute('text-anchor','middle');
+    t.textContent=label;
+    g.appendChild(t);
+    svg.appendChild(g);
+  }
+  function flow(y,color,speed){
+    var l=document.createElementNS(NS,'line');
+    l.setAttribute('x1',0);l.setAttribute('y1',y);l.setAttribute('x2',0);l.setAttribute('y2',y);
+    svg.appendChild(l);
+    var d=document.createElementNS(NS,'line');
+    d.setAttribute('x1',120);d.setAttribute('y1',y);d.setAttribute('x2',560);d.setAttribute('y2',y);
+    d.setAttribute('stroke','var(--border)');d.setAttribute('stroke-width','2');
+    svg.appendChild(d);
+    var pkt=document.createElementNS(NS,'circle');
+    pkt.setAttribute('cy',y);pkt.setAttribute('r',5);pkt.setAttribute('fill',color);pkt.setAttribute('opacity','0');
+    svg.appendChild(pkt);
+    var dur=speed;
+    pkt.style.transition='none';pkt.style.cx='120px';pkt.setAttribute('cx',120);pkt.style.opacity='1';
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){
+        pkt.style.transition='all '+dur+'ms linear';
+        pkt.setAttribute('cx',560);
+      });
+    });
+    return dur;
+  }
+  function drawTcp(){
+    clear();
+    box(120,60,'应用 A');box(340,60,'内核协议栈');box(560,60,'应用 B');
+    box(120,140,'CPU 拷贝');box(560,140,'CPU 拷贝');
+    var d1=flow(100,'var(--red)',2200);
+    flow(180,'var(--red)',2200);
+    box(120,200,'网卡');box(560,200,'网卡');
+    info.innerHTML='TCP：数据 <b>往返内核协议栈</b>（红点），两端 CPU 参与拷贝与协议处理。延迟高、CPU 有负担、路径长。';
+    return d1;
+  }
+  function drawRdma(){
+    clear();
+    box(120,60,'应用 A');box(560,60,'应用 B');
+    var d=flow(100,'var(--green)',700);
+    box(120,160,'网卡（RDMA 引擎）');box(560,160,'网卡（RDMA 引擎）');
+    flow(200,'var(--green)',700);
+    info.innerHTML='RDMA：<b>网卡直写对端内存</b>（绿点直达），不经过内核与对端 CPU——μs 级延迟、CPU 零拷贝零负担。';
+    return d;
+  }
+  document.getElementById('m-tcp').addEventListener('click',function(){
+    this.classList.add('seg-on');document.getElementById('m-rdma').classList.remove('seg-on');drawTcp();
+  });
+  document.getElementById('m-rdma').addEventListener('click',function(){
+    this.classList.add('seg-on');document.getElementById('m-tcp').classList.remove('seg-on');drawRdma();
+  });
+  drawTcp();
+  document.querySelectorAll('.quiz').forEach(function(q){
+    q.addEventListener('click',function(e){
+      var b=e.target.closest('button.opt');
+      if(!b||q.dataset.done==='1')return;
+      var ok=b.dataset.ok==='1';
+      q.querySelectorAll('.opt').forEach(function(x){x.disabled=true;if(x.dataset.ok==='1')x.classList.add('right');});
+      if(!ok)b.classList.add('wrong');
+      var v=q.querySelector('.verdict');
+      v.textContent=ok?'✓ 答对了':'✗ 正确答案已标绿';
+      v.className='verdict '+(ok?'ok':'bad');
+      q.dataset.done='1';
+    });
+  });
+})();
+</script>
+</body>
+</html>

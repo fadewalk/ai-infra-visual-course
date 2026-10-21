@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>加餐 · NVLink / NVSwitch —— 让 8 张卡变成"一张大卡"</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--green);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  .topo{display:flex;justify-content:center;margin:8px 0}
+  svg text{fill:var(--fg);font-size:11px}
+  .topobtns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:10px}
+  button{font:inherit;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--fg);border-radius:8px;padding:6px 14px}
+  button:hover{border-color:var(--green)}
+  button.seg-on{background:var(--green);border-color:var(--green);color:#fff}
+  .tinfo{text-align:center;font-size:13px;min-height:24px;color:var(--muted)}
+  .grid{display:grid;gap:12px;grid-template-columns:1fr}
+  @media(min-width:700px){.grid.c2{grid-template-columns:repeat(2,1fr)}.grid.c3{grid-template-columns:repeat(3,1fr)}}
+  .kcard{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+  .kcard h4{margin:0 0 6px;font-size:14px;color:var(--green)}
+  .kcard .def{font-size:13px;margin:0 0 8px}
+  .kcard .ana{font-size:12px;color:var(--muted);border-top:1px dashed var(--border);padding-top:6px}
+  .genrow{display:flex;align-items:center;gap:10px;font-size:13px;margin:6px 0}
+  .genrow .n{width:130px;font-weight:500}
+  .genrow .track{flex:1;height:16px;border-radius:6px;background:var(--chip);overflow:hidden}
+  .genrow .track i{display:block;height:100%;background:var(--green);opacity:.85}
+  .genrow .v{width:130px;font-size:12px;color:var(--muted)}
+  .quiz{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin:10px 0}
+  .quiz p{margin:0 0 10px;font-size:14px}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:8px 12px}
+  .opt.right{border-color:var(--green);color:var(--green)}
+  .opt.wrong{border-color:var(--red);color:var(--red)}
+  .verdict{font-size:13px;margin-left:8px}
+  .verdict.ok{color:var(--green)} .verdict.bad{color:var(--red)}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .foot ul{margin:6px 0;padding-left:18px}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+  .note{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 加餐 · 硬件与互连 · 承接 GPUDirect</div>
+  <h1>NVLink / NVSwitch</h1>
+  <p class="subtitle">把机内 8 张卡连成"一张大卡"的总线：TP/EP 这类通信密集并行的物理前提。点按钮看两种拓扑的差别。</p>
+
+  <h2>一、动手：直连 vs 交换拓扑</h2>
+  <div class="stage">
+    <div class="topobtns">
+      <button id="t-dgx" class="seg-on" type="button">DGX 拓扑（NVLink 直连 + Switch 混合）</button>
+      <button id="t-nvl" type="button">NVL72 拓扑（NVSwitch 全互联）</button>
+    </div>
+    <div class="topo"><svg id="topo" viewBox="0 0 640 300" width="100%" role="img" aria-label="拓扑图"></svg></div>
+    <div class="tinfo" id="tinfo">8 卡 DGX 式机柜：卡两两直连成 4 组，组间靠 NVSwitch 交换——任意两卡都通，但路径有亲疏（nvidia-smi topo -m 里的 NV# 就是这个含义）。</div>
+  </div>
+
+  <h2>二、代际带宽（厂商口径）</h2>
+  <div class="stage">
+    <div class="genrow"><span class="n">NVLink 3（A100）</span><span class="track"><i style="width:33%"></i></span><span class="v">600 GB/s 单向</span></div>
+    <div class="genrow"><span class="n">NVLink 4（H100）</span><span class="track"><i style="width:50%"></i></span><span class="v">900 GB/s 单向</span></div>
+    <div class="genrow"><span class="n">NVLink 5（B200）</span><span class="track"><i style="width:100%"></i></span><span class="v">1.8 TB/s 单向</span></div>
+    <p class="note">对比第 5 课金字塔：NVLink 5 ≈ 28 倍于 PCIe Gen5 x16（64 GB/s）。每代带宽大约翻倍，是 TP 扩展性的硬件天花板。</p>
+  </div>
+
+  <h2>三、关键词卡</h2>
+  <div class="grid c2">
+    <div class="kcard"><h4>NVLink</h4><p class="def">卡对卡的高速直连总线，替代 PCIe 承担 GPU 间通信。</p><p class="ana">🧠 机内高速专线，比"普通公路"（PCIe）宽一个量级。</p></div>
+    <div class="kcard"><h4>NVSwitch</h4><p class="def">NVLink 的交换机：让机内（乃至机架内）任意两卡全速互联，不必两两拉线。</p><p class="ana">🧠 从"两两拉专线"升级到"全部接交换机"。</p></div>
+    <div class="kcard"><h4>NVLink 域</h4><p class="def">被 NVLink/NVSwitch 连成一体的卡的范围（单机 8 卡；GB300 NVL72 是 72 卡机架级）。</p><p class="ana">🧠 调度时的"亲和域"：TP 的 Pod 要尽量放同一个域内（第 6 课）。</p></div>
+    <div class="kcard"><h4>nvidia-smi topo -m</h4><p class="def">运维第一命令：打印卡间拓扑矩阵（NV18/NV12/PIX/PHB/NODE/SYS），排多卡性能问题时先看它。</p><p class="ana">🧠 机内"网络接线图"：谁和谁走得近一目了然。</p></div>
+  </div>
+
+  <h2>四、小测验</h2>
+  <div class="quiz"><p>Q1 · NVSwitch 解决的问题是什么？</p>
+    <button class="opt" type="button">提高单卡算力</button>
+    <button class="opt" data-ok="1" type="button">让任意两卡都能全速互联，不必两两直连拉线</button>
+    <button class="opt" type="button">替代 HBM</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q2 · TP（张量并行）尽量不跨机器的根本原因是？</p>
+    <button class="opt" data-ok="1" type="button">每层都要集合通信，跨机就失去 NVLink 量级的带宽</button>
+    <button class="opt" type="button">跨机不支持 CUDA</button>
+    <button class="opt" type="button">PP 更省显存</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q3 · 拿到一台新 8 卡机器，查看卡间拓扑的命令是？</p>
+    <button class="opt" type="button">nvidia-smi -q</button>
+    <button class="opt" data-ok="1" type="button">nvidia-smi topo -m</button>
+    <button class="opt" type="button">lspci | grep NV</button>
+    <span class="verdict"></span>
+  </div>
+
+  <div class="foot">
+    <b>延伸阅读（上游硬核版）</b>
+    <ul>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/01_hardware_architecture/nvlink/nvlink_intro.md">NVLink 技术入门</a></li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/01_hardware_architecture/superchips/nvidia_gb300.md">GB300 NVL72 机架级架构</a></li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/01_hardware_architecture/superchips/nvlink_c2c.md">NVLink-C2C 芯片级互连</a></li>
+    </ul>
+    <div class="nav"><a href="04_gpudirect.html">← 上一页：GPUDirect</a><a href="../03_ai_cluster_ops/03_ib_rdma.html">下一页：IB / RDMA →</a></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var svg=document.getElementById('topo'),NS='http://www.w3.org/2000/svg';
+  var info=document.getElementById('tinfo');
+  function clear(){svg.innerHTML='';}
+  function box(x,y,label,cls){
+    var g=document.createElementNS(NS,'g');
+    var r=document.createElementNS(NS,'rect');
+    r.setAttribute('x',x-38);r.setAttribute('y',y-16);r.setAttribute('width',76);r.setAttribute('height',32);
+    r.setAttribute('rx',6);
+    r.setAttribute('fill','var(--chip)');r.setAttribute('stroke',cls||'var(--border)');r.setAttribute('stroke-width',cls?2:1);
+    g.appendChild(r);
+    var t=document.createElementNS(NS,'text');
+    t.setAttribute('x',x);t.setAttribute('y',y+4);t.setAttribute('text-anchor','middle');
+    t.textContent=label;
+    g.appendChild(t);
+    svg.appendChild(g);
+  }
+  function line(x1,y1,x2,y2,c,w){
+    var l=document.createElementNS(NS,'line');
+    l.setAttribute('x1',x1);l.setAttribute('y1',y1);l.setAttribute('x2',x2);l.setAttribute('y2',y2);
+    l.setAttribute('stroke',c||'var(--muted)');l.setAttribute('stroke-width',w||1.5);l.setAttribute('stroke-opacity','.7');
+    svg.appendChild(l);
+  }
+  function drawDgx(){
+    clear();
+    var xs=[100,220,340,460],y1=80,y2=220;
+    xs.forEach(function(x,i){line(x,y1+16,100+((i%2)?80:0)+(i>1?280:0),60,'var(--green)',2);});
+    xs.forEach(function(x,i){line(x,y2-16,100+((i%2)?80:0)+(i>1?280:0),240,'var(--green)',2);});
+    xs.forEach(function(x,i){
+      box(x,y1,'GPU'+i,'var(--green)');
+      box(x,y2,'GPU'+(i+4),'var(--green)');
+    });
+    box(100,40,'NVSwitch','var(--orange)');box(180,40,'NVSwitch','var(--orange)');
+    box(380,40,'NVSwitch','var(--orange)');box(460,40,'NVSwitch','var(--orange)');
+    box(100,260,'NVSwitch','var(--orange)');box(180,260,'NVSwitch','var(--orange)');
+    box(380,260,'NVSwitch','var(--orange)');box(460,260,'NVSwitch','var(--orange)');
+    line(220,y1-16,220,y2+16,'var(--green)',2);line(340,y1-16,340,y2+16,'var(--green)',2);
+    info.innerHTML='8 卡 DGX 式机柜：GPU 上下两排，<b>同组卡两两直连</b>（绿色竖线/横线），跨组流量过 NVSwitch（橙色）。路径有亲疏——<code>nvidia-smi topo -m</code> 的 NV# 矩阵就是这张图。';
+  }
+  function drawNvl(){
+    clear();
+    var xs=[],y=150;
+    for(var i=0;i<8;i++)xs.push(80+i*68);
+    line(320,60,320,240,'var(--purple)',3);
+    box(320,40,'NVSwitch Tray ×若干','var(--purple)');
+    xs.forEach(function(x,i){
+      line(x,y-16,x,70,'var(--purple)',2);
+      line(x,y+16,x,230,'var(--purple)',2);
+      box(x,y-32,'GPU'+i,'var(--purple)');
+      box(x,y+32,'GPU'+(i+8>17?i+8:i+8),'var(--purple)');
+    });
+    info.innerHTML='GB300 NVL72 机架（示意取 16 卡）：<b>所有卡都只接 NVSwitch</b>，任意两卡全速直达，无"亲疏"之分——72 卡连成一台机器，TP 域可大到整个机架。';
+  }
+  document.getElementById('t-dgx').addEventListener('click',function(){
+    this.classList.add('seg-on');document.getElementById('t-nvl').classList.remove('seg-on');drawDgx();
+  });
+  document.getElementById('t-nvl').addEventListener('click',function(){
+    this.classList.add('seg-on');document.getElementById('t-dgx').classList.remove('seg-on');drawNvl();
+  });
+  drawDgx();
+  document.querySelectorAll('.quiz').forEach(function(q){
+    q.addEventListener('click',function(e){
+      var b=e.target.closest('button.opt');
+      if(!b||q.dataset.done==='1')return;
+      var ok=b.dataset.ok==='1';
+      q.querySelectorAll('.opt').forEach(function(x){x.disabled=true;if(x.dataset.ok==='1')x.classList.add('right');});
+      if(!ok)b.classList.add('wrong');
+      var v=q.querySelector('.verdict');
+      v.textContent=ok?'✓ 答对了':'✗ 正确答案已标绿';
+      v.className='verdict '+(ok?'ok':'bad');
+      q.dataset.done='1';
+    });
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>实操 · GPU 排障模拟器 —— 在伪终端里亲手修三起"生产事故"</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.6}
+  .wrap{max-width:1080px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 20px}
+  .duo{display:grid;gap:14px;grid-template-columns:1fr}
+  @media(min-width:860px){.duo{grid-template-columns:5fr 7fr}}
+  .tasks{display:flex;flex-direction:column;gap:10px}
+  .task{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;font-size:13px;cursor:pointer}
+  .task.cur{border-color:var(--orange);box-shadow:0 0 0 2px color-mix(in srgb,var(--orange) 25%, transparent)}
+  .task.done{border-color:var(--green)}
+  .task h3{margin:0 0 4px;font-size:13px;display:flex;justify-content:space-between;align-items:center}
+  .task p{margin:0;color:var(--muted);font-size:12px}
+  .task .ok{color:var(--green);font-weight:500}
+  .term{background:#0d1117;border:1px solid #30363d;border-radius:10px;overflow:hidden;display:flex;flex-direction:column;min-height:460px}
+  .tbar{background:#161b22;color:#8b949e;font-size:12px;padding:8px 12px;display:flex;gap:8px;align-items:center}
+  .dot{width:10px;height:10px;border-radius:50%}
+  .tout{flex:1;overflow-y:auto;padding:12px 14px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;color:#c9d1d9;white-space:pre-wrap;word-break:break-all;max-height:520px}
+  .tout .cmd{color:#79c0ff}
+  .tout .ok{color:#3fb950}
+  .tout .warn{color:#d29922}
+  .tout .err{color:#f85149}
+  .tin{display:flex;gap:8px;padding:10px 14px;border-top:1px solid #21262d;align-items:center}
+  .tin .p{color:#3fb950;font-family:ui-monospace,Menlo,monospace;font-size:12.5px;white-space:nowrap}
+  .tin input{flex:1;background:transparent;border:none;outline:none;color:#c9d1d9;font-family:ui-monospace,Menlo,monospace;font-size:12.5px}
+  .helpbox{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-top:14px;font-size:13px}
+  .helpbox code{font-family:ui-monospace,Menlo,monospace;font-size:12px;background:var(--chip);border:1px solid var(--border);border-radius:4px;padding:1px 6px}
+  .foot{margin-top:28px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .nav{display:flex;justify-content:space-between;margin-top:20px;font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 实操实验室 · 完成加餐「单机 GPU 运维速查」后体验</div>
+  <h1>GPU 排障模拟器</h1>
+  <p class="subtitle">不用碰真机器。下面是一台模拟 GPU 服务器的伪终端——三起"生产事故"等你亲手处理。左侧选任务，右侧敲命令，做对了会打 ✅。</p>
+
+  <div class="duo">
+    <div class="tasks" id="tasks">
+      <div class="task cur" id="t1" data-t="1">
+        <h3>事故 1 · 推理服务突然起不来 <span id="s1">⬜</span></h3>
+        <p>GPU2 显存被吃到 79.6GB，新 Pod 调度不上来。诡异的是 nvidia-smi 里"看不到"进程。找到真凶并释放显存。</p>
+      </div>
+      <div class="task" id="t2" data-t="2">
+        <h3>事故 2 · 训练作业莫名变慢 <span id="s2">⬜</span></h3>
+        <p>没有报错、没有重启，就是慢。用户甩锅网络，你怀疑硬件。用内核日志找证据，并让 GPU3 恢复。</p>
+      </div>
+      <div class="task" id="t3" data-t="3">
+        <h3>事故 3 · "GPU 快跑满了"的求救 <span id="s3">⬜</span></h3>
+        <p>业务方喊"GPU0 利用率 97% 要扩容"。先别急着信 nvidia-smi 的数字——看看算力是不是真的被用满了。</p>
+      </div>
+    </div>
+    <div class="term">
+      <div class="tbar">
+        <span class="dot" style="background:#ff5f56"></span><span class="dot" style="background:#ffbd2e"></span><span class="dot" style="background:#27c93f"></span>
+        &nbsp;sre@gpu-node01: ~ &nbsp;（模拟终端）
+      </div>
+      <div class="tout" id="tout"></div>
+      <div class="tin">
+        <span class="p">sre@gpu-node01:~$</span>
+        <input id="cmd" autocomplete="off" spellcheck="false" placeholder="输入命令，回车执行（先敲 help）" aria-label="终端输入">
+      </div>
+    </div>
+  </div>
+
+  <div class="helpbox">
+    <b>可用命令</b>（真实语法 + 少量模拟器内置命令）：<br><br>
+    <code>help</code> 列出命令 · <code>nvidia-smi</code> / <code>nvidia-smi -q</code> / <code>nvidia-smi -L</code> 显卡状态 ·
+    <code>dmesg | grep -i xid</code> 内核日志找 XID · <code>fuser -v /dev/nvidia2</code> 查谁在用卡 ·
+    <code>ps -p PID</code> 查进程 · <code>kill PID</code> 结束进程 ·
+    <code>smactive 0</code> 看真实算力占用（模拟 DCGM 的 SM Active）·
+    <code>reset 3</code> 复位 GPU（对应真实命令 <code>nvidia-smi --gpu-reset -i 3</code>）·
+    <code>tasks</code> 任务状态 · <code>hint</code> 当前任务提示 · <code>clear</code> 清屏
+  </div>
+
+  <div class="foot">
+    <b>与现实的关系</b>：本模拟器的输出格式参照真实 nvidia-smi / dmesg 简化而来；三起事故的排查思路（fuser 找隐形进程 → XID 日志定位硬件 → SM Active 识破假忙）就是 <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/03_ai_cluster_ops/01_gpu_ops/06_gpu_health_check.md">GPU 集群健康检查</a> 与 <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/03_ai_cluster_ops/01_gpu_ops/08_gpu_driver_troubleshooting.md">驱动故障速查</a> 的日常。有真机后，直接照着敲。
+    <div class="nav"><a href="../index.html">← 返回课程目录</a><a href="01_gpu_ops.html">加餐：单机 GPU 运维速查 →</a></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var out=document.getElementById('tout'),input=document.getElementById('cmd');
+  var st={killed:false,reset:false,smact:false};
+  var cur=1;
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function print(txt,cls){
+    var d=document.createElement('div');
+    if(cls)d.className=cls;
+    d.innerHTML=txt;
+    out.appendChild(d);
+    out.scrollTop=out.scrollHeight;
+  }
+  function printPre(txt,cls){
+    var d=document.createElement('pre');
+    if(cls)d.className=cls;
+    d.style.margin='4px 0';d.style.whiteSpace='pre-wrap';d.style.fontFamily='inherit';
+    if(cls)d.style.color='';
+    d.textContent=txt;
+    if(cls==='ok')d.style.color='#3fb950';
+    if(cls==='warn')d.style.color='#d29922';
+    if(cls==='err')d.style.color='#f85149';
+    out.appendChild(d);
+    out.scrollTop=out.scrollHeight;
+  }
+  function gpuMem(i){
+    if(i===2&&st.killed)return '4MiB /  81559MiB';
+    if(i===2)return '79600MiB / 81559MiB';
+    if(i===3&&st.reset)return '0MiB /  81559MiB';
+    if(i===3)return '2MiB /  81559MiB';
+    return ['1820MiB /  81559MiB','3400MiB /  81559MiB'][i]||'0MiB /  81559MiB';
+  }
+  function gpuUtil(i){
+    if(i===0)return '97%';
+    if(i===2&&!st.killed)return '0%';
+    return Math.floor(Math.random()*5)+'%';
+  }
+  var CMDS={
+    help:function(){
+      printPre('可用命令：\n  nvidia-smi            显卡状态总览\n  nvidia-smi -q         详细信息\n  nvidia-smi -L         列出 GPU\n  dmesg | grep -i xid   内核日志中找 XID 错误\n  fuser -v /dev/nvidiaN 查谁在占用 N 号卡\n  ps -p PID             查进程详情\n  kill PID              结束进程\n  smactive N            查 N 号卡的真实 SM 占用（模拟 DCGM）\n  reset N               复位 N 号卡（= nvidia-smi --gpu-reset -i N）\n  tasks / hint / clear  任务 / 提示 / 清屏');
+    },
+    'nvidia-smi':function(){
+      printPre(
+'Mon Oct 21 13:20:01 2026\n+-----------------------------------------------------------------------------------------+\n| NVIDIA-SMI 580.65.06   Driver Version: 580.65.06   CUDA Version: 12.9                   |\n+-----------------------------------------+------------------------+----------------------+\n| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |\n| Fan  Temp  Perf          Pwr:Usage/Cap  |         Memory-Usage   | GPU-Util  Compute M. |\n|=========================================+========================+======================|\n|   0  NVIDIA H100 80GB HBM3          On  | 00000000:1B:00.0   Off |                    0 |\n| 32%   64C    P0            148W /  700W |   '+gpuMem(0)+'  |  '+gpuUtil(0)+'%      Default   |\n|-----------------------------------------+------------------------+----------------------|\n|   1  NVIDIA H100 80GB HBM3          On  | 00000000:1C:00.0   Off |                    0 |\n| 30%   61C    P0            121W /  700W |   '+gpuMem(1)+'  |  '+gpuUtil(1)+'%      Default   |\n|-----------------------------------------+------------------------+----------------------|\n|   2  NVIDIA H100 80GB HBM3          On  | 00000000:1D:00.0   Off |                    0 |\n| 35%   58C    P0              42W /  700W |   '+gpuMem(2)+'  |  '+gpuUtil(2)+'%      Default   |\n|-----------------------------------------+------------------------+----------------------|\n|   3  NVIDIA H100 80GB HBM3          On  | 00000000:1E:00.0   Off |                    0 |\n| 88%   71C    P0             91W /  700W |   '+gpuMem(3)+'  |  '+gpuUtil(3)+'%      Default   |\n+-----------------------------------------+------------------------+----------------------+\n\n+-----------------------------------------------------------------------------------------+\n| Processes:                                                                              |\n|  No running processes found                                                             |');
+      if(!st.killed)print('💡 注意：GPU2 显存 79.6GB 被占，进程列表却是空的——进程多半活在另一个容器/命名空间里。想想有什么办法能"跨命名空间"找到它。','warn');
+      if(st.killed)print('✅ GPU2 显存已释放（4MiB）。','ok');
+    },
+    'nvidia-smi -q':function(){
+      printPre('==============NVSMI LOG==============\nDriver Version      : 580.65.06   CUDA Version: 12.9\n\nGPU 00000000:1E:00.0\n    Product Name            : NVIDIA H100 80GB HBM3\n    GPU Current Temp        : 71 C\n    GPU Utilization\n        Gpu    : 0 %\n    Retired Pages\n        Single Bit ECC  : 0\n        Double Bit ECC  : 0\n    Remapped Rows           : 0 / 0, 0\n\nGPU 00000000:1B:00.0\n    Product Name            : NVIDIA H100 80GB HBM3\n    GPU Current Temp        : 64 C\n    Utilization\n        Gpu    : 97 %\n        Memory : 31 %');
+      print('💡 GPU0 的 GPU-Util 97% 但 Memory 利用率只有 31%——这个数字组合值得琢磨。','warn');
+    },
+    'nvidia-smi -L':function(){
+      if(st.reset){printPre('GPU 0: NVIDIA H100 80GB HBM3 (UUID: GPU-a1b2c3d4-...)\nGPU 1: NVIDIA H100 80GB HBM3 (UUID: GPU-b2c3d4e5-...)\nGPU 2: NVIDIA H100 80GB HBM3 (UUID: GPU-c3d4e5f6-...)\nGPU 3: NVIDIA H100 80GB HBM3 (UUID: GPU-d4e5f6a7-...)');}
+      else{printPre('GPU 0: NVIDIA H100 80GB HBM3 (UUID: GPU-a1b2c3d4-...)\nGPU 1: NVIDIA H100 80GB HBM3 (UUID: GPU-b2c3d4e5-...)\nGPU 2: NVIDIA H100 80GB HBM3 (UUID: GPU-c3d4e5f6-...)');print('💡 只有 3 张卡？SVG 物理上装了 4 张。结合内核日志想想 GPU3 去哪了。','warn');}
+    },
+    dmesg:function(arg){
+      var s=arg||'';
+      if(s.indexOf('grep')>=0||s.indexOf('xid')>=0){
+        printPre('[ 1024.331] nvidia-nvswitch0: NVLink link 12 down\n[ 5121.882] NVRM: Xid (PCI:0000:1d:00): 13, pid=2841, Graphs MMAccessViolation\n[ 9882.107] NVRM: Xid (PCI:0000:1e:00): 79, GPU has fallen off the bus\n[ 9882.108] NVRM: GPU 0000:1e:00.0: GPU has fallen off the bus\n[ 9883.441] nvidia: Disabling watchdog for GPU 0000:1e:00.0');
+        print('💡 XID 79 = GPU 掉总线（PCI:0000:1e:00 = GPU3）。这就是"莫名变慢"的真凶。处理方式：复位（reset 3），复发就要报硬件。','warn');
+        if(cur===2&&!st.reset)print('👉 试着把它救回来：reset 3','ok');
+      }else{
+        printPre('[    0.000000] Linux version 5.15.0-107-generic\n[    0.812] nvidia: loading out-of-tree module\n[    0.933] nvidia-nvlink: Nvlink Core is being initialized\n[ 1024.331] nvidia-nvswitch0: NVLink link 12 down\n[ 5121.882] NVRM: Xid (PCI:0000:1d:00): 13, pid=2841, Graphs MMAccessViolation\n[ 9882.107] NVRM: Xid (PCI:0000:1e:00): 79, GPU has fallen off the bus');
+        print('💡 行太多看不过来？管道过滤：dmesg | grep -i xid','warn');
+      }
+    },
+    fuser:function(arg){
+      if(arg&&arg.indexOf('nvidia2')>=0){
+        if(st.killed){printPre('/dev/nvidia2:');print('✅ 已经没人占用了。','ok');return;}
+        printPre('/dev/nvidia2:  31337  root');
+        print('💡 找到了：PID 31337（root）正攥着 GPU2。看看它是谁：ps -p 31337','ok');
+        if(cur===1)print('👉 用 ps -p 31337 确认身份，然后 kill 31337','warn');
+      }else{
+        printPre('用法（模拟器）：fuser -v /dev/nvidiaN   # N 为卡号');
+      }
+    },
+    ps:function(arg){
+      if(arg&&arg.indexOf('31337')>=0){
+        if(st.killed){printPre('PID TTY          TIME CMD');print('(进程已不存在)');return;}
+        printPre('    PID TTY          TIME CMD\n  31337 ?        3-21:14:02 python train_qwen.py --epoch 999');
+        print('💡 一个跑着训练脚本的遗留进程，已经跑了 3 天 21 小时——上一波人的实验忘了关。','warn');
+      }else if(arg&&arg.indexOf('aux')>=0){
+        printPre('USER   PID  %CPU %MEM     COMMAND\nroot  31337  98.2 41.7  python train_qwen.py --epoch 999\nroot   1102   0.3  2.1  /usr/bin/nvtop\nsre    2210   0.0  0.1  -bash');
+      }else{
+        printPre('用法（模拟器）：ps -p PID 或 ps aux');
+      }
+    },
+    kill:function(arg){
+      var pid=(arg||'').trim();
+      if(pid==='31337'){
+        if(st.killed){print('kill: (31337) - No such process');return;}
+        st.killed=true;
+        printPre('kill 31337');print('✅ 进程已结束。GPU2 显存释放，新 Pod 很快就能调度上来了。','ok');
+        doneTask(1);
+      }else{
+        print('kill: 用法：kill PID（先 fuser 找到占用者）','err');
+      }
+    },
+    smactive:function(arg){
+      var i=/\d+/.test(arg)?parseInt(arg.match(/\d+/)[0]):0;
+      st.smact=true;
+      if(i===0){
+        printPre('DCGM FI profiler (GPU 0):\n  SM Active     :  11.2 %\n  SM Occupancy  :   6.8 %\n  DRAM Active   :   8.4 %\n  Tensor Active :   4.1 %');
+        print('💡 真相：GPU-Util 显示 97%，但 SM Active 只有 11%——大部分时间 GPU"有 kernel 在跑"，算力却大量空转。扩容之前先优化（batch 太小 / kernel 太碎）。这就是那个著名误区。','warn');
+        doneTask(3);
+      }else{
+        printPre('DCGM FI profiler (GPU '+i+'):\n  SM Active     :   '+(2+i)+'.'+(i*3)+' %\n  DRAM Active   :   '+(1+i)+'.'+(i*2)+' %');
+      }
+    },
+    reset:function(arg){
+      var n=(arg||'').trim();
+      if(n==='3'){
+        if(st.reset){print('GPU3 already reset.');return;}
+        st.reset=true;
+        printPre('Resetting GPU 3 ... done');
+        print('✅ GPU3 已恢复（对应真实命令 nvidia-smi --gpu-reset -i 3，需 root 且卡上无进程）。','ok');
+        print('⚠️ 但注意：dmesg 里 XID 79 是 1 小时前出现的。如果复发，别再复位了——那是硬件信号，直接摘节点报修。','warn');
+        doneTask(2);
+      }else{
+        print('reset: 用法：reset N（先确认卡号；只有"掉总线/死锁"才需要复位）','err');
+      }
+    },
+    tasks:function(){printPre('事故 1 谁在吃显存 : '+(st.killed?'✅ 完成':'⬜ 未完成')+'\n事故 2 训练莫名变慢: '+(st.reset?'✅ 完成':'⬜ 未完成')+'\n事故 3 GPU 真忙假忙 : '+(st.smact?'✅ 完成':'⬜ 未完成'));},
+    hint:function(){
+      var H={1:'fuser -v /dev/nvidia2 先找占用者 → ps -p 31337 看身份 → kill 31337',
+             2:'dmesg | grep -i xid 找证据 → 看到 XID 79 → reset 3',
+             3:'nvidia-smi 说 97%，用 smactive 0 看 SM Active 就知道真假'};
+      print('提示（事故 '+cur+'）：'+H[cur],'warn');
+    },
+    clear:function(){out.innerHTML='';}
+  };
+  function doneTask(n){
+    var el=document.getElementById('s'+n);
+    if(el.textContent==='✅')return;
+    el.textContent='✅';
+    document.getElementById('t'+n).classList.add('done');
+    print('🎉 事故 '+n+' 结案！','ok');
+    if(st.killed&&st.reset&&st.smact){
+      print('🏆 三起事故全部结案。你已经掌握了 GPU SRE 的高频三板斧：找隐形进程、读 XID 日志、识破假忙。有真机时照着这套思路来。','ok');
+    }
+  }
+  function run(line){
+    print('<span class="cmd">sre@gpu-node01:~$ '+esc(line)+'</span>');
+    var m=line.trim();
+    if(!m)return;
+    if(m==='nvidia-smi'){CMDS['nvidia-smi']();return;}
+    if(/^nvidia-smi -q/.test(m)){CMDS['nvidia-smi -q']();return;}
+    if(/^nvidia-smi -L/.test(m)){CMDS['nvidia-smi -L']();return;}
+    if(/^dmesg/.test(m)){CMDS.dmesg(m);return;}
+    if(/^fuser/.test(m)){CMDS.fuser(m);return;}
+    if(/^ps/.test(m)){CMDS.ps(m);return;}
+    if(/^kill/.test(m)){CMDS.kill(m.replace('kill',''));return;}
+    if(/^smactive/.test(m)){CMDS.smactive(m);return;}
+    if(/^reset/.test(m)){CMDS.reset(m.replace('reset',''));return;}
+    if(CMDS[m]){CMDS[m]();return;}
+    print('bash: '+esc(m.split(' ')[0])+': command not found —— 敲 help 看可用命令','err');
+  }
+  document.querySelectorAll('.task').forEach(function(t){
+    t.addEventListener('click',function(){
+      document.querySelectorAll('.task').forEach(function(x){x.classList.remove('cur');});
+      t.classList.add('cur');
+      cur=+t.dataset.t;
+      print('—— 当前任务：事故 '+cur+' ——（hint 可要提示）','warn');
+      input.focus();
+    });
+  });
+  input.addEventListener('keydown',function(e){
+    if(e.key==='Enter'){run(input.value);input.value='';}
+  });
+  printPre('Welcome to gpu-node01 (模拟服务器 · 4 × H100)\n系统里有三起"生产事故"等你处理。左侧选任务，敲 help 看命令。');
+  print('👉 先从【事故 1】开始：nvidia-smi 看看现状。','warn');
+})();
+</script>
+</body>
+</html>

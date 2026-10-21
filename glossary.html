@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>术语图鉴 · 60+ 个 AI Infra 黑话的小白解释</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1080px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 18px}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+  .toolbar input{font:inherit;padding:7px 12px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--fg);width:240px;max-width:100%}
+  .pill{font:inherit;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--fg);border-radius:999px;padding:5px 14px;font-size:13px}
+  .pill.on{background:var(--blue);border-color:var(--blue);color:#fff}
+  .mind{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:8px;margin-bottom:8px;overflow:auto}
+  .mind svg{display:block;margin:0 auto}
+  .mind text{cursor:pointer}
+  .cat-h{font-size:16px;margin:22px 0 8px;padding-left:10px;border-left:4px solid var(--bc,var(--blue));display:flex;align-items:baseline;gap:8px}
+  .cat-h small{color:var(--muted);font-weight:400;font-size:12px}
+  .cards{display:grid;gap:8px;grid-template-columns:1fr}
+  @media(min-width:760px){.cards{grid-template-columns:repeat(2,1fr)}}
+  details{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:0;overflow:hidden}
+  details[open]{border-color:var(--bc,var(--blue))}
+  summary{cursor:pointer;padding:10px 14px;font-size:14px;font-weight:500;list-style:none;display:flex;justify-content:space-between;gap:8px;align-items:center}
+  summary::-webkit-details-marker{display:none}
+  summary:hover{background:var(--chip)}
+  summary .en{font-size:11px;color:var(--muted);font-weight:400;white-space:nowrap}
+  .body{padding:0 14px 12px;font-size:13px}
+  .body .one{margin:0 0 8px}
+  .body .ana{margin:0;color:var(--muted);border-top:1px dashed var(--border);padding-top:8px}
+  .body .lk{margin:8px 0 0;font-size:12px}
+  .count{font-size:12px;color:var(--muted);margin:8px 0}
+  .empty{color:var(--muted);padding:20px;text-align:center}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="index.html">← 返回课程目录</a> · 随身参考 · 遇到黑话就查</div>
+  <h1>术语图鉴</h1>
+  <p class="subtitle">AI Infra 高频黑话的集中翻译：每条 = 一句话定义 + SRE 大脑能记住的类比。支持搜索；点思维导图的分支可快速过滤。</p>
+
+  <div class="toolbar">
+    <input id="q" type="search" placeholder="搜索：如 KV Cache / AllReduce / XID…" aria-label="搜索术语">
+    <button class="pill on" data-c="all" type="button">全部</button>
+    <button class="pill" data-c="hw" type="button" style="--b:var(--blue)">硬件</button>
+    <button class="pill" data-c="prog" type="button">编程</button>
+    <button class="pill" data-c="train" type="button">训练</button>
+    <button class="pill" data-c="infer" type="button">推理</button>
+    <button class="pill" data-c="ops" type="button">调度与运维</button>
+  </div>
+  <div class="mind">
+    <svg id="mindmap" viewBox="0 0 900 300" width="100%" role="img" aria-label="术语分类思维导图"></svg>
+  </div>
+  <div class="count" id="count"></div>
+  <div id="cards"></div>
+  <div class="empty" id="empty" hidden>没有匹配的术语——换个关键词试试。</div>
+
+  <div class="foot">每条的"类比"是为 SRE / 云原生背景定制的心智锚点，严格比喻、非严格定义；需要精确语义时点链接回上游原文。发现缺词？在源码仓库提 issue 即可补充。</div>
+</div>
+
+<script>
+(function(){
+  var B='https://github.com/ForceInjection/AI-fundamentals/blob/main/';
+  var CATS={
+    hw:{n:'硬件与互连',c:'var(--blue)'},
+    prog:{n:'GPU 编程',c:'var(--green)'},
+    train:{n:'训练',c:'var(--orange)'},
+    infer:{n:'推理',c:'var(--purple)'},
+    ops:{n:'调度与运维',c:'var(--red)'}
+  };
+  var T=[
+    /* ---------- 硬件 ---------- */
+    {n:'GPU',e:'Graphics Processing Unit',c:'hw',d:'上千个小核心组成的并行处理器，AI 计算的主力硬件。',a:'CPU 是 4 位教授，GPU 是一支军队。',l:'01_hardware_architecture/01_gpu_vs_cpu.html|本站第 1 课'},
+    {n:'SM 流式多处理器',e:'Streaming Multiprocessor',c:'hw',d:'GPU 内部的"大核"，一张卡由几十到上百个 SM 组成。',a:'≈ CPU 的物理核，但一个核带一个连的兵。',l:'01_hardware_architecture/01_gpu_vs_cpu.html|第 1 课'},
+    {n:'Warp 线程束',e:'Warp',c:'hw',d:'32 个线程组成的执行小队，全队执行同一条指令；队里有人走岔路全队就得等（分支发散）。',a:'一个排 32 人听同一个口令，同进同退。',l:'01_hardware_architecture/01_gpu_vs_cpu.html|第 1 课'},
+    {n:'CUDA Core',e:'CUDA Core',c:'hw',d:'GPU 里的通用算术单元，加减乘都会。',a:'通用 CPU 指令之于专用加速指令。'},
+    {n:'Tensor Core',e:'Tensor Core',c:'hw',d:'专做矩阵乘加的硬件单元，一次算一小块矩阵；AI 算力主要来自它。',a:'类似 AES-NI 之于加密——为一种运算量身定制。',l:'01_hardware_architecture/01_gpu_vs_cpu.html|第 1 课'},
+    {n:'HBM 高带宽显存',e:'High Bandwidth Memory',c:'hw',d:'GPU 专属的"内存条"，和 GPU 封装在一起；模型权重、KV Cache 的常驻地。',a:'给 GPU 单独配的超快 DIMM。',l:'01_hardware_architecture/01_gpu_vs_cpu.html|第 1 课'},
+    {n:'显存带宽',e:'Memory Bandwidth',c:'hw',d:'数据从显存搬到计算单元的速度（H100 约 3.35TB/s）。推理 Decode 的瓶颈。',a:'很多场景 GPU 不是算不动，而是搬不动。',l:'01_hardware_architecture/02_latency_pyramid.html|第 5 课'},
+    {n:'SIMT',e:'Single Instruction Multiple Threads',c:'hw',d:'GPU 的执行模型：程序员写"一个线程干什么"，硬件复制给上万线程。',a:'写一份 SOP，全公司照着执行。'},
+    {n:'NVLink',e:'NVLink',c:'hw',d:'NVIDIA 卡对卡的高速直连（Gen5 单卡 1.8TB/s），TP/EP 并行的物理前提。',a:'机内的高速 RDMA 专线，比 PCIe 宽一个量级。'},
+    {n:'NVSwitch',e:'NVSwitch',c:'hw',d:'NVLink 的交换机，让机内任意两卡全速互联（GB300 NVL72 靠它连 72 张卡）。',a:'从"两两拉专线"升级到"接交换机"。'},
+    {n:'PCIe',e:'PCI Express',c:'hw',d:'GPU 与 CPU 之间的标准总线，比 NVLink 窄得多（Gen5 x16 ≈ 64GB/s）。',a:'普通公路 vs 高速专线。',l:'01_hardware_architecture/02_latency_pyramid.html|第 5 课'},
+    {n:'GPUDirect',e:'GPUDirect P2P / RDMA / Storage',c:'hw',d:'让数据绕开 CPU 中转直达显存的三种直通技术。',a:'DMA 直通 vs 先拷内核再拷出来。',l:'01_hardware_architecture/02_latency_pyramid.html|第 5 课'},
+    {n:'RDMA',e:'Remote Direct Memory Access',c:'hw',d:'跨机器直接读写对方内存，不惊动对端 CPU——IB/RoCE 网络的核心能力。',a:'快递直送仓库，不经收发室。'},
+    {n:'MIG',e:'Multi-Instance GPU',c:'hw',d:'硬件级把一张 A100/H100 切成多个独立实例（各有自己的 SM 和显存），隔离最强。',a:'一套房砌墙隔成两套，水电独立。',l:'04_cloud_native_ai_platform/01_k8s_gpu.html|第 4 课'},
+    {n:'MPS',e:'Multi-Process Service',c:'hw',d:'多个进程同时共享一张卡的 SM（空间共享），吞吐高但隔离弱。',a:'合租：共用厨房，一人糊了可能殃及邻居。',l:'04_cloud_native_ai_platform/01_k8s_gpu.html|第 4 课'},
+    {n:'功耗墙与降频',e:'TDP / Thermal Throttling',c:'hw',d:'过热或超功耗时 GPU 自动降频——"莫名变慢"的常见原因之一。',a:'CPU 过热降频的 GPU 版。'},
+    /* ---------- 编程 ---------- */
+    {n:'CUDA',e:'Compute Unified Device Architecture',c:'prog',d:'NVIDIA 的 GPU 编程体系：C++ 方言 + 运行时 + 加速库的总称。',a:'GPU 世界的 POSIX。'},
+    {n:'Kernel 核函数',e:'Kernel',c:'prog',d:'在 GPU 上执行的一段函数，启动时被成千上万线程同时运行。',a:'一份被执行一万次的函数副本——不是一万次调用，是一次调用一万份。'},
+    {n:'Thread / Block / Grid',e:'CUDA 线程层级',c:'prog',d:'CUDA 的三级线程组织：线程→块（共享内存）→网格（整个 Kernel）。',a:'员工→部门→全公司。'},
+    {n:'CUDA Stream 流',e:'Stream',c:'prog',d:'GPU 上的异步任务队列；多条流可以重叠"计算"与"数据传输"。',a:'多车道：一条在算，另一条在搬数据。'},
+    {n:'算子',e:'Operator / Op',c:'prog',d:'一个数学运算的高性能实现单元（matmul、attention kernel…），框架由算子拼出模型。',a:'标准件，模型是装配图。'},
+    {n:'sm_80 / sm_90 架构代号',e:'Compute Capability',c:'prog',d:'GPU 架构代号的编译目标（A100=sm_80，H100=sm_90）；镜像构建时必须对准，否则跑不起来。',a:'编译时指定目标 CPU 架构。'},
+    {n:'Nsight',e:'Nsight Compute / Systems',c:'prog',d:'NVIDIA 官方性能分析工具族：看 Kernel 耗时、瓶颈是算力还是带宽。',a:'GPU 世界的 perf + flamegraph。'},
+    /* ---------- 训练 ---------- */
+    {n:'前向传播',e:'Forward Pass',c:'train',d:'数据层层穿过网络算出预测值。',a:'按现有流程走一遍出结果。',l:'05_model_training_and_fine_tuning/01_training_loop.html|第 2 课'},
+    {n:'反向传播',e:'Backward Pass',c:'train',d:'从损失出发反推：每个参数对误差该"背多少锅"（梯度）。',a:'复盘追责到每个环节。',l:'05_model_training_and_fine_tuning/01_training_loop.html|第 2 课'},
+    {n:'梯度',e:'Gradient',c:'train',d:'损失对参数的导数：该往哪调、调多少。',a:'下山时脚下的坡度方向。',l:'05_model_training_and_fine_tuning/01_training_loop.html|第 2 课'},
+    {n:'损失函数',e:'Loss Function',c:'train',d:'量化"预测与答案差多远"的一个数，训练就是让它变小。',a:'KPI 里的偏差值。',l:'05_model_training_and_fine_tuning/01_training_loop.html|第 2 课'},
+    {n:'学习率',e:'Learning Rate',c:'train',d:'每步参数调整的步长；太大发散、太小磨蹭。',a:'内核参数调优：拍大了系统震荡。',l:'05_model_training_and_fine_tuning/01_training_loop.html|第 2 课'},
+    {n:'Batch / Step / Epoch',e:'批 / 步 / 轮',c:'train',d:'一次喂多少样本 / 参数更新一次 / 全量数据过一遍。',a:'批处理大小 / 一次 commit / 全量重放一遍。',l:'05_model_training_and_fine_tuning/01_training_loop.html|第 2 课'},
+    {n:'优化器 Adam',e:'Optimizer',c:'train',d:'按梯度更新参数的算法；Adam 自带动量和自适应步长，训练标配。',a:'带惯性的智能调节器。'},
+    {n:'混合精度',e:'Mixed Precision',c:'train',d:'FP16/BF16 干活提速、FP32 保存关键状态保精度。',a:'关键账本用高精度，草稿用低精度。'},
+    {n:'梯度检查点',e:'Gradient Checkpointing',c:'train',d:'不存全部中间结果，反向时重算——用计算换显存。',a:'用 CPU 时间换内存的 classic trade-off。'},
+    {n:'Checkpoint',e:'训练检查点',c:'train',d:'定期把参数和优化器状态存盘，崩溃后续训。',a:'WAL + 快照，SRE 最熟的套路。'},
+    {n:'DDP 数据并行',e:'Distributed Data Parallel',c:'train',d:'每卡完整模型+不同数据，每步 AllReduce 同步梯度。',a:'多副本各干各的活，定期对账。',l:'05_model_training_and_fine_tuning/01_training_loop.html|第 2 课'},
+    {n:'AllReduce',e:'集合通信',c:'train',d:'把所有卡上的张量求和/平均后人人一份——分布式训练每步都要做。',a:'全员对账后人手一份总账。',l:'05_model_training_and_fine_tuning/01_training_loop.html|第 2 课'},
+    {n:'ZeRO',e:'Zero Redundancy Optimizer',c:'train',d:'把优化器状态/梯度/参数分摊到各卡，解决数据并行的显存冗余。',a:'别每台机器都存全量备份——分片存放。'},
+    {n:'LoRA',e:'Low-Rank Adaptation',c:'train',d:'冻结原模型，只训练两块小矩阵的微调方法；显存从 100GB 级降到个位数 GB。',a:'不动主代码，只打一层可插拔补丁。'},
+    {n:'SFT 监督微调',e:'Supervised Fine-Tuning',c:'train',d:'用人工标注的问答对教预训练模型"听话、按格式回答"。',a:'岗前培训：会说话 → 会干活。',l:'06_llm_theory_and_fundamentals/01_llm_basics.html|第 7 课'},
+    {n:'RLHF',e:'Reinforcement Learning from Human Feedback',c:'train',d:'用人类偏好评分训练奖励模型，再强化学习对齐输出风格。',a:'按客户满意度反馈调优。',l:'06_llm_theory_and_fundamentals/01_llm_basics.html|第 7 课'},
+    {n:'预训练',e:'Pre-training',c:'train',d:'用海量文本做自监督"接龙"训练，花几个月、几千张卡，产出基座模型。',a:'读书阶段：读完全网再说。',l:'06_llm_theory_and_fundamentals/01_llm_basics.html|第 7 课'},
+    /* ---------- 推理 ---------- */
+    {n:'Prefill 预填充',e:'Prefill',c:'infer',d:'一次性并行读完整 prompt：compute-bound，决定 TTFT。',a:'cat 整个大文件。',l:'09_inference_system/01_inference_pipeline.html|第 3 课'},
+    {n:'Decode 解码',e:'Decode',c:'infer',d:'一个 token 一个 token 往外吐：每步重读全部权重，memory-bound。',a:'tail -f 逐行追日志，房租照付。',l:'09_inference_system/01_inference_pipeline.html|第 3 课'},
+    {n:'KV Cache',e:'键值缓存',c:'infer',d:'缓存历史 token 的中间结果避免重算；显存随上下文线性涨，决定并发上限。',a:'应用层写缓存：拿内存换计算。',l:'09_inference_system/01_inference_pipeline.html|第 3 课'},
+    {n:'PagedAttention',e:'分页注意力',c:'infer',d:'把 KV Cache 按固定页分配，治显存碎片；vLLM 的成名之作。',a:'就是 OS 虚拟内存分页。',l:'09_inference_system/01_inference_pipeline.html|第 3 课'},
+    {n:'Continuous Batching',e:'连续批处理',c:'infer',d:'请求随到随进批、做完即出批，吞吐比静态批高数倍。',a:'滚动发布 vs 整批重启。',l:'09_inference_system/01_inference_pipeline.html|第 3 课'},
+    {n:'TTFT',e:'Time To First Token',c:'infer',d:'从发出请求到吐出第一个 token 的时间——用户体感的"首字节"。',a:'HTTP 的 TTFB。',l:'09_inference_system/01_inference_pipeline.html|第 3 课'},
+    {n:'TPOT',e:'Time Per Output Token',c:'infer',d:'每生成一个 token 的耗时，决定"打字机速度"。',a:'流式响应的每帧间隔。',l:'09_inference_system/01_inference_pipeline.html|第 3 课'},
+    {n:'量化',e:'Quantization INT8/FP8/INT4',c:'infer',d:'把权重从 FP16 压到低精度：显存减半再减半，速度更快，略损精度。',a:'有损压缩，压的是数字精度。'},
+    {n:'投机解码',e:'Speculative Decoding',c:'infer',d:'小模型先猜几个 token，大模型一次前向验证多个——"一次打草稿多赚几个字"。',a:'批量确认。'},
+    {n:'自回归',e:'Autoregressive',c:'infer',d:'输出拼回输入、循环生成直到结束符——LLM 生成的本质循环。',a:'文字接龙。',l:'06_llm_theory_and_fundamentals/01_llm_basics.html|第 7 课'},
+    {n:'温度 / Top-p',e:'Temperature / Nucleus Sampling',c:'infer',d:'采样随机性旋钮：温度低→保守稳定；高→发散有创意。Top-p 截断长尾候选。',a:'随机数种子的"胆量"档位。',l:'06_llm_theory_and_fundamentals/01_llm_basics.html|第 7 课'},
+    {n:'上下文窗口',e:'Context Window',c:'infer',d:'模型一次能看的最大 token 数；超了装不下或要外挂记忆。',a:'工作内存上限。',l:'06_llm_theory_and_fundamentals/01_llm_basics.html|第 7 课'},
+    {n:'幻觉',e:'Hallucination',c:'infer',d:'接龙接得顺 ≠ 接得对；编造事实是概率生成的天然副作用。',a:'流畅度掩盖置信度。',l:'06_llm_theory_and_fundamentals/01_llm_basics.html|第 7 课'},
+    {n:'MoE 混合专家',e:'Mixture of Experts',c:'infer',d:'把参数拆成多个"专家"，每个 token 只激活一小部分：总参数巨大、单次计算便宜。',a:'呼叫中心按需转接专家。',l:'06_llm_theory_and_fundamentals/01_llm_basics.html|第 7 课'},
+    {n:'Embedding 嵌入',e:'Embedding',c:'infer',d:'把文字变成高维向量，意思近的词坐标就近；语义搜索的基础。',a:'把"意思"变成坐标。',l:'06_llm_theory_and_fundamentals/01_llm_basics.html|第 7 课'},
+    {n:'RAG 检索增强生成',e:'Retrieval-Augmented Generation',c:'infer',d:'回答前先从知识库检索资料塞进上下文——治幻觉、接私有知识。',a:'先查资料再答题，不许裸考。'},
+    /* ---------- 调度与运维 ---------- */
+    {n:'Device Plugin',e:'设备插件',c:'ops',d:'节点上的 DaemonSet，把 GPU 数量上报为 K8s 扩展资源，并在分配时上报设备 ID。',a:'思路同 CSI：kubelet 通过 gRPC 找"管家"要资源。',l:'04_cloud_native_ai_platform/01_k8s_gpu.html|第 4 课'},
+    {n:'nvidia.com/gpu',e:'扩展资源名',c:'ops',d:'K8s 里 GPU 的资源名，写进 Pod 的 resources.limits。',a:'不是 CPU/内存那种可压缩资源——要么给要么不给。',l:'04_cloud_native_ai_platform/01_k8s_gpu.html|第 4 课'},
+    {n:'NVIDIA Container Toolkit',e:'容器工具包',c:'ops',d:'创建容器时把宿主机驱动库和 /dev/nvidia* 注入容器的运行时钩子。',a:'容器里没内核：驱动在宿主，库给你挂进去。',l:'04_cloud_native_ai_platform/01_k8s_gpu.html|第 4 课'},
+    {n:'GPU Operator',e:'GPU 管理器',c:'ops',d:'用 Operator 把驱动/Container Toolkit/Device Plugin/DCGM 全套自动化部署到集群。',a:'GPU 版的"集群初始化剧本"。',l:'04_cloud_native_ai_platform/01_k8s_gpu.html|第 4 课'},
+    {n:'Gang Scheduling',e:'成组调度',c:'ops',d:'8 卡训练作业要么 8 张卡全到位、要么全部等待——防止先启动的卡干等烧钱。',a:'包车：人不齐不发车。',l:'04_cloud_native_ai_platform/01_k8s_gpu.html|第 4 课'},
+    {n:'Volcano / Kueue',e:'批调度器 / 作业队列',c:'ops',d:'K8s 上提供 Gang 调度、队列、配额的两个主流方案。',a:'Slurm 思路在 K8s 上的重生。',l:'04_cloud_native_ai_platform/01_k8s_gpu.html|第 4 课'},
+    {n:'HAMi',e:'Heterogeneous AI Computing Virtualization',c:'ops',d:'开源 GPU 池化项目：显存配额、算力切分、vGPU 调度——补上 K8s 对 GPU 没有硬隔离的课。',a:'给 GPU 补一套 cgroup。'},
+    {n:'vGPU',e:'虚拟 GPU',c:'ops',d:'GPU 切分共享方案的统称（硬件 MIG / 驱动 MPS / 软件时间片 / 池化 HAMi）。',a:'计算资源的"虚拟化"三境界。',l:'04_cloud_native_ai_platform/01_k8s_gpu.html|第 4 课'},
+    {n:'时间切片',e:'Time-Slicing',c:'ops',d:'多个 Pod 轮流占用整张卡，秒级切换；都会跑但互相拖慢。',a:'单核 CPU 的时间片轮转。',l:'04_cloud_native_ai_platform/01_k8s_gpu.html|第 4 课'},
+    {n:'DCGM',e:'Data Center GPU Manager',c:'ops',d:'NVIDIA 官方的数据中心 GPU 监控/诊断框架，集群监控的事实标准。',a:'GPU 的 node-exporter。',l:'03_ai_cluster_ops/01_gpu_ops.html|加餐速查'},
+    {n:'DCGM-Exporter',e:'监控导出器',c:'ops',d:'把 DCGM 指标暴露成 Prometheus 格式。',a:'名字已经说明一切。',l:'03_ai_cluster_ops/01_gpu_ops.html|加餐速查'},
+    {n:'XID',e:'NVIDIA 错误码',c:'ops',d:'GPU 驱动写入内核日志的错误编号（dmesg | grep -i xid）；79=掉总线、13=非法访存…',a:'GPU 世界的 Oops 码，排障第一线索。',l:'03_ai_cluster_ops/02_gpu_troubleshoot_sim.html|排障模拟器'},
+    {n:'ECC 错误',e:'Error Correcting Code',c:'ops',d:'显存纠错机制；不可修复 ECC 错误 = 硬件损伤信号，摘节点报修。',a:'内存 ECC 的 GPU 版，坏页会被替换（Remapped Rows）。'},
+    {n:'GPU-Util 误区',e:'Utilization Myth',c:'ops',d:'nvidia-smi 的 GPU-Util 只说明"有 kernel 在跑"，不代表算力用满；看真相要 SM Active。',a:'进程存在 ≠ CPU 在干活。',l:'03_ai_cluster_ops/02_gpu_troubleshoot_sim.html|排障模拟器'},
+    {n:'拓扑感知调度',e:'Topology-Aware Scheduling',c:'ops',d:'按 NVLink/PCIe 亲和度安排 Pod 位置，让通信密集的作业落在同一高速域。',a:'把常互访的服务调度到同可用区。'},
+    {n:'PD 分离',e:'Prefill/Decode Disaggregation',c:'ops',d:'把 Prefill 和 Decode 部署到不同机器，各司其职；代价是跨机传 KV Cache。',a:'读写分离：写入密集和查询密集各用一套。',l:'09_inference_system/01_inference_pipeline.html|第 3 课'}
+  ];
+  var cards=document.getElementById('cards'),count=document.getElementById('count'),empty=document.getElementById('empty');
+  var curCat='all',q='';
+  function linkHtml(l){
+    if(!l)return '';
+    var p=l.split('|');
+    var href=(p[0].indexOf('http')===0)?p[0]:p[0];
+    return '<p class="lk">→ <a href="'+href+'">'+(p[1]||p[0])+'</a></p>';
+  }
+  function render(){
+    cards.innerHTML='';
+    var total=0;
+    for(var ck in CATS){
+      if(curCat!=='all'&&curCat!==ck)continue;
+      var items=T.filter(function(t){
+        if(t.c!==ck)return false;
+        if(!q)return true;
+        return (t.n+t.e+t.d+t.a).toLowerCase().indexOf(q)>=0;
+      });
+      if(!items.length)continue;
+      total+=items.length;
+      var sec=document.createElement('div');
+      var h=document.createElement('div');h.className='cat-h';h.style.setProperty('--bc',CATS[ck].c);
+      h.innerHTML=CATS[ck].n+' <small>'+items.length+' 条</small>';
+      sec.appendChild(h);
+      var grid=document.createElement('div');grid.className='cards';
+      items.forEach(function(t){
+        var d=document.createElement('details');
+        d.innerHTML='<summary><span>'+t.n+'</span><span class="en">'+t.e+'</span></summary>'
+          +'<div class="body"><p class="one">'+t.d+'</p><p class="ana">🧠 '+t.a+'</p>'+linkHtml(t.l)+'</div>';
+        grid.appendChild(d);
+      });
+      sec.appendChild(grid);
+      cards.appendChild(sec);
+    }
+    count.textContent='共 '+total+' 条';
+    empty.hidden=total>0;
+  }
+  document.querySelectorAll('.pill').forEach(function(p){
+    p.addEventListener('click',function(){
+      document.querySelectorAll('.pill').forEach(function(x){x.classList.remove('on');});
+      p.classList.add('on');
+      curCat=p.dataset.c;
+      render();
+    });
+  });
+  document.getElementById('q').addEventListener('input',function(){
+    q=this.value.trim().toLowerCase();
+    render();
+  });
+  /* ---------- 思维导图 ---------- */
+  var mm=document.getElementById('mindmap');
+  var NS='http://www.w3.org/2000/svg';
+  var cx=450,cy=150;
+  function node(x,y,r,fill,label,click,fs){
+    var g=document.createElementNS(NS,'g');
+    var c=document.createElementNS(NS,'circle');
+    c.setAttribute('cx',x);c.setAttribute('cy',y);c.setAttribute('r',r);
+    c.setAttribute('fill',fill);c.setAttribute('fill-opacity','.18');c.setAttribute('stroke',fill);
+    g.appendChild(c);
+    var t=document.createElementNS(NS,'text');
+    t.setAttribute('x',x);t.setAttribute('y',y+4);t.setAttribute('text-anchor','middle');
+    t.setAttribute('font-size',fs||12);t.setAttribute('fill','var(--fg)');
+    t.textContent=label;g.appendChild(t);
+    if(click){g.style.cursor='pointer';g.addEventListener('click',click);}
+    mm.appendChild(g);
+    return g;
+  }
+  function edge(x1,y1,x2,y2,color){
+    var l=document.createElementNS(NS,'line');
+    l.setAttribute('x1',x1);l.setAttribute('y1',y1);l.setAttribute('x2',x2);l.setAttribute('y2',y2);
+    l.setAttribute('stroke',color);l.setAttribute('stroke-opacity','.5');l.setAttribute('stroke-width','1.5');
+    mm.appendChild(l);
+  }
+  var branches=[
+    {c:'hw',x:120,y:55,leaves:['SM · Warp','Tensor Core','HBM · NVLink','GPUDirect']},
+    {c:'prog',x:120,y:245,leaves:['CUDA · Kernel','Stream','Nsight']},
+    {c:'train',x:760,y:55,leaves:['梯度 · 损失','DDP · AllReduce','LoRA · SFT']},
+    {c:'infer',x:760,y:245,leaves:['Prefill · Decode','KV Cache','TTFT · TPOT']},
+    {c:'ops',x:450,y:262,leaves:['Device Plugin','Gang Scheduling','XID · DCGM','HAMi · vGPU']}
+  ];
+  node(cx,cy,34,'var(--orange)','AI Infra',null,13);
+  branches.forEach(function(b){
+    edge(cx,cy,b.x,b.y,CATS[b.c].c);
+    var el=node(b.x,b.y,26,CATS[b.c].c,CATS[b.c].n,function(){
+      document.querySelectorAll('.pill').forEach(function(x){x.classList.toggle('on',x.dataset.c===b.c);});
+      curCat=b.c;render();
+      window.scrollTo({top:document.getElementById('cards').offsetTop-60,behavior:'smooth'});
+    },12);
+    b.leaves.forEach(function(leaf,i){
+      var lx=b.x+(cx-b.x)*0.42+(i-(b.leaves.length-1)/2)*86*(b.x<cx?-1:1)*-1;
+      var ly=b.y+(b.y<cy?38:-38);
+      edge(b.x,b.y,lx,ly,CATS[b.c].c);
+      var t=document.createElementNS(NS,'text');
+      t.setAttribute('x',lx);t.setAttribute('y',ly+4);t.setAttribute('text-anchor','middle');
+      t.setAttribute('font-size','10.5');t.setAttribute('fill','var(--muted)');
+      t.textContent=leaf;
+      mm.appendChild(t);
+    });
+  });
+  render();
+})();
+</script>
+</body>
+</html>

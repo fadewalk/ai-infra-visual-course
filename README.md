@@ -15,12 +15,15 @@
 | 5 | **延迟金字塔** —— 七层访存延迟、"算不动/搬不动/送不到"定位法 | [01_hardware_architecture/02_latency_pyramid.html](01_hardware_architecture/02_latency_pyramid.html) |
 | 6 | **并行策略** —— DP/TP/PP/EP 切法、显存计算器 | [09_inference_system/02_parallelism.html](09_inference_system/02_parallelism.html) |
 | 加餐 | **单机 GPU 运维速查** —— nvidia-smi/XID/健康检查对照 Linux 主机运维 | [03_ai_cluster_ops/01_gpu_ops.html](03_ai_cluster_ops/01_gpu_ops.html) |
+| 7 | **LLM 是怎么回事** —— 文字接龙采样动画、温度交互、Embedding/Attention 图示 | [06_llm_theory_and_fundamentals/01_llm_basics.html](06_llm_theory_and_fundamentals/01_llm_basics.html) |
+| 加餐 2 | **GPU 排障模拟器** —— 伪终端亲手修三起"生产事故"（实操） | [03_ai_cluster_ops/02_gpu_troubleshoot_sim.html](03_ai_cluster_ops/02_gpu_troubleshoot_sim.html) |
+| 参考 | **术语图鉴** —— 60+ 个黑话的一句话解释 + SRE 类比，可搜索、带思维导图 | [glossary.html](glossary.html) |
 
 完整 1:1 课程目录（含全部章节的制作状态）见 [index.html](index.html)。
 
 ## 学习路径
 
-第 0 阶段刷完六课（约 1.5 小时）→ 按站点首页的**六阶段路径**进入上游硬核文档 → 自测四问（站点首页）：为什么 7B 训练单卡放不下 / decode 慢在带宽不在算力 / `nvidia.com/gpu` 从 Pod 到卡经过谁 / GPU-Util 90% 为什么不代表忙。
+第 0 阶段刷完七课（约 2 小时）→ 玩排障模拟器、逛术语图鉴 → 按站点首页的**六阶段路径**进入上游硬核文档 → 自测四问（站点首页）：为什么 7B 训练单卡放不下 / decode 慢在带宽不在算力 / `nvidia.com/gpu` 从 Pod 到卡经过谁 / GPU-Util 90% 为什么不代表忙。
 
 ## 部署
 

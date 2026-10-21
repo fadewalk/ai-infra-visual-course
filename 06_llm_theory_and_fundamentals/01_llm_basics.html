@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 7 课 · LLM 是怎么回事 —— 一台超大规模的文字接龙机器</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--red);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  .ctl{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+  button{font:inherit;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--fg);border-radius:8px;padding:6px 14px}
+  button:hover{border-color:var(--red)}
+  button.primary{background:var(--red);border-color:var(--red);color:#fff}
+  .sentence{font-size:16px;padding:10px 14px;border:1px solid var(--border);border-radius:8px;background:var(--chip);min-height:46px}
+  .sentence .nw{color:var(--red);font-weight:500}
+  .probs{margin:10px 0}
+  .prow{display:flex;align-items:center;gap:8px;font-size:12px;margin:3px 0}
+  .prow .w{width:64px;text-align:right;color:var(--muted);white-space:nowrap}
+  .prow .bar{flex:1;height:14px;border-radius:6px;background:var(--chip);overflow:hidden}
+  .prow .bar i{display:block;height:100%;background:var(--red);opacity:.8;transition:width .25s}
+  .prow .pv{width:44px;font-size:11px;color:var(--muted)}
+  .lr{display:flex;align-items:center;gap:8px;font-size:13px}
+  .lr input[type=range]{flex:1;max-width:260px}
+  .grid{display:grid;gap:12px;grid-template-columns:1fr}
+  @media(min-width:700px){.grid.c2{grid-template-columns:repeat(2,1fr)}.grid.c3{grid-template-columns:repeat(3,1fr)}}
+  .kcard{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+  .kcard h4{margin:0 0 6px;font-size:14px;color:var(--red)}
+  .kcard .def{font-size:13px;margin:0 0 8px}
+  .kcard .ana{font-size:12px;color:var(--muted);border-top:1px dashed var(--border);padding-top:6px}
+  .toks{display:flex;flex-wrap:wrap;gap:4px;margin:10px 0}
+  .tok{font-size:13px;padding:3px 9px;border-radius:6px;background:var(--chip);border:1px solid var(--border)}
+  .tok:nth-child(odd){background:color-mix(in srgb,var(--blue) 10%, var(--card))}
+  input[type=text]{font:inherit;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--fg);width:260px;max-width:100%}
+  .flow{display:flex;flex-wrap:wrap;gap:6px;align-items:stretch}
+  .fnode{flex:1;min-width:100px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:12px;background:var(--chip);text-align:center}
+  .fnode b{display:block;font-size:13px}
+  .fnode.hl{border-color:var(--red)}
+  .arrow{align-self:center;color:var(--muted)}
+  .loop{font-size:12px;color:var(--red);margin-top:8px;text-align:center}
+  svg text{fill:var(--fg);font-size:12px}
+  .note{font-size:12px;color:var(--muted)}
+  .quiz{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin:10px 0}
+  .quiz p{margin:0 0 10px;font-size:14px}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:8px 12px}
+  .opt.right{border-color:var(--green);color:var(--green)}
+  .opt.wrong{border-color:var(--red);color:var(--red)}
+  .verdict{font-size:13px;margin-left:8px}
+  .verdict.ok{color:var(--green)} .verdict.bad{color:var(--red)}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .foot ul{margin:6px 0;padding-left:18px}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 第 7 课 / 共 7 课 · 建议用时 12 分钟</div>
+  <h1>LLM 是怎么回事？</h1>
+  <p class="subtitle">拆掉神秘感：大语言模型只做一件事——看前文，猜下一个词的概率。前面学的 GPU、训练、推理，全都是为这一件事服务的。</p>
+
+  <h2>一、动手接龙：体会"概率分布"和"温度"</h2>
+  <div class="stage">
+    <div class="sentence" id="sent">今天天气真</div>
+    <div class="probs" id="probs"></div>
+    <div class="ctl">
+      <button id="pick" class="primary" type="button">接一个词</button>
+      <button id="reset" type="button">重置</button>
+      <span class="lr">温度 T = <input type="range" id="temp" min="0" max="2" step="0.1" value="0.8"><b id="tempv">0.8</b></span>
+    </div>
+    <p class="note" id="tnote">温度是采样前的"抖动旋钮"：T 越低分布越尖（保守、稳定），T 越高越平（发散、有创意）。拖到 0 再点几次——永远选"好"，这就是贪心解码。</p>
+  </div>
+
+  <h2>二、Token：文字的乐高积木</h2>
+  <div class="stage">
+    <div class="ctl"><input type="text" id="tinput" value="大模型把文字切成小块再计算" maxlength="30" aria-label="输入一句话"><span class="note" id="tcnt"></span></div>
+    <div class="toks" id="toks"></div>
+    <p class="note">模型不认识"字"，只认识 token。计费、上下文窗口、KV Cache 大小……全都按 token 数算——这就是为什么它成了 AI 经济的基本单位。估算口径：英文约 0.75 个单词 / token，中文 1 个字 ≈ 1 个 token 左右（随词表不同）。</p>
+  </div>
+
+  <h2>三、Embedding：把"意思"变成坐标</h2>
+  <div class="stage">
+    <div class="grid c2">
+      <svg viewBox="0 0 380 260" width="100%" role="img" aria-label="词向量示意">
+        <line x1="20" y1="240" x2="370" y2="240" stroke="var(--border)"/>
+        <line x1="20" y1="10" x2="20" y2="240" stroke="var(--border)"/>
+        <g id="emb"></g>
+      </svg>
+      <div>
+        <p style="font-size:13px;margin-top:0">每个 token 会被变成一串数字（向量），意思相近的词在坐标里就挨得近。<b>模型的世界里没有文字，只有坐标。</b></p>
+        <p style="font-size:13px">这解释了两件事：① 为什么 RAG 能"按语义搜索"（算距离）；② 为什么 Embedding 模型能单独拿去做推荐、聚类。</p>
+        <p class="note">上图是二维示意；真实向量是几百到几千维。</p>
+      </div>
+    </div>
+  </div>
+
+  <h2>四、Attention：每个词都在"看"别的词</h2>
+  <div class="stage">
+    <div class="grid c2">
+      <svg viewBox="0 0 380 170" width="100%" role="img" aria-label="注意力连线示意">
+        <g id="att"></g>
+      </svg>
+      <div>
+        <p style="font-size:13px;margin-top:0">处理"它"这个词时，注意力机制会回看全句，发现"它"最该关注<b>"小猫"</b>——连线越粗，关注越多。</p>
+        <p style="font-size:13px">每一层 Transformer 都在做这种"全词互看 + 加权汇总"，几十层叠起来，模型就学会了语法、常识和推理。<b>注意力的计算量随长度平方增长</b>——这就是长上下文贵、KV Cache 重要的根源（第 3 课）。</p>
+      </div>
+    </div>
+  </div>
+
+  <h2>五、全流程串起来</h2>
+  <div class="stage">
+    <div class="flow">
+      <div class="fnode"><b>文本</b>你的输入</div>
+      <div class="arrow">→</div>
+      <div class="fnode"><b>Tokenizer</b>切成 token</div>
+      <div class="arrow">→</div>
+      <div class="fnode"><b>Embedding</b>变成向量</div>
+      <div class="arrow">→</div>
+      <div class="fnode hl"><b>Transformer × N 层</b>注意力 + 前馈网络（GPU 的主场）</div>
+      <div class="arrow">→</div>
+      <div class="fnode"><b>概率分布</b>下一个 token 的候选</div>
+      <div class="arrow">→</div>
+      <div class="fnode"><b>采样</b>按温度选一个</div>
+    </div>
+    <div class="loop">↺ 选出的 token 拼回输入，再跑一遍——直到吐出结束符。这就是"自回归生成"（第 3 课的 Decode 就是在跑这个循环）</div>
+    <p class="note" style="margin-top:10px">对应关系：这一圈循环里，"Transformer × N 层"就是第 1 课 GPU 灌矩阵乘法的地方；训练（第 2 课）就是用海量文本把这个模型的几十一几千亿个参数调对；推理系统（第 3 课）就是把这一圈跑得又快又便宜。</p>
+  </div>
+
+  <h2>六、关键词卡</h2>
+  <div class="grid c2">
+    <div class="kcard"><h4>上下文窗口（Context Window）</h4><p class="def">模型一次能"看"的最大 token 数。超了就装不下（或要外挂记忆/RAG）。</p><p class="ana">🧠 类比：进程的工作内存上限。1M 窗口 ≈ 能一次读完一本长篇小说。</p></div>
+    <div class="kcard"><h4>训练三阶段</h4><p class="def">预训练（海量文本学接龙）→ SFT（用问答对学会"听话"）→ RLHF/偏好对齐（学会更符合人类偏好）。</p><p class="ana">🧠 类比：先读书 → 再岗前培训 → 再按客户反馈调优。</p></div>
+    <div class="kcard"><h4>幻觉（Hallucination）</h4><p class="def">模型在"接龙"，接得顺不代表接得对——编造事实是概率生成的天然副作用。</p><p class="ana">🧠 类比：置信度被"流畅度"掩盖。缓解靠检索（RAG）、约束解码与人工校验。</p></div>
+    <div class="kcard"><h4>参数量 & MoE</h4><p class="def">参数 ≈ 模型的"旋钮"总数，越多越强也越吃显存。MoE 把参数拆成多个"专家"，每个 token 只激活一小部分。</p><p class="ana">🧠 类比：从"一个全才"变成"呼叫中心按需转接专家"。</p></div>
+  </div>
+
+  <h2>七、小测验</h2>
+  <div class="quiz"><p>Q1 · LLM 生成文本的本质是？</p>
+    <button class="opt" type="button">从数据库里检索现成句子</button>
+    <button class="opt" data-ok="1" type="button">根据前文预测下一个 token 的概率分布，再采样一个</button>
+    <button class="opt" type="button">套用语法规则模板</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q2 · 把温度（temperature）调到接近 0，输出会怎样？</p>
+    <button class="opt" type="button">更加随机发散</button>
+    <button class="opt" data-ok="1" type="button">几乎总是选概率最高的词，输出稳定保守</button>
+    <button class="opt" type="button">模型变笨，答非所问</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q3 · 现代大模型训练三阶段的正确顺序是？</p>
+    <button class="opt" type="button">SFT → 预训练 → RLHF</button>
+    <button class="opt" type="button">RLHF → 预训练 → SFT</button>
+    <button class="opt" data-ok="1" type="button">预训练 → SFT → RLHF（偏好对齐）</button>
+    <span class="verdict"></span>
+  </div>
+
+  <div class="foot">
+    <b>延伸阅读（上游硬核版）</b>
+    <ul>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/06_llm_theory_and_fundamentals/llm_basic_concepts/transformer/transformer_architecture.md">Transformer 架构详解</a>——本课第 4/5 节的完整展开</li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/06_llm_theory_and_fundamentals/llm_basic_concepts/token/README.md">Token 机制解析</a> · <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/06_llm_theory_and_fundamentals/llm_basic_concepts/cot/chain_of_thought_cot_intro.md">思维链 CoT</a> · <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/06_llm_theory_and_fundamentals/llm_basic_concepts/moe/mixture_of_experts_moe_visual_guide.zh-CN.md">MoE 可视化指南</a></li>
+    </ul>
+    <div class="nav"><a href="../09_inference_system/02_parallelism.html">← 第 6 课：并行策略</a><a href="../index.html">完成全部 7 课 → 回课程目录</a></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  /* ---------- 接龙 ---------- */
+  var BASE={'好':0.58,'不错':0.22,'热':0.15,'糟糕':0.04,'冷':0.01};
+  var hist=['今天天气真'];
+  var sent=document.getElementById('sent'),probs=document.getElementById('probs');
+  var temp=document.getElementById('temp');
+  function adjusted(){
+    var T=Math.max(0.01,+temp.value), out={},sum=0;
+    for(var k in BASE){var v=Math.pow(BASE[k],1/T);out[k]=v;sum+=v;}
+    for(var k2 in out)out[k2]/=sum;
+    return out;
+  }
+  function renderProbs(){
+    var adj=adjusted();
+    probs.innerHTML='';
+    for(var k in BASE){
+      var row=document.createElement('div');row.className='prow';
+      row.innerHTML='<span class="w">'+k+'</span><span class="bar"><i style="width:0%"></i></span><span class="pv"></span>';
+      probs.appendChild(row);
+      (function(bar,pv){
+        setTimeout(function(){
+          bar.style.width=(adj[k]*100).toFixed(1)+'%';
+          pv.textContent=(adj[k]*100).toFixed(1)+'%';
+        },30);
+      })(row.querySelector('.bar i'),row.querySelector('.pv'));
+    }
+  }
+  temp.addEventListener('input',function(){
+    document.getElementById('tempv').textContent=(+temp.value).toFixed(1);
+    document.getElementById('tnote').textContent= +temp.value===0
+      ? 'T=0：贪心解码——永远选概率最高的词，输出完全确定。生产里要求"结果可复现"时就用它。'
+      : (+temp.value>1.3
+        ? 'T 很高：分布被拍平，冷门词也可能被选中——输出发散有创意，也更容易胡说。'
+        : '温度是采样前的"抖动旋钮"：T 越低分布越尖（保守稳定），T 越高越平（发散有创意）。');
+    renderProbs();
+  });
+  document.getElementById('pick').addEventListener('click',function(){
+    var adj=adjusted(),r=Math.random(),acc=0,chosen='好';
+    for(var k in adj){acc+=adj[k];if(r<=acc){chosen=k;break;}}
+    hist.push(chosen);
+    sent.innerHTML=hist.map(function(w,i){return i===hist.length-1?'<span class="nw">'+w+'</span>':w;}).join('');
+  });
+  document.getElementById('reset').addEventListener('click',function(){
+    hist=['今天天气真'];sent.textContent='今天天气真';
+  });
+  renderProbs();
+
+  /* ---------- Tokenizer ---------- */
+  var ti=document.getElementById('tinput'),toks=document.getElementById('toks'),tcnt=document.getElementById('tcnt');
+  function tokenize(){
+    var s=ti.value||'';toks.innerHTML='';
+    var parts=s.match(/[\u4e00-\u9fff]|[a-zA-Z]+|[0-9]+|[^\s\u4e00-\u9fa5a-zA-Z0-9]/g)||[];
+    parts.forEach(function(p){
+      var d=document.createElement('span');d.className='tok';d.textContent=p;toks.appendChild(d);
+    });
+    tcnt.textContent='≈ '+parts.length+' tokens（模拟分词：1 汉字 ≈ 1 token）';
+  }
+  ti.addEventListener('input',tokenize);tokenize();
+
+  /* ---------- Embedding 散点 ---------- */
+  var words=[
+    {w:'猫',x:90,y:80,c:'var(--blue)'},{w:'狗',x:120,y:95,c:'var(--blue)'},
+    {w:'苹果',x:280,y:70,c:'var(--green)'},{w:'香蕉',x:305,y:90,c:'var(--green)'},
+    {w:'跑',x:110,y:190,c:'var(--orange)'},{w:'跳',x:145,y:205,c:'var(--orange)'},
+    {w:'国王',x:60,y:150,c:'var(--purple)'},{w:'女王',x:88,y:165,c:'var(--purple)'}
+  ];
+  var emb=document.getElementById('emb');
+  words.forEach(function(p){
+    var t=document.createElementNS('http://www.w3.org/2000/svg','text');
+    t.setAttribute('x',p.x);t.setAttribute('y',p.y);t.setAttribute('fill',p.c);
+    t.setAttribute('font-weight','500');t.textContent=p.w;
+    emb.appendChild(t);
+  });
+
+  /* ---------- Attention 连线 ---------- */
+  var asent=['小猫','追着','球','跑，','它','很开心'];
+  var att=document.getElementById('att');
+  var ax0=30,gap=54,ay=120;
+  var links=[{f:4,t:0,w:4},{f:4,t:2,w:1.2},{f:5,t:0,w:1.5},{f:0,t:2,w:1},{f:2,t:3,w:1}];
+  links.forEach(function(l){
+    var x1=ax0+l.f*gap+22,x2=ax0+l.t*gap+22;
+    var p=document.createElementNS('http://www.w3.org/2000/svg','path');
+    var midY=ay-30-l.w*8;
+    p.setAttribute('d','M'+x1+' '+(ay-14)+' Q '+((x1+x2)/2)+' '+midY+' '+x2+' '+(ay-14));
+    p.setAttribute('fill','none');
+    p.setAttribute('stroke',l.f===4?'var(--red)':'var(--muted)');
+    p.setAttribute('stroke-width',l.w);
+    p.setAttribute('opacity',l.f===4?'0.85':'0.3');
+    att.appendChild(p);
+  });
+  asent.forEach(function(w,i){
+    var t=document.createElementNS('http://www.w3.org/2000/svg','text');
+    t.setAttribute('x',ax0+i*gap);t.setAttribute('y',ay);
+    t.setAttribute('font-size', i===4?'15':'12');
+    if(i===4)t.setAttribute('fill','var(--red)');
+    if(i===0)t.setAttribute('fill','var(--blue)');
+    t.setAttribute('font-weight', i===4?'500':'400');
+    t.textContent=w;
+    att.appendChild(t);
+  });
+  var cap=document.createElementNS('http://www.w3.org/2000/svg','text');
+  cap.setAttribute('x',ax0);cap.setAttribute('y',30);cap.setAttribute('fill','var(--muted)');cap.setAttribute('font-size','11');
+  cap.textContent='红线 = "它"对其他词的注意力权重（最粗的线指向"小猫"）';
+  att.appendChild(cap);
+
+  /* ---------- 测验 ---------- */
+  document.querySelectorAll('.quiz').forEach(function(q){
+    q.addEventListener('click',function(e){
+      var b=e.target.closest('button.opt');
+      if(!b||q.dataset.done==='1')return;
+      var ok=b.dataset.ok==='1';
+      q.querySelectorAll('.opt').forEach(function(x){x.disabled=true;if(x.dataset.ok==='1')x.classList.add('right');});
+      if(!ok)b.classList.add('wrong');
+      var v=q.querySelector('.verdict');
+      v.textContent=ok?'✓ 答对了':'✗ 正确答案已标绿';
+      v.className='verdict '+(ok?'ok':'bad');
+      q.dataset.done='1';
+    });
+  });
+})();
+</script>
+</body>
+</html>

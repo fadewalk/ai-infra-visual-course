@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>导读 · AI 存储三篇 —— JuiceFS / 3FS / ICMS 一页通</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--orange);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{color:var(--muted);font-weight:500;font-size:12px}
+  .grid{display:grid;gap:12px;grid-template-columns:1fr}
+  @media(min-width:700px){.grid.c2{grid-template-columns:repeat(2,1fr)}}
+  .kcard{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+  .kcard h4{margin:0 0 6px;font-size:14px;color:var(--orange)}
+  .kcard .def{font-size:13px;margin:0 0 8px}
+  .kcard .ana{font-size:12px;color:var(--muted);border-top:1px dashed var(--border);padding-top:6px}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .foot ul{margin:6px 0;padding-left:18px}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+  .note{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 系列导读 · AI 存储线</div>
+  <h1>JuiceFS / 3FS / ICMS 一页通</h1>
+  <p class="subtitle">AI 负载把存储逼到墙角：训练读海量小文件、推理要 KV 分层、checkpoint 一次写几百 GB。三篇文章各答一个问题。</p>
+
+  <h2>一、三篇各答什么问题</h2>
+  <div class="stage" style="padding:0;overflow:auto">
+    <table>
+      <thead><tr><th>文章</th><th>回答的问题</th><th>一句话架构</th></tr></thead>
+      <tbody>
+        <tr><td><b>JuiceFS</b></td><td>POSIX 兼容的分布式文件系统怎么做"数据与元数据分离"？</td><td>元数据引擎（Redis 等）+ 对象存储数据面；兼容性好，运维成熟</td></tr>
+        <tr><td><b>DeepSeek 3FS</b></td><td>为 AI 训练极致吞吐的文件系统长什么样？</td><td>CRAQ 强一致 + RDMA 全栈 + 分块并行，专为训练数据流设计</td></tr>
+        <tr><td><b>NVIDIA ICMS</b></td><td>推理侧 KV Cache 的存储层怎么建？</td><td>面向推理上下文（KV）的多层存储架构，与 LMCache/HiCache 思想同源</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>二、关键词卡</h2>
+  <div class="grid c2">
+    <div class="kcard"><h4>元数据是瓶颈</h4><p class="def">海量小文件的 open/stat 才是训练数据加载的真瓶颈——所以"元数据独立扩容"成了标配设计。</p><p class="ana">🧠 类比：inode/目录项压力，不是带宽压力。</p></div>
+    <div class="kcard"><h4>checkpoint 的一次性大写入</h4><p class="def">几十上百 GB 的周期性写突发，考验文件系统的突发吞吐与空间预留策略。</p><p class="ana">🧠 类比：备份窗口——写暴击要有余量。</p></div>
+    <div class="kcard"><h4>KV 是新存储负载</h4><p class="def">KV Cache 的读写模式（追加写、按前缀读、按会话淘汰）与传统文件完全不同，催生了专用存储层。</p><p class="ana">🧠 对象存储/文件存储之外出现了第三种形态。</p></div>
+    <div class="kcard"><h4>存储选型视角</h4><p class="def">训练数据（读多写少、海量大文件）→ 3FS 类；通用挂载/共享 → JuiceFS 类；推理 KV → ICMS/HiCache 类。</p><p class="ana">🧠 别用一把锤子敲三种钉子。</p></div>
+  </div>
+
+  <h2>三、上游阅读入口</h2>
+  <div class="stage">
+    <ul style="font-size:13px;margin:0;padding-left:20px">
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/04_cloud_native_ai_platform/storage/juicefs/README.md">JuiceFS 系列</a>（含文件修改机制与后端迁移手册）</li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/04_cloud_native_ai_platform/storage/deepseek_3fs/01_deepseek_3fs_design_notes.md">DeepSeek 3FS 设计笔记</a></li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/04_cloud_native_ai_platform/storage/inference_context_memory_storage/01_icms_architecture.md">NVIDIA ICMS 架构解析</a></li>
+    </ul>
+  </div>
+
+  <div class="foot">
+    <div class="nav"><a href="04_lws_llmd.html">← 上一页：LWS / llm-d</a><a href="../05_model_training_and_fine_tuning/03_70b_lessons.html">下一页：70B 训练复盘导读 →</a></div>
+  </div>
+</div>
+</body>
+</html>

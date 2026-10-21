@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>导读 · LWS 与 llm-d —— K8s 上跑分布式推理的骨架</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--blue);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  .lws{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:10px 0}
+  .pod{border:2px solid var(--blue);border-radius:10px;padding:10px 14px;font-size:12px;text-align:center;background:color-mix(in srgb,var(--blue) 8%, var(--card));min-width:120px}
+  .pod.lead{border-color:var(--orange);background:color-mix(in srgb,var(--orange) 8%, var(--card))}
+  .pod b{display:block;font-size:13px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{color:var(--muted);font-weight:500;font-size:12px}
+  .ol{display:flex;flex-direction:column;gap:8px;counter-reset:oli}
+  .ol .it{position:relative;padding-left:34px;font-size:13px}
+  .ol .it:before{counter-increment:oli;content:counter(oli);position:absolute;left:0;top:2px;width:22px;height:22px;border-radius:50%;background:var(--blue);color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+  .note{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 系列导读 · 云原生推理调度</div>
+  <h1>LWS 与 llm-d 导读</h1>
+  <p class="subtitle">多机多卡推理在 K8s 上的两块拼图：<b>LWS</b> 管"一组 Pod 怎么成组部署"，<b>llm-d</b> 管"推理服务栈怎么分层"。各用一段 + 阅读入口。</p>
+
+  <h2>一、LWS：给推理"复制组"一个原生抽象</h2>
+  <div class="stage">
+    <div class="lws">
+      <div class="pod lead"><b>Leader Pod</b>(rank 0 · 协调)</div>
+      <div class="pod"><b>Worker 1</b>(rank 1)</div>
+      <div class="pod"><b>Worker 2</b>(rank 2)</div>
+      <div class="pod"><b>Worker 3</b>(rank 3)</div>
+    </div>
+    <p style="font-size:13px;margin:0">TP=4 的推理服务：4 个 Pod 必须同生同死、知道彼此地址、共享生命周期——StatefulSet 太重、裸 Deployment 不管序号。<b>LWS（LeaderWorkerSet）</b>就是 K8s 生态为此定制的原生抽象：以"Leader+Workers"为一组单位扩缩容。你学过的 Gang 思想在这里落到"服务"而不是"训练作业"上。</p>
+  </div>
+
+  <h2>二、llm-d：推理服务栈的分层参考</h2>
+  <div class="stage">
+    <p style="font-size:13px;margin:0 0 8px">llm-d 的价值不在"又一个推理引擎"，而在把推理服务拆成清晰的层：<b>网关/路由 → 调度（前缀感知）→ 引擎池（vLLM 等）→ KV 分层存储</b>。它把本课程多课的内容（Prefix Caching、KV 分层、PD 分离）组合成一份可部署的参考架构。</p>
+    <table>
+      <thead><tr><th>层</th><th>对应课程知识</th></tr></thead>
+      <tbody>
+        <tr><td>前缀感知路由</td><td>Prefix Caching（第 3 课）——同前缀请求路由到已持有 KV 的实例</td></tr>
+        <tr><td>KV 分层</td><td>第 5 课金字塔 + LMCache/HiCache 思想</td></tr>
+        <tr><td>引擎池</td><td>vLLM/SGLang 实例组（LWS 成组管理）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>三、上游阅读入口</h2>
+  <div class="stage">
+    <div class="ol">
+      <div class="it"><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/04_cloud_native_ai_platform/k8s/04_lws_intro.md">LWS 介绍</a> —— 原理与多机推理实战</div>
+      <div class="it"><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/04_cloud_native_ai_platform/k8s/05_llm_d_intro.md">llm-d 介绍</a> —— 架构与集群规模选型</div>
+      <div class="it">配套：<a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/09_inference_system/README.md#92-核心框架与平台">推理系统章 9.2 核心框架与平台</a></div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div class="nav"><a href="03_hami_kueue.html">← 上一页：HAMi 与 Kueue</a><a href="05_storage.html">下一页：存储三篇导读 →</a></div>
+  </div>
+</div>
+</body>
+</html>

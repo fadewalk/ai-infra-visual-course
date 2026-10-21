@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>导读 · 70B 从零训练复盘 —— 大规模训练的四份作业答案</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--green);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  .timeline{display:flex;flex-direction:column;gap:8px}
+  .tl{display:flex;gap:12px;font-size:13px}
+  .tl .d{min-width:76px;font-weight:500;color:var(--green)}
+  .tl .b{flex:1;border:1px solid var(--border);border-radius:8px;padding:8px 12px;background:var(--chip)}
+  .ol{display:flex;flex-direction:column;gap:8px;counter-reset:oli}
+  .ol .it{position:relative;padding-left:34px;font-size:13px}
+  .ol .it:before{counter-increment:oli;content:counter(oli);position:absolute;left:0;top:2px;width:22px;height:22px;border-radius:50%;background:var(--green);color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+  .note{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 系列导读 · 训练复盘</div>
+  <h1>70B 从零训练复盘导读</h1>
+  <p class="subtitle">Imbue 公开的 70B 从零训练四部曲，是公开资料里少有的"全生命周期复盘"。本页给路线图与运维视角的看点。</p>
+
+  <h2>一、四部曲各讲什么</h2>
+  <div class="stage">
+    <div class="timeline">
+      <div class="tl"><span class="d">基础设施</span><span class="b">裸金属搭建、网络、存储与自动化脚本——<b>SRE 主场</b>：从 0 到"能开训"的所有坑</span></div>
+      <div class="tl"><span class="d">数据</span><span class="b">开源数据集清洗、配比与评估方法——数据质量决定模型下限</span></div>
+      <div class="tl"><span class="d">训练本体</span><span class="b">训练流程、监控、checkpoint 策略与事故处理</span></div>
+      <div class="tl"><span class="d">超参</span><span class="b">CARBS 超参优化器：把"调参"变成搜索问题</span></div>
+    </div>
+  </div>
+
+  <h2>二、运维向的四个看点</h2>
+  <div class="stage">
+    <div class="ol">
+      <div class="it">自动化脚本覆盖"裸金属 → 可训练"的全流程——和你的 IaC/Playbook 思路同构，值得对照学习</div>
+      <div class="it">checkpoint 的频率与恢复演练是训练 SRE 的核心 KPI（第 2 课讲过：崩了续训靠它）</div>
+      <div class="it">评估数据集要先于模型准备好——"训完才发现没法评估"是常见事故</div>
+      <div class="it">监控不只看 loss：吞吐、MFU、通信占比、坏卡检测共同构成训练可观测</div>
+    </div>
+  </div>
+
+  <h2>三、上游原文</h2>
+  <div class="stage">
+    <ul style="font-size:13px;margin:0;padding-left:20px">
+      <li><a href="https://imbue.com/research/70b-infrastructure/">From bare metal to a 70B model: infrastructure</a></li>
+      <li><a href="https://imbue.com/research/70b-evals/">Sanitized open-source datasets: how we evaluated</a></li>
+      <li><a href="https://imbue.com/research/70b-intro/">Training a 70B model from scratch</a></li>
+      <li><a href="https://imbue.com/research/70b-carbs/">Open-sourcing CARBS</a></li>
+      <li>进阶：上游 <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/05_model_training_and_fine_tuning/rl_training/miles-train-rollout-alignment.md">RL 后训练的系统约束</a>（推理引擎与训练框架的对齐问题）</li>
+    </ul>
+  </div>
+
+  <div class="foot">
+    <div class="nav"><a href="../04_cloud_native_ai_platform/05_storage.html">← 上一页：存储三篇导读</a><a href="../01_hardware_architecture/06_chips.html">下一页：TPU / GPGPU / NPU 对比 →</a></div>
+  </div>
+</div>
+</body>
+</html>

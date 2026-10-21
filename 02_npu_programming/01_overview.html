@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>导读 · NPU 与 CUDA 生态对照 —— 昇腾世界一页通</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--red);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{color:var(--muted);font-weight:500;font-size:12px}
+  .grid{display:grid;gap:12px;grid-template-columns:1fr}
+  @media(min-width:700px){.grid.c2{grid-template-columns:repeat(2,1fr)}}
+  .kcard{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+  .kcard h4{margin:0 0 6px;font-size:14px;color:var(--red)}
+  .kcard .def{font-size:13px;margin:0 0 8px}
+  .kcard .ana{font-size:12px;color:var(--muted);border-top:1px dashed var(--border);padding-top:6px}
+  .stack{display:flex;flex-direction:column;gap:4px;max-width:640px;margin:0 auto}
+  .srow{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .scell{border:1px solid var(--border);border-radius:8px;padding:7px 12px;font-size:12px;text-align:center;background:var(--chip)}
+  .scell.cu{border-color:var(--green)} .scell.np{border-color:var(--red)}
+  .shead{font-size:12px;color:var(--muted);text-align:center;grid-column:span 1}
+  .slabel{grid-column:span 2;font-size:11px;color:var(--muted);text-align:left;padding-top:6px}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .foot ul{margin:6px 0;padding-left:18px}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+  .note{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 系列导读 · 国产算力栈</div>
+  <h1>NPU 与 CUDA 生态对照</h1>
+  <p class="subtitle">昇腾是国产 AI 算力的主线。你已有的 CUDA 心智不必推倒——生态逐层对照着学，迁移成本比想象的小。</p>
+
+  <h2>一、生态逐层对照表</h2>
+  <div class="stage">
+    <div class="stack">
+      <div class="slabel">框架层</div>
+      <div class="srow"><div class="scell cu">PyTorch / MindSpore</div><div class="scell np">PyTorch（torch_npu 适配）/ MindSpore</div></div>
+      <div class="slabel">运行时与算子库</div>
+      <div class="srow"><div class="scell cu">CUDA / cuDNN / cuBLAS</div><div class="scell np">CANN / ACL / 算子库（AOL）</div></div>
+      <div class="slabel">编程语言</div>
+      <div class="srow"><div class="scell cu">CUDA C++ / TileLang</div><div class="scell np">Ascend C / TileLang 昇腾后端</div></div>
+      <div class="slabel">硬件执行单元</div>
+      <div class="srow"><div class="scell cu">SM · CUDA Core · Tensor Core</div><div class="scell np">AI Core · Cube（矩阵）+ Vector（向量）</div></div>
+      <div class="slabel">显存</div>
+      <div class="srow"><div class="scell cu">HBM</div><div class="scell np">HBM（同源技术路线）</div></div>
+      <div class="slabel">推理引擎生态</div>
+      <div class="srow"><div class="scell cu">vLLM / SGLang / TensorRT-LLM</div><div class="scell np">MindIE / vLLM-Ascend / DeepSeek 昇腾栈</div></div>
+      <div class="slabel">性能分析</div>
+      <div class="srow"><div class="scell cu">Nsight</div><div class="scell np">msprof / MindStudio Insight</div></div>
+    </div>
+    <p class="note">最大架构差异：昇腾把"矩阵计算（Cube）与向量计算（Vector）"拆成两类独立单元，卷积/矩阵走 Cube、其余走 Vector——写算子时要想着"这份活该给谁"。</p>
+  </div>
+
+  <h2>二、关键词卡</h2>
+  <div class="grid c2">
+    <div class="kcard"><h4>CANN</h4><p class="def">华为的异构计算架构（对标 CUDA 全家桶）：驱动、运行时、算子库、编译器的统称。</p><p class="ana">🧠 昇腾世界的"CUDA 生态总名"。</p></div>
+    <div class="kcard"><h4>torch_npu</h4><p class="def">PyTorch 的昇腾后端插件：代码几乎不用改，换设备名即可把训练/推理搬到 NPU。</p><p class="ana">🧠 类比 AMD 的 ROCm PyTorch 插件路线。</p></div>
+    <div class="kcard"><h4>Da Vinci 架构</h4><p class="def">昇腾 AI Core 的微架构：Cube 矩阵单元 + Vector 向量单元 + 标量单元，L1/L0 缓存分层。</p><p class="ana">🧠 对照第 1 课：CUDA Core/Tensor Core 的昇腾分工版。</p></div>
+    <div class="kcard"><h4>DeepSeek 昇腾开源栈</h4><p class="def">DeepSeek 把生产推理栈搬上昇腾：TileLang/DeepGEMM/DeepEP 等 6 组件的昇腾版，绑定 Ascend 950。</p><p class="ana">🧠 观察"顶级生产负载迁移 NPU"的风向标，上游有逐仓拆解。</p></div>
+  </div>
+
+  <h2>三、上游 14 个子模块怎么读</h2>
+  <div class="stage">
+    <p style="font-size:13px;margin:0 0 8px">上游 <code>02_npu_programming/</code> 有 01 环境 → 02 架构 → 03 PyTorch 适配 → 04 MindSpore → 05 工具 → 06 算子 → 07-13 实战（RAG/FlashAttention/Mini-GPT/推理/DDP/微调/量化）→ 08 Profiling 的完整路径。运维向建议只走三条线：</p>
+    <ol style="font-size:13px;margin:0;padding-left:20px">
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/02_npu_programming/02_ascend_architecture/README.md">Da Vinci 架构与 CANN</a> —— 对照第 1 课读</li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/02_npu_programming/11_llm_inference/01_llm_inference_on_npu.md">LLM 推理 on NPU</a> —— 一个完整落地案例</li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/09_inference_system/deepseek_ascend/deepseek-ascend-open-source.md">DeepSeek 昇腾开源栈拆解</a> —— 生产级迁移样本（在推理章）</li>
+    </ol>
+  </div>
+
+  <div class="foot">
+    <div class="nav"><a href="../09_inference_system/08_kv_systems.html">← 上一页：KV 系统一页通</a><a href="../04_cloud_native_ai_platform/04_lws_llmd.html">下一页：LWS / llm-d 导读 →</a></div>
+  </div>
+</div>
+</body>
+</html>

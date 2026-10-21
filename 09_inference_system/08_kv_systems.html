@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>导读 · KV Cache 分布式系统 —— LMCache / Mooncake / Tair 一页通</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--purple);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{color:var(--muted);font-weight:500;font-size:12px}
+  .grid{display:grid;gap:12px;grid-template-columns:1fr}
+  @media(min-width:700px){.grid.c2{grid-template-columns:repeat(2,1fr)}}
+  .kcard{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+  .kcard h4{margin:0 0 6px;font-size:14px;color:var(--purple)}
+  .kcard .def{font-size:13px;margin:0 0 8px}
+  .kcard .ana{font-size:12px;color:var(--muted);border-top:1px dashed var(--border);padding-top:6px}
+  .tiers{display:flex;gap:6px;align-items:stretch;flex-wrap:wrap;justify-content:center;margin:10px 0}
+  .tier{border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:12px;text-align:center;background:var(--chip);min-width:130px}
+  .tier b{display:block;font-size:13px}
+  .tier .s{color:var(--muted)}
+  .tarrow{align-self:center;color:var(--muted);font-size:16px}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .foot ul{margin:6px 0;padding-left:18px}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+  .note{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 系列导读 · KV 系统三兄弟</div>
+  <h1>LMCache / Mooncake / Tair 一页通</h1>
+  <p class="subtitle">当单机 KV 装不下、跨实例想复用，KV Cache 就从"引擎内组件"升级成"分布式系统"。三套方案一页分清。</p>
+
+  <h2>一、共同的主线：KV 的存储层级</h2>
+  <div class="stage">
+    <div class="tiers">
+      <div class="tier"><b>L1 GPU 显存</b><span class="s">最快 · 最贵</span></div>
+      <div class="tarrow">→</div>
+      <div class="tier"><b>L2 主机内存</b><span class="s">μs 级 · 便宜</span></div>
+      <div class="tarrow">→</div>
+      <div class="tier"><b>L3 SSD / 对象存储</b><span class="s">ms 级 · 海量</span></div>
+      <div class="tarrow">→</div>
+      <div class="tier"><b>跨实例 RDMA 传输</b><span class="s">复用他机缓存</span></div>
+    </div>
+    <p class="note">逐层降速换容量——第 5 课金字塔的 KV 版。区别只在：谁来管这个层级、以什么为中心调度。</p>
+  </div>
+
+  <h2>二、三套方案定位对照</h2>
+  <div class="stage" style="padding:0;overflow:auto">
+    <table>
+      <thead><tr><th>方案</th><th>定位</th><th>特色</th><th>什么时候看它</th></tr></thead>
+      <tbody>
+        <tr><td><b>LMCache</b></td><td>vLLM 生态的 KV 中间件</td><td>四层存储后端（CPU/磁盘/P2P/GDS）+ 控制面；CacheBlend 跨文档融合</td><td>用 vLLM 想加跨实例 KV 复用</td></tr>
+        <tr><td><b>Mooncake</b></td><td>以 KV 为中心的调度架构（月之暗面）</td><td>KV Store 与调度器解耦，PD 分离的标杆设计</td><td>研究"KV 即调度中心"的架构思想</td></tr>
+        <tr><td><b>Tair KVCache</b></td><td>阿里云企业级 KV 管理系统</td><td>中心化管理、大规模生产口径，附与 LMCache 的全面对比</td><td>企业级选型与大规模部署参考</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>三、关键词卡</h2>
+  <div class="grid c2">
+    <div class="kcard"><h4>KV Offloading</h4><p class="def">显存不够时把冷 KV 换出到主机内存/SSD——引擎内原生支持 vs 外挂中间件是两条路线。</p><p class="ana">🧠 内存换页的推理版。</p></div>
+    <div class="kcard"><h4>跨实例复用</h4><p class="def">同一份系统提示词/长文档的 KV 全集群只算一次——省的是"重算的电费"，靠的是统一索引与高速传输。</p><p class="ana">🧠 CDN 思想：回源一次，边缘共享。</p></div>
+  </div>
+
+  <h2>四、上游阅读顺序</h2>
+  <div class="stage">
+    <ol style="font-size:13px;margin:0;padding-left:20px">
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/09_inference_system/kv_cache/README.md">KV Cache 技术体系总览</a></li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/09_inference_system/kv_cache/01_concepts/offloading/01_kv_offloading.md">vLLM Offloading vs LMCache 对比</a> —— 两条路线的分水岭</li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/09_inference_system/kv_cache/02_systems/lmcache/lmcache_overview.md">LMCache 架构概览</a>（系列很长，按兴趣选后端源码篇）</li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/09_inference_system/kv_cache/02_systems/mooncake/mooncake_architecture.md">Mooncake 架构详解</a></li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/09_inference_system/kv_cache/02_systems/tair_kvcache/tair-kvcache-architecture-design.md">Tair KVCache 深度分析</a></li>
+    </ol>
+  </div>
+
+  <div class="foot">
+    <div class="nav"><a href="07_sglang_overview.html">← 上一页：SGLang 一张图看懂</a><a href="../02_npu_programming/01_overview.html">下一页：NPU vs CUDA 生态 →</a></div>
+  </div>
+</div>
+</body>
+</html>

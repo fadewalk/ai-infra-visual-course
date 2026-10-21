@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>导读 · vLLM 一张图看懂 —— 系列入口</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--purple);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  .arch{display:flex;flex-direction:column;gap:6px;max-width:640px;margin:0 auto}
+  .layer{border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:13px;background:var(--chip);display:flex;justify-content:space-between;gap:10px;align-items:center}
+  .layer b{font-size:13px}
+  .layer .d{color:var(--muted);font-size:12px;text-align:right}
+  .layer.hl{border-color:var(--purple)}
+  .ol{display:flex;flex-direction:column;gap:8px;counter-reset:oli}
+  .ol .it{position:relative;padding-left:34px;font-size:13px}
+  .ol .it:before{counter-increment:oli;content:counter(oli);position:absolute;left:0;top:2px;width:22px;height:22px;border-radius:50%;background:var(--purple);color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{color:var(--muted);font-weight:500;font-size:12px}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .foot ul{margin:6px 0;padding-left:18px}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+  .note{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 系列导读 · 推理引擎一</div>
+  <h1>vLLM 一张图看懂</h1>
+  <p class="subtitle">读完课程十课后，vLLM 的架构图应该已经"每一层都眼熟"。本页是导读：架构分层 + 上游系列文章的阅读顺序。</p>
+
+  <h2>一、分层架构（学过的概念各就各位）</h2>
+  <div class="stage">
+    <div class="arch">
+      <div class="layer"><b>API Server 层</b><span class="d">OpenAI 兼容接口、请求路由</span></div>
+      <div class="layer hl"><b>Scheduler 调度器</b><span class="d">Continuous Batching（加餐讲过）· token 级调度</span></div>
+      <div class="layer hl"><b>KV Cache Manager</b><span class="d">PagedAttention 分页（加餐讲过）· Prefix 复用</span></div>
+      <div class="layer"><b>Model Runner</b><span class="d">CUDA Graph（Decode 提速）· 并行策略 TP/PP（第 6 课）</span></div>
+      <div class="layer"><b>GPU Kernel</b><span class="d">FlashAttention / GEMM——第 1 课 Tensor Core 的主场</span></div>
+    </div>
+    <p class="note">每一层都对应课程里的一课——这就是"先建直觉再读源码"路线的意义。</p>
+  </div>
+
+  <h2>二、上游系列阅读顺序</h2>
+  <div class="stage">
+    <div class="ol">
+      <div class="it"><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/09_inference_system/vllm/README.md">vLLM 推理系统优化与分析（总览）</a> —— 先建立全貌</div>
+      <div class="it"><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/09_inference_system/vllm/module_analysis/cuda_graph_deep_dive.md">CUDA Graphs 深度解析</a> —— Decode 为什么快</div>
+      <div class="it"><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/09_inference_system/vllm/module_analysis/attention_mha_mla_nsa.md">注意力机制演进 MHA→MLA→NSA</a> —— 配套 PPT 有讲稿</div>
+      <div class="it"><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/09_inference_system/vllm/module_analysis/gpu-memory-utilization-retirement.md">gpu-memory-utilization 的谢幕</a> —— 显存从"估"到"测"</div>
+      <div class="it"><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/09_inference_system/vllm/routing/router.md">Router 架构</a> 与 <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/09_inference_system/vllm/routing/semantic_router_deep_dive.md">Semantic Router</a> —— 多实例分流</div>
+    </div>
+  </div>
+
+  <h2>三、运维向速记</h2>
+  <div class="stage" style="padding:0;overflow:auto">
+    <table>
+      <thead><tr><th>场景</th><th>第一反应</th></tr></thead>
+      <tbody>
+        <tr><td>吞吐不达标</td><td>查 batch 利用率与 KV Pool 占用（容量计算器口径），再查是否启用 prefix caching</td></tr>
+        <tr><td>显存 OOM</td><td>max-model-len / gpu-memory-utilization 两旋钮；长上下文查 KV 涨幅（第 3 课红线）</td></tr>
+        <tr><td>TTFT 抖动</td><td>Chunked Prefill 是否开启；是否被长 prompt 的 prefill 阻塞 decode</td></tr>
+        <tr><td>启动慢</td><td>权重加载占大头（FAST'26 论文：可达 79% 延迟）——查存储路径与页缓存</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="foot">
+    <div class="nav"><a href="../03_ai_cluster_ops/04_nccl_intro.html">← 上一页：NCCL 导读</a><a href="07_sglang_overview.html">下一页：SGLang 一张图看懂 →</a></div>
+  </div>
+</div>
+</body>
+</html>

@@ -142,7 +142,12 @@
     {n:'幻觉',e:'Hallucination',c:'infer',d:'接龙接得顺 ≠ 接得对；编造事实是概率生成的天然副作用。',a:'流畅度掩盖置信度。',l:'06_llm_theory_and_fundamentals/01_llm_basics.html|第 7 课'},
     {n:'MoE 混合专家',e:'Mixture of Experts',c:'infer',d:'把参数拆成多个"专家"，每个 token 只激活一小部分：总参数巨大、单次计算便宜。',a:'呼叫中心按需转接专家。',l:'06_llm_theory_and_fundamentals/01_llm_basics.html|第 7 课'},
     {n:'Embedding 嵌入',e:'Embedding',c:'infer',d:'把文字变成高维向量，意思近的词坐标就近；语义搜索的基础。',a:'把"意思"变成坐标。',l:'06_llm_theory_and_fundamentals/01_llm_basics.html|第 7 课'},
-    {n:'RAG 检索增强生成',e:'Retrieval-Augmented Generation',c:'infer',d:'回答前先从知识库检索资料塞进上下文——治幻觉、接私有知识。',a:'先查资料再答题，不许裸考。'},
+    {n:'RAG 检索增强生成',e:'Retrieval-Augmented Generation',c:'infer',d:'回答前先从知识库检索资料塞进上下文——治幻觉、接私有知识。',a:'先查资料再答题，不许裸考。',l:'07_rag_and_tools/01_rag_basics.html|第 8 课'},
+    {n:'Function Calling 工具调用',e:'Function Calling',c:'infer',d:'模型按约定格式输出"调哪个函数+参数"，由外部系统执行后把结果喂回。',a:'模型填工单，程序执行工单。',l:'08_agentic_system/01_agent_basics.html|第 9 课'},
+    {n:'ReAct',e:'Reason + Act',c:'infer',d:'Agent 的基本循环：思考→行动→观察→再思考，直到能给出答案。',a:'边干边想的执行循环。',l:'08_agentic_system/01_agent_basics.html|第 9 课'},
+    {n:'Chunking 切块',e:'Chunking',c:'infer',d:'RAG 里把长文档切成适合检索的小段；粒度直接决定检索质量。',a:'日志切分粒度：太粗查不准，太细丢上下文。',l:'07_rag_and_tools/01_rag_basics.html|第 8 课'},
+    {n:'向量数据库',e:'Vector Database',c:'infer',d:'存 Embedding 并支持按"意思相似度"检索的数据库（Milvus / FAISS / pgvector…）。',a:'ES 按关键词建索引，它按语义。',l:'07_rag_and_tools/01_rag_basics.html|第 8 课'},
+    {n:'Rerank 重排',e:'Reranker',c:'infer',d:'初检之后用更精细的模型对候选重新排序，提升相关性。',a:'粗筛之后加一道精查。',l:'07_rag_and_tools/01_rag_basics.html|第 8 课'},
     /* ---------- 调度与运维 ---------- */
     {n:'Device Plugin',e:'设备插件',c:'ops',d:'节点上的 DaemonSet，把 GPU 数量上报为 K8s 扩展资源，并在分配时上报设备 ID。',a:'思路同 CSI：kubelet 通过 gRPC 找"管家"要资源。',l:'04_cloud_native_ai_platform/01_k8s_gpu.html|第 4 课'},
     {n:'nvidia.com/gpu',e:'扩展资源名',c:'ops',d:'K8s 里 GPU 的资源名，写进 Pod 的 resources.limits。',a:'不是 CPU/内存那种可压缩资源——要么给要么不给。',l:'04_cloud_native_ai_platform/01_k8s_gpu.html|第 4 课'},

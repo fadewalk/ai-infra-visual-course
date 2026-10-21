@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 10 课 · Transformer 拆解 —— 打开"× N 层"那个黑盒</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--red);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  .ctl{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+  button{font:inherit;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--fg);border-radius:8px;padding:6px 14px}
+  button:hover{border-color:var(--red)}
+  button.primary{background:var(--red);border-color:var(--red);color:#fff}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .duo{display:grid;gap:16px;grid-template-columns:1fr}
+  @media(min-width:820px){.duo{grid-template-columns:5fr 6fr}}
+  .stack{display:flex;flex-direction:column-reverse;gap:6px}
+  .comp{border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;background:var(--chip);color:var(--muted);transition:all .25s}
+  .comp b{color:var(--fg)}
+  .comp.active{border-color:var(--red);background:color-mix(in srgb,var(--red) 10%, var(--card));color:var(--fg);box-shadow:0 0 0 2px color-mix(in srgb,var(--red) 25%, transparent)}
+  .comp.done{border-color:var(--green)}
+  .loopbadge{font-size:11px;color:var(--muted);text-align:center;padding:2px 0}
+  .say{margin-top:12px;padding:10px 14px;border-radius:8px;background:var(--chip);font-size:14px;min-height:44px}
+  .layercnt{font-size:13px;color:var(--muted)}
+  .layercnt b{color:var(--red)}
+  .qkv{display:grid;gap:10px;grid-template-columns:1fr}
+  @media(min-width:700px){.qkv{grid-template-columns:repeat(3,1fr)}}
+  .kcard{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+  .kcard h4{margin:0 0 6px;font-size:14px;color:var(--red)}
+  .kcard .def{font-size:13px;margin:0 0 8px}
+  .kcard .ana{font-size:12px;color:var(--muted);border-top:1px dashed var(--border);padding-top:6px}
+  .grid{display:grid;gap:12px;grid-template-columns:1fr}
+  @media(min-width:700px){.grid.c2{grid-template-columns:repeat(2,1fr)}}
+  .quiz{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin:10px 0}
+  .quiz p{margin:0 0 10px;font-size:14px}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:8px 12px}
+  .opt.right{border-color:var(--green);color:var(--green)}
+  .opt.wrong{border-color:var(--red);color:var(--red)}
+  .verdict{font-size:13px;margin-left:8px}
+  .verdict.ok{color:var(--green)} .verdict.bad{color:var(--red)}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .foot ul{margin:6px 0;padding-left:18px}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 第 10 课 / 共 10 课 · 建议用时 12 分钟</div>
+  <h1>Transformer 拆解</h1>
+  <p class="subtitle">第 7 课流程图里那个"Transformer × N 层"的黑盒，今天打开。里面只有两种积木：注意力（词互看）+ 前馈网络（各自加工），剩下的都是辅助件。</p>
+
+  <h2>一、跟一个 token 走完一层</h2>
+  <div class="stage">
+    <div class="ctl">
+      <button id="step" class="primary" type="button">下一步</button>
+      <button id="reset" type="button">重置</button>
+      <span class="layercnt">当前在第 <b id="ln">–</b> 层 / 共 32 层（以 7B 级模型为例）</span>
+    </div>
+    <div class="duo">
+      <div class="stack" id="stack">
+        <div class="comp"><b>输出概率分布</b>：每个候选 token 的分数（第 7 课接龙用）</div>
+        <div class="comp loopbadge">… 同样的结构重复 32 层 …</div>
+        <div class="comp" id="c-ffn2"><b>前馈网络 FFN</b>：每个词独立过一个小 MLP</div>
+        <div class="comp" id="c-norm2"><b>Add & LayerNorm</b>：残留 + 归一化</div>
+        <div class="comp" id="c-att"><b>自注意力 Self-Attention</b>：句子里的词互相关注、交换信息</div>
+        <div class="comp" id="c-norm1"><b>Add & LayerNorm</b>：残留 + 归一化</div>
+        <div class="comp" id="c-emb"><b>Embedding + 位置编码</b>：token 变向量，附上"座位号"</div>
+        <div class="comp"><b>输入</b>："小猫 追着 球 跑"</div>
+      </div>
+      <div>
+        <div class="say" id="say">点「下一步」，看"小猫"这个 token 怎么穿过一层。</div>
+      </div>
+    </div>
+  </div>
+
+  <h2>二、注意力的核心：Q · K · V</h2>
+  <div class="stage">
+    <div class="qkv">
+      <div class="kcard"><h4>Q 查询（Query）</h4><p class="def">当前词"想找什么信息"。"它"发出查询：我在找"我指代的对象"。</p><p class="ana">🧠 你去档案室问的问题。</p></div>
+      <div class="kcard"><h4>K 钥匙（Key）</h4><p class="def">每个词挂着一块"我能提供什么"的标签。查询和钥匙对上了，注意力权重就高。</p><p class="ana">🧠 档案夹脊上的索引标签。</p></div>
+      <div class="kcard"><h4>V 内容（Value）</h4><p class="def">对上了就取走这个词条正的内容，按权重混合进当前词的新表示。</p><p class="ana">🧠 档案夹里的正文。</p></div>
+    </div>
+    <p style="font-size:13px;margin-top:12px"><b>多头注意力</b> = 上述过程并行做几十份，每份关注不同角度（语法/指代/语义…），最后拼接。<b>算力视角</b>：Q×K、A×V 全是矩阵乘法——第 1 课的"GPU 为什么重要"在这里兑现。</p>
+  </div>
+
+  <h2>三、其余积木</h2>
+  <div class="grid c2">
+    <div class="kcard"><h4>FFN 前馈网络</h4><p class="def">注意力负责"传话"，FFN 负责"消化"：每个词独立过一个两层的 MLP。模型的"知识"大量储存在这里，参数量占大头。</p><p class="ana">🧠 注意力=开会沟通，FFN=各自回工位干活。</p></div>
+    <div class="kcard"><h4>残差连接 + LayerNorm</h4><p class="def">每个子层的输出都加回输入（x + f(x)），再归一化——信息有高速公路直通，几十层也训得动。</p><p class="ana">🧠 默认保底链路 + 信号归一，深系统防雪崩的通用手法。</p></div>
+    <div class="kcard"><h4>位置编码 / RoPE</h4><p class="def">注意力本身"不分先后"，要把词序信息注入向量（现代主流是旋转位置编码 RoPE）。</p><p class="ana">🧠 给每个座位编号，不然"狗咬人"和"人咬狗"没区别。</p></div>
+    <div class="kcard"><h4>因果掩码（Decoder-only）</h4><p class="def">生成式 LLM 只允许每个词看它<b>前面</b>的词（不然就是作弊偷看答案）。GPT/Llama/Qwen 都是这种 decoder-only 架构。</p><p class="ana">🧠 流式处理：只依赖已到达的数据。</p></div>
+  </div>
+
+  <h2>四、小测验</h2>
+  <div class="quiz"><p>Q1 · 注意力机制里，"查询-钥匙配对成功"意味着什么？</p>
+    <button class="opt" type="button">两个词被合并成一个词</button>
+    <button class="opt" data-ok="1" type="button">当前词从对方那里按权重取走内容，更新自己的表示</button>
+    <button class="opt" type="button">删除不相关的词</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q2 · 为什么必须加位置编码？</p>
+    <button class="opt" type="button">为了让显存占用更小</button>
+    <button class="opt" data-ok="1" type="button">注意力本身不感知词序，不加的话"狗咬人"和"人咬狗"无法区分</button>
+    <button class="opt" type="button">为了支持更多语言</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q3 · 模型的"知识"主要储存在哪个组件？</p>
+    <button class="opt" type="button">注意力层</button>
+    <button class="opt" data-ok="1" type="button">FFN 前馈网络（参数量占大头）</button>
+    <button class="opt" type="button">位置编码</button>
+    <span class="verdict"></span>
+  </div>
+
+  <div class="foot">
+    <b>延伸阅读（上游硬核版）</b>
+    <ul>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/06_llm_theory_and_fundamentals/llm_basic_concepts/transformer/transformer_architecture.md">Transformer 架构详解</a>——本课的完整展开（目标：读完能看懂 modeling_llama.py）</li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/06_llm_theory_and_fundamentals/llm_basic_concepts/transformer/transformer_block_visual.html">Transformer Block 交互可视化（上游）</a></li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/06_llm_theory_and_fundamentals/llm_basic_concepts/positional_encoding/positional_encoding.md">位置编码：从 Sinusoidal 到 RoPE</a></li>
+    </ul>
+    <div class="nav"><a href="../08_agentic_system/01_agent_basics.html">← 第 9 课：Agent 是怎么回事</a><a href="../index.html">完成全部 10 课 → 回课程目录</a></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var order=['c-emb','c-norm1','c-att','c-norm2','c-ffn2'];
+  var SAYS=[
+    '① Embedding + 位置编码：token 变成向量，并附上"我在第几个位置"的信息（RoPE）。',
+    '② 先做一次 Add & LayerNorm：保底链路 + 信号归一，让 32 层也能稳定训练。',
+    '③ 自注意力：句子里的词互相关注——"小猫"的 Q 去配所有词的 K，按权重取回 V，完成信息交换。（GPU 灌矩阵乘法的主战场）',
+    '④ 又一次 Add & LayerNorm：同样保底。',
+    '⑤ FFN 前馈网络：每个词独立过一个小 MLP，消化刚才交换来的信息——模型的"知识"大多存在这里。',
+    '✅ 一层走完！同样的结构再重复 31 次，最后输出下一个 token 的概率分布——回到第 7 课的接龙循环。'
+  ];
+  var phase=0;
+  var comps=order.map(function(id){return document.getElementById(id);});
+  function reset(){
+    phase=0;
+    comps.forEach(function(c){c.className='comp';});
+    document.getElementById('ln').textContent='–';
+    document.getElementById('say').textContent='点「下一步」，看"小猫"这个 token 怎么穿过一层。';
+  }
+  document.getElementById('step').addEventListener('click',function(){
+    if(phase>=5){return;}
+    comps.forEach(function(c,idx){c.classList.toggle('active',idx===phase);c.classList.toggle('done',idx<phase);});
+    document.getElementById('say').textContent=SAYS[phase];
+    document.getElementById('ln').textContent=Math.min(phase+1,32);
+    phase++;
+  });
+  document.getElementById('reset').addEventListener('click',reset);
+  document.querySelectorAll('.quiz').forEach(function(q){
+    q.addEventListener('click',function(e){
+      var b=e.target.closest('button.opt');
+      if(!b||q.dataset.done==='1')return;
+      var ok=b.dataset.ok==='1';
+      q.querySelectorAll('.opt').forEach(function(x){x.disabled=true;if(x.dataset.ok==='1')x.classList.add('right');});
+      if(!ok)b.classList.add('wrong');
+      var v=q.querySelector('.verdict');
+      v.textContent=ok?'✓ 答对了':'✗ 正确答案已标绿';
+      v.className='verdict '+(ok?'ok':'bad');
+      q.dataset.done='1';
+    });
+  });
+})();
+</script>
+</body>
+</html>

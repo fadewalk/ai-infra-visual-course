@@ -17,6 +17,10 @@
 | 加餐 | **单机 GPU 运维速查** —— nvidia-smi/XID/健康检查对照 Linux 主机运维 | [03_ai_cluster_ops/01_gpu_ops.html](03_ai_cluster_ops/01_gpu_ops.html) |
 | 7 | **LLM 是怎么回事** —— 文字接龙采样动画、温度交互、Embedding/Attention 图示 | [06_llm_theory_and_fundamentals/01_llm_basics.html](06_llm_theory_and_fundamentals/01_llm_basics.html) |
 | 加餐 2 | **GPU 排障模拟器** —— 伪终端亲手修三起"生产事故"（实操） | [03_ai_cluster_ops/02_gpu_troubleshoot_sim.html](03_ai_cluster_ops/02_gpu_troubleshoot_sim.html) |
+| 8 | **RAG 是怎么回事** —— 检索增强全流程动画、微调 vs RAG 选型 | [07_rag_and_tools/01_rag_basics.html](07_rag_and_tools/01_rag_basics.html) |
+| 9 | **Agent 是怎么回事** —— 运维 Agent 实况推演、ReAct 循环、MCP | [08_agentic_system/01_agent_basics.html](08_agentic_system/01_agent_basics.html) |
+| 10 | **Transformer 拆解** —— token 穿层动画、Q/K/V、FFN/残差/RoPE | [06_llm_theory_and_fundamentals/02_transformer.html](06_llm_theory_and_fundamentals/02_transformer.html) |
+| 实验室 | **KV 容量计算器** · **训练显存对比（全参 vs LoRA）** · **Gang 调度演示** | [09_inference_system/03_kv_capacity_calc.html](09_inference_system/03_kv_capacity_calc.html) · [05_model_training_and_fine_tuning/02_memory_calc.html](05_model_training_and_fine_tuning/02_memory_calc.html) · [04_cloud_native_ai_platform/02_scheduling_demo.html](04_cloud_native_ai_platform/02_scheduling_demo.html) |
 | 参考 | **术语图鉴** —— 60+ 个黑话的一句话解释 + SRE 类比，可搜索、带思维导图 | [glossary.html](glossary.html) |
 
 完整 1:1 课程目录（含全部章节的制作状态）见 [index.html](index.html)。

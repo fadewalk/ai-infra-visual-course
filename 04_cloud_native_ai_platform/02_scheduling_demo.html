@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>实验室 · Gang 调度演示 —— 为什么训练作业"要么全上，要么全等"</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--orange);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  .ctl{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+  button{font:inherit;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--fg);border-radius:8px;padding:6px 14px}
+  button:hover{border-color:var(--orange)}
+  button.seg-on{background:var(--orange);border-color:var(--orange);color:#fff}
+  button.primary{background:var(--orange);border-color:var(--orange);color:#fff}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .duo{display:grid;gap:16px;grid-template-columns:1fr}
+  @media(min-width:820px){.duo{grid-template-columns:6fr 5fr}}
+  .gpus{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .g{aspect-ratio:1.9;border-radius:8px;border:1px solid var(--border);background:var(--chip);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;color:var(--muted);transition:all .3s}
+  .g .who{font-weight:500;margin-top:2px}
+  .g.infra{background:color-mix(in srgb,var(--muted) 18%, var(--card))}
+  .g.a{background:color-mix(in srgb,var(--blue) 25%, var(--card));border-color:var(--blue)}
+  .g.b{background:color-mix(in srgb,var(--purple) 25%, var(--card));border-color:var(--purple)}
+  .g.stall{background:color-mix(in srgb,var(--yellow,#d97706) 30%, var(--card));border-color:var(--orange);animation:fl 1s infinite}
+  .g.c{background:color-mix(in srgb,var(--green) 25%, var(--card));border-color:var(--green)}
+  @keyframes fl{50%{opacity:.55}}
+  .queue{margin-top:12px}
+  .queue h4{margin:0 0 6px;font-size:12px;color:var(--muted)}
+  .qcard{display:inline-block;border:1px dashed var(--border);border-radius:8px;padding:4px 12px;font-size:12px;margin:0 6px 6px 0;background:var(--chip)}
+  .qcard.wait{border-color:var(--orange);color:var(--orange)}
+  .statrow{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;font-size:13px;color:var(--muted)}
+  .statrow b{color:var(--red)}
+  .say{margin-top:12px;padding:10px 14px;border-radius:8px;background:var(--chip);font-size:14px;min-height:24px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{color:var(--muted);font-weight:500;font-size:12px}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .nav{display:flex;justify-content:space-between;margin-top:20px;font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 实验室 · 配合第 4 课使用</div>
+  <h1>Gang 调度演示</h1>
+  <p class="subtitle">一台 8 卡机器，两个训练作业 + 一个推理服务排队。切换"普通 / Gang"两种调度器跑一遍，看区别在哪。</p>
+
+  <div class="stage">
+    <div class="ctl">
+      <button id="m-norm" class="seg-on" type="button">普通调度（逐 Pod）</button>
+      <button id="m-gang" type="button">Gang 调度（成组）</button>
+      <button id="run" class="primary" type="button">运行</button>
+      <button id="reset" type="button">重置</button>
+    </div>
+    <div class="duo">
+      <div>
+        <div class="gpus" id="gpus"></div>
+        <div class="queue">
+          <h4>等待队列 / 状态</h4>
+          <div id="queue"></div>
+        </div>
+        <div class="statrow">
+          <span>⏱ 已仿真 <b id="clock">0s</b></span>
+          <span>🔥 空转浪费 <b id="waste">0 GPU·s</b></span>
+        </div>
+      </div>
+      <div>
+        <div class="say" id="say">场景：GPU6-7 已被常驻推理占用；随后 作业A(4卡·训练)、作业B(4卡·训练)、服务C(2卡·推理) 先后到达。训练作业 4 个副本必须全到位才能开跑。选模式后点「运行」。</div>
+        <div class="legend" style="font-size:12px;color:var(--muted);margin-top:10px;line-height:2">
+          <span style="display:inline-block;width:12px;height:12px;background:color-mix(in srgb,var(--blue) 25%,var(--card));border:1px solid var(--blue);border-radius:3px;vertical-align:-2px"></span> 作业A（训练 4 卡）<br>
+          <span style="display:inline-block;width:12px;height:12px;background:color-mix(in srgb,var(--purple) 25%,var(--card));border:1px solid var(--purple);border-radius:3px;vertical-align:-2px"></span> 作业B（训练 4 卡）　<span style="display:inline-block;width:12px;height:12px;background:color-mix(in srgb,var(--green) 25%,var(--card));border:1px solid var(--green);border-radius:3px;vertical-align:-2px"></span> 服务C（推理 2 卡）<br>
+          <span style="display:inline-block;width:12px;height:12px;background:var(--chip);border:1px solid var(--border);border-radius:3px;vertical-align:-2px"></span> 空闲　<span style="display:inline-block;width:12px;height:12px;background:var(--orange);border-radius:3px;vertical-align:-2px;opacity:.6"></span> 空转等待中（烧钱不干活）
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h2>谁在管这件事</h2>
+  <div class="stage" style="padding:0;overflow:auto">
+    <table>
+      <thead><tr><th>组件</th><th>定位</th><th>一句话</th></tr></thead>
+      <tbody>
+        <tr><td>K8s 默认调度器</td><td>逐 Pod 调度</td><td>每个 Pod 独立找位子——适合无状态服务，不适合"全员到齐才能跑"的训练作业（就是左边"普通"模式）</td></tr>
+        <tr><td>Volcano</td><td>批调度器</td><td>提供 Gang Scheduling、队列、公平性——AI 训练集群的常用选择</td></tr>
+        <tr><td>Kueue</td><td>作业队列 + 配额</td><td>K8s 原生思路的队列管理，管"谁先跑、用多少配额"，配合调度器做 Gang</td></tr>
+        <tr><td>HAMi</td><td>GPU 池化 / 切分</td><td>管的是"一张卡怎么分给多个任务"（显存配额、vGPU），和上面管"任务什么时候上"互补</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="foot">
+    <b>延伸阅读（上游）</b>：<a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/03_ai_cluster_ops/04_gpu_scheduling/01_gpu_scheduling_problem.md">GPU 调度问题总览</a> · <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/04_cloud_native_ai_platform/k8s/03_kueue_hami_integration.md">Kueue + HAMi 集成</a> · <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/04_cloud_native_ai_platform/gpu_manager/hami/KAI_vs_HAMi_Comparison.md">KAI vs HAMi 对比</a>
+    <div class="nav"><a href="../index.html">← 返回课程目录</a><a href="01_k8s_gpu.html">第 4 课：K8s 上跑 GPU →</a></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var gpusEl=document.getElementById('gpus'),queueEl=document.getElementById('queue'),
+      say=document.getElementById('say'),clockEl=document.getElementById('clock'),wasteEl=document.getElementById('waste');
+  var mode='norm',timer=null;
+  function initGpus(){
+    gpusEl.innerHTML='';
+    for(var i=0;i<8;i++){
+      var d=document.createElement('div');d.className='g';d.id='g'+i;
+      d.innerHTML='<span>GPU'+i+'</span><span class="who">空闲</span>';
+      gpusEl.appendChild(d);
+    }
+    setGpu(6,'infra','常驻推理');setGpu(7,'infra','常驻推理');
+  }
+  function setGpu(i,cls,who){
+    var d=document.getElementById('g'+i);
+    d.className='g '+(cls||'');
+    d.querySelector('.who').textContent=who||'空闲';
+  }
+  function queue(cards){
+    queueEl.innerHTML=cards.map(function(c){return '<span class="qcard '+(c.cls||'')+'">'+c.t+'</span>';}).join('')||'<span class="qcard">（空）</span>';
+  }
+  function reset(){
+    if(timer){clearInterval(timer);timer=null;}
+    initGpus();
+    document.getElementById('clock').textContent='0s';
+    document.getElementById('waste').textContent='0 GPU·s';
+    document.getElementById('run').disabled=false;
+    queue([{t:'队列：空'}]);
+    say.textContent='场景：GPU6-7 已被常驻推理占用；随后 作业A(4卡·训练)、作业B(4卡·训练)、服务C(2卡·推理) 先后到达。选模式后点「运行」。';
+  }
+  function setMode(m){
+    if(timer)return;
+    mode=m;
+    document.getElementById('m-norm').classList.toggle('seg-on',m==='norm');
+    document.getElementById('m-gang').classList.toggle('seg-on',m==='gang');
+    reset();
+  }
+  var STEPS={
+    norm:[
+      {t:'作业A 到达：4 个 Pod 逐个找位子——GPU0-3 全空闲，全部落位，A 开跑。',fn:function(){
+        for(var i=0;i<4;i++)setGpu(i,'a','作业A');queue([{t:'作业A：运行中',cls:'wait'},{t:'队列：空'}]);
+      },waste:0},
+      {t:'作业B 到达：也 要 4 卡，但只剩 GPU4-5 两个位子。普通调度器照放不误：2 个 Pod 落位、2 个 Pending——训练 4 个副本缺一不可，B 实际干不了活，落位的 2 卡开始空转烧钱！',fn:function(){
+        setGpu(4,'stall','作业B·空转');setGpu(5,'stall','作业B·空转');
+        queue([{t:'作业A：运行中'},{t:'作业B：2 Pod 空转 + 2 Pending',cls:'wait'},{t:'队列：空'}]);
+      },waste:2},
+      {t:'服务C 到达（2 卡）：位子全没了，只能排队。',fn:function(){queue([{t:'作业A：运行中'},{t:'作业B：空转烧钱…',cls:'wait'},{t:'服务C：Pending',cls:'wait'}]);},waste:2},
+      {t:'时间流逝（每秒都在浪费 2 张卡的电费和折旧）…',fn:null,waste:4},
+      {t:'继续空转…业务方开始问"作业B怎么还没动静"。',fn:null,waste:6},
+      {t:'作业A 终于跑完，释放 GPU0-3。B 的另外 2 个 Pod 落位——B 这才凑齐 4 卡开始真正训练。',fn:function(){
+        setGpu(0,'b','作业B');setGpu(1,'b','作业B');setGpu(2,'b','作业B');setGpu(3,'b','作业B');
+        queue([{t:'作业B：终于开跑'},{t:'服务C：还在 Pending…',cls:'wait'}]);
+      },waste:0},
+      {t:'结论：B 白白空转烧了 60 GPU·秒；服务C 被饿着。这就是"逐 Pod 调度"遇上训练作业的经典事故。',fn:null,waste:0}
+    ],
+    gang:[
+      {t:'作业A 到达：Gang 调度器发现 4 个位子全空 → 整组放行，A 开跑。',fn:function(){
+        for(var i=0;i<4;i++)setGpu(i,'a','作业A');queue([{t:'作业A：运行中'},{t:'队列：空'}]);
+      },waste:0},
+      {t:'作业B 到达：需要 4 卡，只剩 2 个位子。<b>Gang 调度器判定"成组资源不足"→ 整个作业进队列等待，一个 Pod 都不启动</b>——不烧一分钱。',fn:function(){
+        queue([{t:'作业A：运行中'},{t:'作业B：整组等待（0 浪费）',cls:'wait'},{t:'队列：按优先级排队'}]);
+      },waste:0},
+      {t:'服务C 到达（2 卡）：位子正好！C 直接落位运行——没有被 B 的"半截 Pod"占坑。',fn:function(){
+        setGpu(4,'c','服务C');setGpu(5,'c','服务C');
+        queue([{t:'作业A：运行中'},{t:'作业B：整组等待'},{t:'服务C：运行中'}]);
+      },waste:0},
+      {t:'时间流逝（0 浪费，B 在队列里安静排队）。',fn:null,waste:0},
+      {t:'作业A 跑完，释放 GPU0-3。',fn:function(){for(var i=0;i<4;i++)setGpu(i,'');},waste:0},
+      {t:'B 的 4 个 Pod 整组落位，立即满编开跑。',fn:function(){
+        for(var i=0;i<4;i++)setGpu(i,'b','作业B');
+        queue([{t:'作业B：运行中'},{t:'服务C：运行中'}]);
+      },waste:0},
+      {t:'结论：B 开跑时间只晚了几个调度周期，但零浪费；服务C 也没被饿死。Volcano / Kueue 在 K8s 上干的就是这件事。',fn:null,waste:0}
+    ]
+  };
+  function run(){
+    reset();
+    var steps=STEPS[mode==='norm'?'norm':'gang'];
+    var i=0,clock=0,waste=0;
+    document.getElementById('run').disabled=true;
+    timer=setInterval(function(){
+      if(i>=steps.length){
+        clearInterval(timer);timer=null;
+        document.getElementById('run').disabled=false;
+        return;
+      }
+      var s=steps[i];
+      clock+=10;
+      waste+=s.waste*10;
+      clockEl.textContent=clock+'s';
+      wasteEl.textContent=waste+' GPU·s';
+      if(s.fn)s.fn();
+      say.innerHTML=s.t;
+      i++;
+    },1600);
+  }
+  document.getElementById('m-norm').addEventListener('click',function(){setMode('norm');});
+  document.getElementById('m-gang').addEventListener('click',function(){setMode('gang');});
+  document.getElementById('run').addEventListener('click',run);
+  document.getElementById('reset').addEventListener('click',reset);
+  initGpus();
+})();
+</script>
+</body>
+</html>

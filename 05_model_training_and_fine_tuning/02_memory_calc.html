@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>实验室 · 训练显存对比 —— 全参微调 vs LoRA</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--green);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  .inputs{display:grid;gap:14px;grid-template-columns:1fr}
+  @media(min-width:760px){.inputs{grid-template-columns:repeat(3,1fr)}}
+  .f label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+  select{font:inherit;width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--fg)}
+  .seg{display:flex;gap:6px;flex-wrap:wrap}
+  .seg button{font:inherit;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--fg);border-radius:8px;padding:6px 14px}
+  .seg button.on{background:var(--green);border-color:var(--green);color:#fff}
+  .sld{display:flex;align-items:center;gap:8px}
+  .sld input[type=range]{flex:1}
+  .sld b{min-width:56px;font-size:13px}
+  .lanes{display:flex;flex-direction:column;gap:14px;margin-top:14px}
+  .lane{border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+  .lane h3{margin:0 0 8px;font-size:14px}
+  .membar{display:flex;height:30px;border-radius:8px;overflow:hidden;font-size:11px;color:#fff}
+  .membar div{display:flex;align-items:center;justify-content:center;white-space:nowrap;overflow:hidden;transition:width .3s}
+  .m1{background:var(--blue)}.m2{background:var(--purple)}.m3{background:var(--orange)}.m4{background:var(--muted);opacity:.6}
+  .verdict{font-size:13px;margin-top:8px;font-weight:500}
+  .verdict.ok{color:var(--green)} .verdict.bad{color:var(--red)}
+  .formula{font-size:12px;color:var(--muted);margin-top:10px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--border)}
+  th{color:var(--muted);font-weight:500;font-size:12px}
+  .ok{color:var(--green)} .bad{color:var(--red)}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .nav{display:flex;justify-content:space-between;margin-top:20px;font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 实验室 · 配合第 2 课使用</div>
+  <h1>训练显存对比：全参微调 vs LoRA</h1>
+  <p class="subtitle">第 2 课说过全参微调每参数约 16 字节——那 LoRA 为什么能把它打到地板上？调参数看看。</p>
+
+  <div class="stage">
+    <div class="inputs">
+      <div class="f">
+        <label>模型规模</label>
+        <select id="msz">
+          <option value="0.5">0.5B（端侧）</option>
+          <option value="1.5">1.5B</option>
+          <option value="7" selected>7B</option>
+          <option value="14">14B</option>
+          <option value="32">32B</option>
+          <option value="70">70B</option>
+        </select>
+      </div>
+      <div class="f">
+        <label>微调方式</label>
+        <div class="seg">
+          <button id="m-full" class="on" type="button">全参微调</button>
+          <button id="m-lora" type="button">LoRA（r=16）</button>
+          <button id="m-both" type="button">对比</button>
+        </div>
+      </div>
+      <div class="f">
+        <label>batch（影响激活值，粗估）</label>
+        <div class="sld"><input type="range" id="batch" min="1" max="32" value="4"><b id="batchv">4</b></div>
+      </div>
+    </div>
+
+    <div class="lanes" id="lanes"></div>
+    <p class="formula">口径：全参 ≈ 16 字节/参数（fp16 权重 2 + fp16 梯度 2 + fp32 主权重 4 + Adam 状态 8）+ 激活值；LoRA ≈ 冻结权重 2 字节/参数 + 可训练参数(≈0.2%)×16 字节 + 激活值。激活值按 batch × 参数量的经验比例粗估（已含梯度检查点前的常见水位）。都是教学口径，生产以 profiler 实测为准。</p>
+  </div>
+
+  <h2>速查表</h2>
+  <div class="stage" style="padding:0;overflow:auto">
+    <table>
+      <thead><tr><th>模型</th><th>全参微调（batch 4）</th><th>80GB 卡</th><th>LoRA（batch 4）</th><th>80GB 卡</th></tr></thead>
+      <tbody id="tbl"></tbody>
+    </table>
+  </div>
+
+  <div class="foot">
+    <b>延伸阅读</b>：<a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/05_model_training_and_fine_tuning/sft_example/README.md">SFT 微调实战</a> · <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/09_inference_system/memory_calc/memory_analysis.md">显存占用分析</a>
+    <div class="nav"><a href="../index.html">← 返回课程目录</a><a href="01_training_loop.html">第 2 课：训练是怎么回事 →</a></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var msz=document.getElementById('msz'),batch=document.getElementById('batch'),lanes=document.getElementById('lanes'),tbl=document.getElementById('tbl');
+  var mode='both';
+  function setMode(m){
+    mode=m;
+    ['full','lora','both'].forEach(function(k){document.getElementById('m-'+k).classList.toggle('on',k===m);});
+    render();
+  }
+  ['full','lora','both'].forEach(function(k){
+    document.getElementById('m-'+k).addEventListener('click',function(){setMode(k);});
+  });
+  function bar(items){
+    var total=items.reduce(function(s,x){return s+x.gb;},0);
+    var html='<div class="membar">';
+    items.forEach(function(x){
+      html+='<div class="'+x.c+'" style="width:'+(x.gb/80*100).toFixed(1)+'%">'+(x.gb/80*100>9?x.n+' '+x.gb.toFixed(1)+'GB':'')+'</div>';
+    });
+    html+='</div>';
+    return {html:html,total:total};
+  }
+  function lane(name,items,ids){
+    var b=bar(items);
+    var ok=b.total<=80;
+    var v=document.createElement('div');v.className='lane';
+    v.innerHTML='<h3>'+name+' <span style="float:right;font-weight:500;color:'+(ok?'var(--green)':'var(--red)')+'">合计 '+b.total.toFixed(1)+' GB '+(ok?'✓ 单卡放得下':'✗ 超过 80GB')+'</span></h3>'+b.html
+      +'<div class="verdict '+(ok?'ok':'bad')+'">'+(ok?'这张 80GB 卡能直接开训。':'需要：ZeRO 分摊 / 多卡并行 / 量化 / 梯度检查点（对应真实命令在延伸阅读）。')+'</div>';
+    lanes.appendChild(v);
+  }
+  function render(){
+    lanes.innerHTML='';
+    var pB=parseFloat(msz.value), b=parseInt(batch.value);
+    document.getElementById('batchv').textContent=b;
+    // full
+    var fullItems=[
+      {n:'权重',gb:pB*2,c:'m1'},
+      {n:'梯度',gb:pB*2,c:'m2'},
+      {n:'优化器状态(含fp32主权重)',gb:pB*12,c:'m3'},
+      {n:'激活',gb:b*pB*0.05,c:'m4'}
+    ];
+    // lora
+    var loraItems=[
+      {n:'冻结权重',gb:pB*2,c:'m1'},
+      {n:'LoRA 可训练(≈0.2%)×16B',gb:pB*0.002*16,c:'m2'},
+      {n:'激活',gb:b*pB*0.05,c:'m4'}
+    ];
+    if(mode==='full'||mode==='both'){
+      var ft=fullItems.reduce(function(s,x){return s+x.gb;},0);
+      lane('全参微调（Adam 混合精度）',fullItems);
+    }
+    if(mode==='lora'||mode==='both'){
+      lane('LoRA（r=16，≈0.2% 参数可训练）',loraItems);
+    }
+    // table
+    var sizes=[0.5,1.5,7,14,32,70],rows='';
+    sizes.forEach(function(s){
+      var f=s*16+b*s*0.05, l=s*2+s*0.002*16+b*s*0.05;
+      rows+='<tr><td>'+s+'B</td><td>'+f.toFixed(1)+' GB</td><td class="'+(f<=80?'ok':'bad')+'">'+(f<=80?'✓':'✗')+'</td><td>'+l.toFixed(1)+' GB</td><td class="'+(l<=80?'ok':'bad')+'">'+(l<=80?'✓':'✗')+'</td></tr>';
+    });
+    tbl.innerHTML=rows;
+  }
+  msz.addEventListener('change',render);
+  batch.addEventListener('input',render);
+  render();
+})();
+</script>
+</body>
+</html>

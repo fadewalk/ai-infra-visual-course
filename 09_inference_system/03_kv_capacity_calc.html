@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>实验室 · KV Cache 容量计算器 —— 并发上限是怎么算出来的</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--purple);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  .inputs{display:grid;gap:12px;grid-template-columns:1fr}
+  @media(min-width:760px){.inputs{grid-template-columns:repeat(3,1fr)}}
+  .f label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+  select,input[type=number]{font:inherit;width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--fg)}
+  .sld{display:flex;align-items:center;gap:8px}
+  .sld input[type=range]{flex:1}
+  .sld b{min-width:64px;font-size:13px}
+  .bar{display:flex;height:40px;border-radius:10px;overflow:hidden;font-size:12px;color:#fff;margin:14px 0 6px}
+  .bar div{display:flex;align-items:center;justify-content:center;white-space:nowrap;overflow:hidden;transition:width .3s}
+  .w{background:var(--blue)}.r{background:var(--muted);opacity:.55}.k{background:var(--purple)}
+  .k.full{background:var(--red)}
+  .res{display:flex;gap:24px;flex-wrap:wrap;margin-top:14px}
+  .stat{background:var(--chip);border-radius:10px;padding:10px 18px}
+  .stat .l{font-size:12px;color:var(--muted)}
+  .stat .v{font-size:26px;font-weight:500}
+  .stat .v.ok{color:var(--green)} .stat .v.bad{color:var(--red)}
+  .formula{font-size:13px;color:var(--muted);background:var(--chip);border-radius:8px;padding:8px 14px;margin-top:12px}
+  .warn{color:var(--red);font-size:14px;margin-top:10px}
+  .note{font-size:12px;color:var(--muted)}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .nav{display:flex;justify-content:space-between;margin-top:20px;font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 实验室 · 配合第 3 课使用</div>
+  <h1>KV Cache 容量计算器</h1>
+  <p class="subtitle">"这台机器能同时服务几个用户？"——调参看看各变量怎么拉高/压垮并发上限。</p>
+
+  <div class="stage">
+    <div class="inputs">
+      <div class="f">
+        <label>模型（KV 每 token 估算口径）</label>
+        <select id="model">
+          <option value="0.5,14">7B · MHA（KV 0.5MB/token · 权重 14GB）</option>
+          <option value="0.32,140">70B · GQA（KV 0.32MB/token · 权重 140GB）</option>
+          <option value="0.52,810">405B · GQA（KV 0.52MB/token · 权重 810GB）</option>
+          <option value="0.1,140">70B · GQA + FP8 KV（KV 0.1MB/token）</option>
+        </select>
+      </div>
+      <div class="f">
+        <label>单卡显存（GB）× 卡数</label>
+        <div class="sld">
+          <select id="vram" style="flex:1"><option>24</option><option>48</option><option selected>80</option><option>96</option><option>141</option></select>
+          <span style="color:var(--muted)">×</span>
+          <select id="ngpu" style="flex:1"><option value="1">1</option><option value="2">2</option><option value="4">4</option><option value="8" selected>8</option></select>
+        </div>
+      </div>
+      <div class="f">
+        <label>系统预留（框架开销/激活，占显存 %）</label>
+        <div class="sld"><input type="range" id="oh" min="5" max="40" value="20"><b id="ohv">20%</b></div>
+      </div>
+      <div class="f">
+        <label>单会话长度（token）</label>
+        <div class="sld"><input type="range" id="len" min="1000" max="128000" step="1000" value="8000"><b id="lenv">8K</b></div>
+      </div>
+    </div>
+
+    <div class="bar" id="bar">
+      <div class="w" id="bw">权重</div>
+      <div class="r" id="br">预留</div>
+      <div class="k" id="bk">KV 可用</div>
+    </div>
+
+    <div class="res">
+      <div class="stat"><div class="l">单会话 KV 占用</div><div class="v" id="perSess">–</div></div>
+      <div class="stat"><div class="l">可用于 KV 的显存</div><div class="v" id="usable">–</div></div>
+      <div class="stat"><div class="l">理论并发上限</div><div class="v" id="conc">–</div></div>
+    </div>
+    <div class="warn" id="warn" hidden></div>
+    <div class="formula" id="formula"></div>
+    <p class="note">口径说明：KV 每 token = 2 × 层数 × KV头数×头维 × 精度字节；预设值按 Llama 系公开结构估算（MHA/GQA 差别巨大——这就是 GQA 存在的意义）。未计激活值与框架碎片，生产规划请再打 7–8 折。对应上游文章：<a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/09_inference_system/kv_cache/01_concepts/capacity_planning/hbm_kv_pool_concurrency.md">L1 KV Pool 与系统并发上限</a>。</p>
+  </div>
+
+  <div class="foot">
+    <div class="nav"><a href="../index.html">← 返回课程目录</a><a href="01_inference_pipeline.html">第 3 课：推理是怎么回事 →</a></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var model=document.getElementById('model'),vram=document.getElementById('vram'),
+      ngpu=document.getElementById('ngpu'),oh=document.getElementById('oh'),
+      len=document.getElementById('len');
+  function fmt(gb){return gb>=1? gb.toFixed(1)+' GB' : (gb*1024).toFixed(0)+' MB';}
+  function calc(){
+    var parts=model.value.split(',');
+    var perMB=parseFloat(parts[0]), wGB=parseFloat(parts[1]);
+    var total=parseFloat(vram.value)*parseInt(ngpu.value);
+    var overhead=parseInt(oh.value)/100;
+    var sessLen=parseInt(len.value);
+    document.getElementById('ohv').textContent=oh.value+'%';
+    var l=sessLen/1000;
+    document.getElementById('lenv').textContent= l>=1? l+'K' : sessLen;
+    var reserved=total*overhead;
+    var usable=Math.max(0,total-wGB-reserved);
+    var perSessGB=perMB*sessLen/1024;
+    var conc=perSessGB>0?Math.floor(usable/perSessGB):0;
+    // bar
+    var bw=Math.min(100,wGB/total*100), br=reserved/total*100;
+    var bk=Math.max(0,100-bw-br);
+    var bwEl=document.getElementById('bw'),brEl=document.getElementById('br'),bkEl=document.getElementById('bk');
+    bwEl.style.width=bw+'%';brEl.style.width=br+'%';bkEl.style.width=bk+'%';
+    bwEl.textContent='权重 '+fmt(wGB);
+    brEl.textContent='预留 '+fmt(reserved);
+    bkEl.textContent='KV 可用 '+fmt(usable);
+    // stats
+    document.getElementById('perSess').textContent=fmt(perSessGB);
+    var u=document.getElementById('usable');u.textContent=fmt(usable);u.className='v';
+    var c=document.getElementById('conc');
+    if(wGB>total){
+      c.textContent='✗';c.className='v bad';
+      document.getElementById('warn').hidden=false;
+      document.getElementById('warn').textContent='⚠️ 权重（'+fmt(wGB)+'）超过总显存（'+fmt(total)+'）——先上 TP/PP 切分或量化，再谈并发。';
+      document.getElementById('formula').textContent='并发 ≈ ( 总显存 − 权重 − 预留 ) ÷ ( 每 token KV × 会话长度 )';
+      return;
+    }
+    document.getElementById('warn').hidden=true;
+    if(conc<1){
+      c.textContent='0';c.className='v bad';
+      document.getElementById('warn').hidden=false;
+      document.getElementById('warn').textContent='⚠️ 一条会话的 KV（'+fmt(perSessGB)+'）都放不进剩余空间——缩短会话长度、压缩 KV（量化/GQA/稀疏）或加卡。';
+    }else{
+      c.textContent=conc;c.className='v ok';
+    }
+    document.getElementById('formula').textContent='并发 ≈ ( '+fmt(total)+' − '+fmt(wGB)+' − '+fmt(reserved)+' ) ÷ ( '+perMB+'MB/token × '+sessLen.toLocaleString()+' token ) = '+conc;
+  }
+  [model,vram,ngpu].forEach(function(el){el.addEventListener('change',calc);});
+  [oh,len].forEach(function(el){el.addEventListener('input',calc);});
+  calc();
+})();
+</script>
+</body>
+</html>

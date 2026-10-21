@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 8 课 · RAG 是怎么回事 —— 给大模型开卷考试</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--green);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  .ctl{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+  button{font:inherit;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--fg);border-radius:8px;padding:6px 14px}
+  button:hover{border-color:var(--green)}
+  button.primary{background:var(--green);border-color:var(--green);color:#fff}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .duo{display:grid;gap:16px;grid-template-columns:1fr}
+  @media(min-width:820px){.duo{grid-template-columns:6fr 5fr}}
+  .doclib{display:grid;grid-template-columns:repeat(6,1fr);gap:5px}
+  .chunk{aspect-ratio:1.15;border-radius:5px;background:var(--chip);border:1px solid var(--border);transition:all .3s}
+  .chunk.hit{background:color-mix(in srgb,var(--green) 40%, var(--card));border-color:var(--green);transform:scale(1.06)}
+  .flowv{display:flex;flex-direction:column;gap:6px}
+  .fstep{border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;background:var(--chip);color:var(--muted)}
+  .fstep b{color:inherit}
+  .fstep.active{border-color:var(--green);background:color-mix(in srgb,var(--green) 10%, var(--card));color:var(--fg)}
+  .fstep.done{border-color:var(--green)}
+  .say{margin-top:12px;padding:10px 14px;border-radius:8px;background:var(--chip);font-size:14px;min-height:24px}
+  .sim{margin-top:10px}
+  .sim .qrow{display:flex;align-items:center;gap:8px;font-size:12px;margin:4px 0}
+  .sim .t{width:230px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted)}
+  .sim .bar{flex:1;height:12px;border-radius:6px;background:var(--chip);overflow:hidden}
+  .sim .bar i{display:block;height:100%;width:0%;background:var(--green);transition:width .5s}
+  .sim .sc{width:52px;font-size:11px;color:var(--muted);text-align:right}
+  .grid{display:grid;gap:12px;grid-template-columns:1fr}
+  @media(min-width:700px){.grid.c2{grid-template-columns:repeat(2,1fr)}.grid.c3{grid-template-columns:repeat(3,1fr)}}
+  .kcard{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+  .kcard h4{margin:0 0 6px;font-size:14px;color:var(--green)}
+  .kcard .def{font-size:13px;margin:0 0 8px}
+  .kcard .ana{font-size:12px;color:var(--muted);border-top:1px dashed var(--border);padding-top:6px}
+  .why{background:var(--card);border:1px solid var(--border);border-left:4px solid var(--orange);border-radius:10px;padding:12px 16px;font-size:14px}
+  .quiz{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin:10px 0}
+  .quiz p{margin:0 0 10px;font-size:14px}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:8px 12px}
+  .opt.right{border-color:var(--green);color:var(--green)}
+  .opt.wrong{border-color:var(--red);color:var(--red)}
+  .verdict{font-size:13px;margin-left:8px}
+  .verdict.ok{color:var(--green)} .verdict.bad{color:var(--red)}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .foot ul{margin:6px 0;padding-left:18px}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 第 8 课 / 共 10 课 · 建议用时 10 分钟</div>
+  <h1>RAG 是怎么回事？</h1>
+  <p class="subtitle">模型不知道你们公司的制度、也不知道昨天的新闻——RAG 就是"先帮它查资料，再让它答题"的开卷考试。</p>
+
+  <h2>一、为什么需要 RAG</h2>
+  <div class="why">
+    三个硬伤，决定了不能只靠模型本身：① <b>知识截止</b>——训练完就冻结了，昨天的新闻它不知道；② <b>私有知识</b>——你们公司的文档它从来没见过；③ <b>幻觉</b>——不知道也会硬编。给模型微调能治一部分，但贵、慢、且知识更新一次就要重训。RAG（Retrieval-Augmented Generation，检索增强生成）的思路：<b>把知识放在外面，回答前先检索，把查到的资料塞进上下文</b>——知识可以随时更新，答案还能附带出处。
+  </div>
+
+  <h2>二、动手：一次检索增强的全过程</h2>
+  <div class="stage">
+    <div class="ctl">
+      <button id="step" class="primary" type="button">走一步</button>
+      <button id="auto" type="button">自动演示</button>
+      <button id="reset" type="button">重置</button>
+    </div>
+    <div class="duo">
+      <div>
+        <p style="font-size:13px;margin:0 0 6px">用户问题：<b style="color:var(--green)">"公司年假怎么申请？"</b></p>
+        <div class="doclib" id="doclib"></div>
+        <div class="sim" id="sims">
+          <div class="qrow"><span class="t">《考勤制度 v3》第 4 章 · 年假申请流程…</span><span class="bar"><i></i></span><span class="sc"></span></div>
+          <div class="qrow"><span class="t">《2026 春节值班安排》…</span><span class="bar"><i></i></span><span class="sc"></span></div>
+          <div class="qrow"><span class="t">《报销制度》差旅住宿标准…</span><span class="bar"><i></i></span><span class="sc"></span></div>
+          <div class="qrow"><span class="t">《员工手册》入职指引…</span><span class="bar"><i></i></span><span class="sc"></span></div>
+        </div>
+      </div>
+      <div class="flowv" id="flow">
+        <div class="fstep"><b>① 文档切块</b><span> 知识库文档被切成小段（chunk），各自算好向量存进向量库</span></div>
+        <div class="fstep"><b>② 问题向量化</b><span> 用户问题也变成向量（第 7 课的 Embedding）</span></div>
+        <div class="fstep"><b>③ 相似度检索</b><span> 在向量库里找"意思最接近"的 Top-k 块</span></div>
+        <div class="fstep"><b>④ 拼装 Prompt</b><span> 把命中的资料 + 问题拼在一起</span></div>
+        <div class="fstep"><b>⑤ 生成答案</b><span> LLM 基于资料回答，可附引用</span></div>
+      </div>
+    </div>
+    <div class="say" id="say">点「走一步」，看左边知识库的命中块怎么亮起来。绿块 = 检索命中的资料。</div>
+  </div>
+
+  <h2>三、五个关键词</h2>
+  <div class="grid c2">
+    <div class="kcard"><h4>Chunking 切块</h4><p class="def">把长文档切成适合检索的小段（几百 token 一段）。切太大→命中的资料夹杂噪声；切太小→上下文断裂。</p><p class="ana">🧠 类比：日志切分粒度——太粗查不准，太细丢上下文。</p></div>
+    <div class="kcard"><h4>向量数据库</h4><p class="def">存 Embedding 并支持"相似度检索"的数据库（Milvus、FAISS、pgvector…）。</p><p class="ana">🧠 类比：ES 按关键词建索引，它按"意思"建索引。</p></div>
+    <div class="kcard"><h4>Top-k 检索 + Rerank 重排</h4><p class="def">先粗筛 k 个候选（快），再用更精细的模型重排（准）。混合检索 = 关键词 + 语义双路。</p><p class="ana">🧠 类比：负载均衡粗筛 + 慢路径精查。</p></div>
+    <div class="kcard"><h4>引用与溯源</h4><p class="def">答案标注"来自哪份文档哪一段"，可人工核对——这是 RAG 对抗幻觉的底牌。</p><p class="ana">🧠 类比：变更单附审计日志。</p></div>
+  </div>
+  <div class="grid c2" style="margin-top:12px">
+    <div class="kcard"><h4>Naive vs Advanced RAG</h4><p class="def">Naive：检索→生成一步到位。Advanced：查询改写、混合检索、重排、压缩上下文等增强环。</p><p class="ana">🧠 类比：单级缓存 → 多级缓存 + 预热。</p></div>
+    <div class="kcard"><h4>微调 vs RAG 怎么选</h4><p class="def">教"能力/风格"用微调（SFT）；给"知识/事实"用 RAG——知识会变就该外置。</p><p class="ana">🧠 类比：培训技能 vs 查手册。</p></div>
+  </div>
+
+  <h2>四、小测验</h2>
+  <div class="quiz"><p>Q1 · RAG 主要解决什么问题？</p>
+    <button class="opt" data-ok="1" type="button">知识新鲜度/私有知识 + 答案可溯源</button>
+    <button class="opt" type="button">让模型推理速度变快</button>
+    <button class="opt" type="button">替代 GPU</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q2 · 公司知识库每月更新，哪种方式更合适？</p>
+    <button class="opt" type="button">每次更新都重新微调</button>
+    <button class="opt" data-ok="1" type="button">RAG——知识外置，更新文档即生效</button>
+    <button class="opt" type="button">把文档全文塞进系统提示词</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q3 · 检索回来的块（chunk）切得太大，最直接的坏处是？</p>
+    <button class="opt" type="button">向量算不出来</button>
+    <button class="opt" data-ok="1" type="button">噪声多、挤占上下文窗口，答案质量下降</button>
+    <button class="opt" type="button">数据库存不下</button>
+    <span class="verdict"></span>
+  </div>
+
+  <div class="foot">
+    <b>延伸阅读（上游硬核版）</b>
+    <ul>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/07_rag_and_tools/rag_basics/rag_comparison.md">RAG 策略对比</a>——Naive/Advanced 架构演进</li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/07_rag_and_tools/rag_basics/evaluating_chunking_strategies_summary.md">Chunking 策略评估</a></li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/07_rag_and_tools/graph_rag/graph_rag_learning_guide.md">GraphRAG 学习指南</a>——知识图谱版 RAG</li>
+    </ul>
+    <div class="nav"><a href="../06_llm_theory_and_fundamentals/01_llm_basics.html">← 第 7 课：LLM 是怎么回事</a><a href="../08_agentic_system/01_agent_basics.html">下一课：Agent 是怎么回事 →</a></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var lib=document.getElementById('doclib');
+  var HIT=[2,7,8,13,20,25];
+  for(var i=0;i<30;i++){var d=document.createElement('div');d.className='chunk';lib.appendChild(d);}
+  var chunks=lib.children;
+  var steps=document.querySelectorAll('#flow .fstep');
+  var sims=document.querySelectorAll('#sims .qrow');
+  var scores=['0.86','0.31','0.22','0.05'];
+  var phase=0;
+  function clearAll(){
+    for(var i=0;i<chunks.length;i++)chunks[i].className='chunk';
+    steps.forEach(function(s){s.className='fstep';});
+    sims.forEach(function(r){r.querySelector('.bar i').style.width='0%';r.querySelector('.sc').textContent='';});
+  }
+  function applyPhase(p){
+    if(p>=1)steps[0].classList.add('done');
+    if(p>=2){steps[1].classList.add('done');steps[1].classList.add('active');}
+    if(p>=3){
+      steps[2].classList.add('done');
+      HIT.forEach(function(h){chunks[h].classList.add('hit');});
+      sims.forEach(function(r,i){
+        r.querySelector('.bar i').style.width=(parseFloat(scores[i])*100)+'%';
+        r.querySelector('.sc').textContent=scores[i];
+      });
+    }
+    if(p>=4)steps[3].classList.add('done');
+    if(p>=5)steps[4].classList.add('done');
+    steps[Math.min(p,4)].classList.add('active');
+  }
+  var SAYS=[
+    '① 离线准备：公司文档被切成 30 个小块，每块算好向量存进向量库（左边每个格子 = 一个 chunk）。',
+    '② 用户问题"公司年假怎么申请"被 Embedding 成向量（第 7 课）。',
+    '③ 相似度检索：意思最接近的块被点亮——考勤制度里的年假章节命中了，值班/报销/入职都没跑偏。',
+    '④ 拼装 Prompt：把命中的资料片段 + 问题组装成新的输入（这就是"开卷"的开卷纸）。',
+    '⑤ LLM 基于资料生成答案，并可附上"来自《考勤制度 v3》第 4 章"的引用。✅ 完成——重置后再看一遍流程。'
+  ];
+  function setSay(){
+    document.getElementById('say').textContent=SAYS[Math.min(phase,5)];
+  }
+  document.getElementById('step').addEventListener('click',function(){
+    if(phase>=5)return;
+    phase++;clearAll();applyPhase(phase);setSay();
+  });
+  var timer=null;
+  document.getElementById('auto').addEventListener('click',function(){
+    if(timer){clearInterval(timer);timer=null;this.textContent='自动演示';return;}
+    this.textContent='停止';phase=0;clearAll();
+    timer=setInterval(function(){
+      phase++;clearAll();applyPhase(phase);setSay();
+      if(phase>=5){clearInterval(timer);timer=null;document.getElementById('auto').textContent='自动演示';}
+    },1100);
+  });
+  document.getElementById('reset').addEventListener('click',function(){phase=0;clearAll();document.getElementById('say').textContent='点「走一步」，看左边知识库的命中块怎么亮起来。绿块 = 检索命中的资料。';});
+  document.querySelectorAll('.quiz').forEach(function(q){
+    q.addEventListener('click',function(e){
+      var b=e.target.closest('button.opt');
+      if(!b||q.dataset.done==='1')return;
+      var ok=b.dataset.ok==='1';
+      q.querySelectorAll('.opt').forEach(function(x){x.disabled=true;if(x.dataset.ok==='1')x.classList.add('right');});
+      if(!ok)b.classList.add('wrong');
+      var v=q.querySelector('.verdict');
+      v.textContent=ok?'✓ 答对了':'✗ 正确答案已标绿';
+      v.className='verdict '+(ok?'ok':'bad');
+      q.dataset.done='1';
+    });
+  });
+})();
+</script>
+</body>
+</html>

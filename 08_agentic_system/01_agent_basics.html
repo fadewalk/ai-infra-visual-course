@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 9 课 · Agent 是怎么回事 —— 会自己动手的大模型</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--purple);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  .ctl{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+  button{font:inherit;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--fg);border-radius:8px;padding:6px 14px}
+  button:hover{border-color:var(--purple)}
+  button.primary{background:var(--purple);border-color:var(--purple);color:#fff}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .taskbox{font-size:14px;padding:10px 14px;border:1px solid var(--border);border-left:4px solid var(--purple);border-radius:8px;background:var(--chip);margin-bottom:14px}
+  .log{display:flex;flex-direction:column;gap:6px;max-height:420px;overflow-y:auto}
+  .bubble{border-radius:10px;padding:9px 13px;font-size:13px;border:1px solid var(--border);opacity:0;transform:translateY(6px);transition:all .3s}
+  .bubble.show{opacity:1;transform:none}
+  .bubble .tag{display:inline-block;font-size:10px;border-radius:5px;padding:0 7px;margin-right:8px;color:#fff;vertical-align:1px}
+  .think .tag{background:var(--blue)} .think{background:color-mix(in srgb,var(--blue) 7%, var(--card));border-color:color-mix(in srgb,var(--blue) 30%, var(--border))}
+  .act .tag{background:var(--purple)} .act{background:color-mix(in srgb,var(--purple) 7%, var(--card));border-color:color-mix(in srgb,var(--purple) 30%, var(--border))}
+  .obs .tag{background:var(--orange)} .obs{background:color-mix(in srgb,var(--orange) 8%, var(--card));border-color:color-mix(in srgb,var(--orange) 35%, var(--border))}
+  .ans .tag{background:var(--green)} .ans{background:color-mix(in srgb,var(--green) 10%, var(--card));border-color:var(--green)}
+  .act code{font-family:ui-monospace,Menlo,monospace;font-size:12px;background:var(--chip);border:1px solid var(--border);border-radius:4px;padding:1px 6px}
+  .loopdiagram{display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap;margin:6px 0 12px;font-size:13px}
+  .ld{border:1px solid var(--border);border-radius:8px;padding:6px 14px;background:var(--chip)}
+  .ld.cur{border-color:var(--purple);background:color-mix(in srgb,var(--purple) 12%, var(--card))}
+  .grid{display:grid;gap:12px;grid-template-columns:1fr}
+  @media(min-width:700px){.grid.c2{grid-template-columns:repeat(2,1fr)}.grid.c3{grid-template-columns:repeat(3,1fr)}}
+  .kcard{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+  .kcard h4{margin:0 0 6px;font-size:14px;color:var(--purple)}
+  .kcard .def{font-size:13px;margin:0 0 8px}
+  .kcard .ana{font-size:12px;color:var(--muted);border-top:1px dashed var(--border);padding-top:6px}
+  .quiz{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin:10px 0}
+  .quiz p{margin:0 0 10px;font-size:14px}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:8px 12px}
+  .opt.right{border-color:var(--green);color:var(--green)}
+  .opt.wrong{border-color:var(--red);color:var(--red)}
+  .verdict{font-size:13px;margin-left:8px}
+  .verdict.ok{color:var(--green)} .verdict.bad{color:var(--red)}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .foot ul{margin:6px 0;padding-left:18px}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 第 9 课 / 共 10 课 · 建议用时 10 分钟</div>
+  <h1>Agent 是怎么回事？</h1>
+  <p class="subtitle">给大模型配上"工具"和"循环"，它就从"只会说"变成"会自己动手干"。下面这个 Agent 正在替值班 SRE 查一台 GPU 节点的故障——点步进看它怎么思考。</p>
+
+  <h2>一、动手：看一个运维 Agent 干活</h2>
+  <div class="stage">
+    <div class="taskbox">📋 任务：<b>「gpu-03 这台节点上有个训练作业一直重试，帮我查一下原因并给出处理建议。」</b></div>
+    <div class="loopdiagram">
+      <span class="ld" id="ld-think">🤔 思考 Thought</span><span>→</span>
+      <span class="ld" id="ld-act">⚡ 行动 Action</span><span>→</span>
+      <span class="ld" id="ld-obs">👁 观察 Observation</span><span>→</span>
+      <span style="color:var(--muted)">循环…直到能回答</span>
+    </div>
+    <div class="ctl">
+      <button id="step" class="primary" type="button">走一步</button>
+      <button id="auto" type="button">自动运行</button>
+      <button id="reset" type="button">重置</button>
+    </div>
+    <div class="log" id="log"></div>
+  </div>
+
+  <h2>二、Agent = LLM + 工具 + 循环</h2>
+  <div class="grid c3">
+    <div class="kcard"><h4>LLM 是大脑</h4><p class="def">负责理解任务、拆解步骤、决定"下一步干什么"——就是上面每一步的"思考"。</p><p class="ana">🧠 决策引擎，不是执行者。</p></div>
+    <div class="kcard"><h4>工具是手脚</h4><p class="def">搜索、查库、执行命令、调 API……模型输出"调用哪个工具+参数"，系统替它执行并把结果喂回来。</p><p class="ana">🧠 类比：Runbook 里能自动执行的动作。</p></div>
+    <div class="kcard"><h4>循环是灵魂</h4><p class="def">思考→行动→观察→再思考……直到任务完成。没有循环就只是单轮问答。</p><a class="ana" style="display:block;text-decoration:none" href="javascript:void(0)">🧠 这个循环叫 ReAct（Reason + Act）</a></div>
+  </div>
+
+  <h2>三、关键词卡</h2>
+  <div class="grid c2">
+    <div class="kcard"><h4>Function Calling 工具调用</h4><p class="def">模型按约定格式输出"要调用的函数名和参数"，由外部系统真正执行。</p><p class="ana">🧠 类比：模型填工单，人来执行工单——只是执行者也是程序。</p></div>
+    <div class="kcard"><h4>MCP</h4><p class="def">Model Context Protocol——工具接入的开放协议，一次接入、多家模型/客户端通用。</p><p class="ana">🧠 类比：USB-C——以前每个设备一种线，现在一个口全搞定。</p></div>
+    <div class="kcard"><h4>上下文工程</h4><p class="def">窗口有限，放什么进上下文要精心管理：历史压缩、关键信息前置、工具结果裁剪。</p><p class="ana">🧠 类比：容量规划——贵资源只放热数据。Agent 越跑越长，这越关键。</p></div>
+    <div class="kcard"><h4>记忆系统</h4><p class="def">短期记忆 = 上下文窗口；长期记忆 = 外挂数据库（向量库/图库），用时检索回来。</p><p class="ana">🧠 类比：内存 vs 外存，照搬计算机存储层级。</p></div>
+  </div>
+
+  <h2>四、和你的关系：AIOps 正在变成现实</h2>
+  <div class="grid c2">
+    <div class="kcard"><h4>运维 Agent 已在落地</h4><p class="def">K8s 运维智能体（如 Kagent）、告警自动分诊、故障初诊报告……上游仓库有专门的 Kagent 拆解文章。</p><p class="ana">🧠 你现在写的 Runbook，就是未来运维 Agent 的"技能书"。</p></div>
+    <div class="kcard"><h4>边界要清醒</h4><p class="def">Agent 会出错、会被上下文长度限制、执行高危命令需要审批闸门。"能自动"≠"该全自动"——分级放权是 SRE 的老本领。</p><p class="ana">🧠 类比：自动化变更也要分只读/低危/高危审批。</p></div>
+  </div>
+
+  <h2>五、小测验</h2>
+  <div class="quiz"><p>Q1 · Agent 与普通聊天机器人的本质区别是？</p>
+    <button class="opt" type="button">模型参数更大</button>
+    <button class="opt" data-ok="1" type="button">有工具 + 有循环：能行动、能根据观察继续决策</button>
+    <button class="opt" type="button">回答速度更快</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q2 · MCP 解决的是什么问题？</p>
+    <button class="opt" type="button">模型训练速度慢</button>
+    <button class="opt" type="button">GPU 不够用</button>
+    <button class="opt" data-ok="1" type="button">工具接入的标准化——一次接入，多家通用</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q3 · 一个长任务跑了 50 轮后 Agent 开始"忘事"，最直接的原因是？</p>
+    <button class="opt" data-ok="1" type="button">上下文窗口被历史撑满，早期关键信息被挤掉或截断</button>
+    <button class="opt" type="button">GPU 温度过高</button>
+    <button class="opt" type="button">工具太多</button>
+    <span class="verdict"></span>
+  </div>
+
+  <div class="foot">
+    <b>延伸阅读（上游硬核版）</b>
+    <ul>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/08_agentic_system/agent_design/docs/react-agent.md">ReAct Agent 模式详解</a></li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/08_agentic_system/mcp/docs/01_deep_dive_into_mcp_and_the_future_of_ai_tooling.md">MCP 深入解析</a></li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/08_agentic_system/agent_infra/docs/deep-dive-kagent-k8s-ops-agent.md">Kagent：K8s 运维智能体实战</a>——和本课场景同源</li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/08_agentic_system/agent_course_hub/README.md">Agent 学习课程 Hub</a>——七阶段路线图</li>
+    </ul>
+    <div class="nav"><a href="../07_rag_and_tools/01_rag_basics.html">← 第 8 课：RAG 是怎么回事</a><a href="../06_llm_theory_and_fundamentals/02_transformer.html">下一课：Transformer 拆解 →</a></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var STEPS=[
+    {k:'think',t:'这是个训练作业重试问题。先确认节点本身的状态——用 kubectl 查 gpu-03。'},
+    {k:'act',t:'调用工具：<code>kubectl get node gpu-03 -o wide</code>'},
+    {k:'obs',t:'结果：<b>NotReady</b>（since 23m）。节点不健康，作业重试大概率因为它。'},
+    {k:'think',t:'NotReady 常见原因：kubelet 挂了、容器运行时异常、硬件故障。先看节点事件。'},
+    {k:'act',t:'调用工具：<code>kubectl describe node gpu-03 | tail -30</code>'},
+    {k:'obs',t:'结果：事件里有 <b>nvidia.com/gpu 数量变为 3/8</b>，且 Kubelet 报 "NVIDIA driver error"。'},
+    {k:'think',t:'驱动报错 + 少了一张卡——很可能是 GPU 硬件问题。上节点看内核日志确认。'},
+    {k:'act',t:'调用工具：<code>ssh gpu-03 "dmesg -T | grep -i xid | tail -5"</code>'},
+    {k:'obs',t:'结果：<b>XID 79, GPU has fallen off the bus</b>（1 小时前）。实锤：GPU 硬件故障。'},
+    {k:'think',t:'结论足够清晰了：硬件故障导致 NotReady → 作业重试。给出建议并结束。'},
+    {k:'ans',t:'<b>结论</b>：gpu-03 的 GPU3 发生 XID 79（掉总线，硬件级故障），节点 NotReady，导致训练作业调度失败反复重试。<b>建议</b>：① cordon 摘除该节点；② GPU 复位一次观察，若复发直接报修换卡；③ 训练作业迁移到健康节点（配置 Gang Scheduling 可避免部分调度）。'}
+  ];
+  var log=document.getElementById('log'),i=0,autoTimer=null;
+  var TAG={think:'🤔 思考',act:'⚡ 行动',obs:'👁 观察',ans:'✅ 回答'};
+  function add(){
+    if(i>=STEPS.length)return;
+    var s=STEPS[i];
+    var d=document.createElement('div');
+    d.className='bubble '+s.k;
+    d.innerHTML='<span class="tag">'+TAG[s.k]+'</span>'+s.t;
+    log.appendChild(d);
+    requestAnimationFrame(function(){d.classList.add('show');});
+    log.scrollTop=log.scrollHeight;
+    ['think','act','obs'].forEach(function(k){document.getElementById('ld-'+k).classList.toggle('cur',s.k===k);});
+    if(s.k==='ans')['think','act','obs'].forEach(function(k){document.getElementById('ld-'+k).classList.remove('cur');});
+    i++;
+  }
+  document.getElementById('step').addEventListener('click',add);
+  document.getElementById('auto').addEventListener('click',function(){
+    if(autoTimer){clearInterval(autoTimer);autoTimer=null;this.textContent='自动运行';return;}
+    this.textContent='停止';
+    autoTimer=setInterval(function(){
+      add();
+      if(i>=STEPS.length){clearInterval(autoTimer);autoTimer=null;document.getElementById('auto').textContent='自动运行';}
+    },1200);
+  });
+  document.getElementById('reset').addEventListener('click',function(){
+    log.innerHTML='';i=0;['think','act','obs'].forEach(function(k){document.getElementById('ld-'+k).classList.remove('cur');});
+  });
+  document.querySelectorAll('.quiz').forEach(function(q){
+    q.addEventListener('click',function(e){
+      var b=e.target.closest('button.opt');
+      if(!b||q.dataset.done==='1')return;
+      var ok=b.dataset.ok==='1';
+      q.querySelectorAll('.opt').forEach(function(x){x.disabled=true;if(x.dataset.ok==='1')x.classList.add('right');});
+      if(!ok)b.classList.add('wrong');
+      var v=q.querySelector('.verdict');
+      v.textContent=ok?'✓ 答对了':'✗ 正确答案已标绿';
+      v.className='verdict '+(ok?'ok':'bad');
+      q.dataset.done='1';
+    });
+  });
+})();
+</script>
+</body>
+</html>

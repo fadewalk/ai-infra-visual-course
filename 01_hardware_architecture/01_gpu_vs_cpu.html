@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 1 课 · GPU 是什么 —— 从 4 个教授到一支军队</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed;
+    --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--blue);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  .lanes{display:flex;flex-direction:column;gap:16px}
+  @media(min-width:720px){.lanes{flex-direction:row}.lanes>div{flex:1}}
+  .lane{border:1px solid var(--border);border-radius:10px;padding:12px}
+  .lane h3{margin:0 0 8px;font-size:14px}
+  .lane .who{font-size:12px;color:var(--muted);margin-bottom:8px}
+  .cores{display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin-bottom:10px}
+  .cores.cpu{grid-template-columns:repeat(4,1fr)}
+  .core{aspect-ratio:1;border-radius:4px;background:var(--chip);transition:background .15s}
+  .core.on-cpu{background:var(--blue)}
+  .core.on-gpu{background:var(--green)}
+  .bar{height:10px;border-radius:6px;background:var(--chip);overflow:hidden;margin-top:6px}
+  .bar>i{display:block;height:100%;width:0%;transition:width .1s linear}
+  .bar.cpu i{background:var(--blue)} .bar.gpu i{background:var(--green)}
+  .t{font-size:12px;color:var(--muted)}
+  .t b{color:var(--fg)}
+  .ctl{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+  button{font:inherit;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--fg);border-radius:8px;padding:6px 14px}
+  button:hover{border-color:var(--blue)}
+  button.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+  button.seg-on{background:var(--blue);border-color:var(--blue);color:#fff}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .concl{margin-top:14px;padding:10px 14px;border-radius:8px;background:var(--chip);font-size:14px;min-height:22px}
+  .concl b.win{color:var(--green)} .concl b.tie{color:var(--orange)}
+  .grid{display:grid;gap:12px;grid-template-columns:1fr}
+  @media(min-width:700px){.grid.c3{grid-template-columns:repeat(3,1fr)} .grid.c2{grid-template-columns:repeat(2,1fr)}}
+  .kcard{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+  .kcard h4{margin:0 0 6px;font-size:14px;color:var(--blue)}
+  .kcard .def{font-size:13px;margin:0 0 8px}
+  .kcard .ana{font-size:12px;color:var(--muted);border-top:1px dashed var(--border);padding-top:6px}
+  .kcard .num{font-size:12px;color:var(--green);margin-top:4px}
+  .note{font-size:12px;color:var(--muted)}
+  .whybox{background:var(--card);border:1px solid var(--border);border-left:4px solid var(--orange);border-radius:10px;padding:12px 16px}
+  .quiz{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin:10px 0}
+  .quiz p{margin:0 0 10px;font-size:14px}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:8px 12px}
+  .opt.right{border-color:var(--green);color:var(--green)}
+  .opt.wrong{border-color:var(--red);color:var(--red)}
+  .verdict{font-size:13px;margin-left:8px}
+  .verdict.ok{color:var(--green)} .verdict.bad{color:var(--red)}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .foot ul{margin:6px 0;padding-left:18px}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 第 1 课 / 共 6 课 · 建议用时 10 分钟</div>
+  <h1>GPU 是什么？</h1>
+  <p class="subtitle">CPU 是 4 位教授，GPU 是一支军队。为什么 AI 偏爱后者？——动手跑一次"赛跑"就懂了。</p>
+
+  <h2>一、动手：CPU vs GPU 赛跑</h2>
+  <div class="stage">
+    <div class="ctl">
+      <button id="m-parallel" class="seg-on" type="button">任务 A：512 个独立小任务</button>
+      <button id="m-serial" type="button">任务 B：12 步环环相扣</button>
+      <button id="run" class="primary" type="button">开始</button>
+      <span class="t" id="status">选择任务类型，点「开始」</span>
+    </div>
+    <div class="lanes">
+      <div class="lane">
+        <h3>CPU —— 4 位教授</h3>
+        <div class="who">核少、每核很强，擅长复杂逻辑</div>
+        <div class="cores cpu" id="cpu-cores"></div>
+        <div class="bar cpu"><i id="cpu-bar"></i></div>
+        <div class="t">进度 <b id="cpu-pct">0%</b> · 耗时 <b id="cpu-time">0.0s</b></div>
+      </div>
+      <div class="lane">
+        <h3>GPU —— 128 个小学生</h3>
+        <div class="who">核多、每核简单，擅长重复劳动</div>
+        <div class="cores" id="gpu-cores"></div>
+        <div class="bar gpu"><i id="gpu-bar"></i></div>
+        <div class="t">进度 <b id="gpu-pct">0%</b> · 耗时 <b id="gpu-time">0.0s</b></div>
+      </div>
+    </div>
+    <div class="concl" id="concl">任务 A 是"各自算各的"（并行）；任务 B 是"每一步都要等上一步"（串行）。先跑 A 看看。</div>
+  </div>
+
+  <h2>二、为什么 AI 非用 GPU 不可</h2>
+  <div class="whybox">
+    神经网络的本质是<b>海量的矩阵乘法</b>：把数据乘上几百万到几千亿个权重再求和。这些乘加运算<b>互相独立、长得一模一样</b>——正是任务 A 那种"给 512 个像素各调一次亮度"的活。
+    训练一个大模型 = 重复几十万次"前向计算 → 反向求导"，每一步里 95% 以上的时间都在做矩阵乘法。所以 AI 加速器的设计目标只有一个：<b>用几万个简单核心，把矩阵乘法灌满</b>。
+  </div>
+
+  <h2>三、六个关键词（带 SRE 记忆锚点）</h2>
+  <div class="grid c3">
+    <div class="kcard"><h4>SM（流式多处理器）</h4><p class="def">GPU 里的"大核"。一张 GPU 由几十到上百个 SM 组成，每个 SM 里塞了几百个更小的运算单元。</p><p class="ana">🧠 类比：SM ≈ CPU 的物理核，但一个"核"带一个连的兵。</p><p class="num">H100 SXM 有 132 个 SM（厂商口径）</p></div>
+    <div class="kcard"><h4>Warp（线程束）</h4><p class="def">32 个线程组成的小队，<b>同进同退</b>：全队执行同一条指令，只是处理的数据不同（SIMT）。</p><p class="ana">🧠 类比：一个排 32 人，听同一个口令。队里有人"走岔路"（if 分支不同），全队就得等——这叫分支发散，是 GPU 性能杀手之一。</p></div>
+    <div class="kcard"><h4>CUDA Core vs Tensor Core</h4><p class="def">CUDA Core 是通用算术单元（加减乘除都会）；Tensor Core 是<b>专门做矩阵乘加</b>的专用单元，一次算一小块。</p><p class="ana">🧠 类比：通用 CPU 指令 vs 专用加速指令（类似 AES-NI 之于加密）。</p><p class="num">AI 的算力主要来自 Tensor Core</p></div>
+    <div class="kcard"><h4>HBM（高带宽显存）</h4><p class="def">GPU 专属的"内存条"，和 GPU 封装在一起，容量几十 GB。</p><p class="ana">🧠 类比：相当于给 GPU 单独配的 DIMM。模型权重、KV Cache 都住在这里（第 3 课展开）。</p><p class="num">H100：80GB HBM3（厂商口径）</p></div>
+    <div class="kcard"><h4>显存带宽</h4><p class="def">数据从显存搬到计算单元的速度，决定"喂得饱不饱"。</p><p class="ana">🧠 类比：内存带宽的数十倍。很多场景 GPU 不是算不动，而是<b>搬不动</b>——排查瓶颈时要先分清这两者。</p><p class="num">H100：约 3.35 TB/s（≈ DDR5 单通道的几十倍）</p></div>
+    <div class="kcard"><h4>SIMT 编程模型</h4><p class="def">程序员只写"一个线程该干什么"，硬件自动复制给成千上万个线程同时执行。</p><p class="ana">🧠 类比：写一份 SOP，让全公司照着执行，而不是给每个人单独写指令。</p></div>
+  </div>
+
+  <h2>四、小测验</h2>
+  <div class="quiz"><p>Q1 · 一个 Warp 里有多少个线程？</p>
+    <button class="opt" type="button">8 个</button>
+    <button class="opt" data-ok="1" type="button">32 个</button>
+    <button class="opt" type="button">128 个</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q2 · 下面哪种任务，GPU 相对 CPU 的优势最小？</p>
+    <button class="opt" type="button">给 100 万张图片批量加水印</button>
+    <button class="opt" type="button">大矩阵乘法</button>
+    <button class="opt" data-ok="1" type="button">每一步都依赖上一步结果的规则引擎</button>
+    <button class="opt" type="button">批量视频转码</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q3 · nvidia-smi 显示 GPU-Util 90%，能说明算力真的被用满了吗？</p>
+    <button class="opt" type="button">能，90% 就是很忙</button>
+    <button class="opt" data-ok="1" type="button">不一定——它只说明"这段时间有 Kernel 在执行"，SM 可能大量空转</button>
+    <button class="opt" type="button">它表示的是显存占用率</button>
+    <span class="verdict"></span>
+  </div>
+
+  <div class="foot">
+    <b>延伸阅读（本仓库硬核版）</b>
+    <ul>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/01_hardware_architecture/nvidia/understand_gpu_architecture/README.md">深入理解 GPU 架构</a>——本课的完整展开</li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/03_ai_cluster_ops/01_gpu_ops/02_gpu_utilization_myth.md">GPU 利用率是一个误导性指标</a>——Q3 的出处，运维必读</li>
+      <li><a href="02_latency_pyramid.html">AI 基础设施延迟金字塔（第 5 课 · 本站版）</a>——把"算不动 vs 搬不动"放进全景</li>
+    </ul>
+    <div class="nav"><span>上一课：无</span><a href="../05_model_training_and_fine_tuning/01_training_loop.html">下一课：训练是怎么回事 →</a></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var CPU_N=4, GPU_N=128, TASKS=512;
+  var mode='parallel', running=false, raf=null;
+  var cpuCores=document.getElementById('cpu-cores'),
+      gpuCores=document.getElementById('gpu-cores');
+  for(var i=0;i<CPU_N;i++){var d=document.createElement('div');d.className='core';cpuCores.appendChild(d);}
+  for(var j=0;j<GPU_N;j++){var g=document.createElement('div');g.className='core';gpuCores.appendChild(g);}
+  var cpuDots=cpuCores.children, gpuDots=gpuCores.children;
+  // 虚拟耗时（秒）：并行任务 CPU 每拍做 4 个 / GPU 每拍做 128 个
+  var CFG={
+    parallel:{cpuV:12.8,gpuV:0.4,cpuReal:3.6,
+      concl:'同样 512 个<b>互相独立</b>的小任务：CPU 虚拟耗时 12.8s，GPU 只要 <b class="win">0.4s（32 倍速）</b>。矩阵乘法就是这种任务——所以 AI 吃 GPU。'},
+    serial:{cpuV:1.2,gpuV:1.4,cpuReal:2.4,
+      concl:'12 步<b>环环相扣</b>：核心再多也只能排队，GPU 还要多付一步调度开销，<b class="tie">反而更慢</b>。操作系统、调度器这类逻辑正是 CPU 的主场。'}
+  };
+  function setMode(m){
+    if(running)return;
+    mode=m;
+    document.getElementById('m-parallel').className=(m==='parallel')?'seg-on':'';
+    document.getElementById('m-serial').className=(m==='serial')?'seg-on':'';
+    reset();
+    document.getElementById('concl').innerHTML=(m==='parallel')
+      ?'任务 A 是"各自算各的"（并行）；任务 B 是"每一步都要等上一步"（串行）。先跑 A 看看。'
+      :'现在换成 12 步串行任务——注意看两队谁更快（或更慢）。';
+  }
+  function reset(){
+    if(raf)cancelAnimationFrame(raf); running=false;
+    document.getElementById('run').textContent='开始';
+    document.getElementById('run').disabled=false;
+    document.getElementById('cpu-bar').style.width='0%';
+    document.getElementById('gpu-bar').style.width='0%';
+    document.getElementById('cpu-time').textContent='0.0s';
+    document.getElementById('gpu-time').textContent='0.0s';
+    document.getElementById('cpu-pct').textContent='0%';
+    document.getElementById('gpu-pct').textContent='0%';
+    for(var i=0;i<cpuDots.length;i++){cpuDots[i].className='core';}
+    for(var j=0;j<gpuDots.length;j++){gpuDots[j].className='core';}
+  }
+  function lightDots(dots,onClass,frac){
+    var n=Math.round(dots.length*frac);
+    for(var i=0;i<dots.length;i++){dots[i].className= i<n ? 'core '+onClass : 'core';}
+  }
+  function start(){
+    if(running){reset();return;}
+    running=true; document.getElementById('run').textContent='重跑';
+    var c=CFG[mode], t0=performance.now();
+    var cpuReal=c.cpuReal, gpuReal;
+    if(mode==='parallel'){ gpuReal=Math.max(0.7, cpuReal*(c.gpuV/c.cpuV)); }
+    else{ gpuReal=cpuReal*(c.gpuV/c.cpuV); }
+    var total=Math.max(cpuReal,gpuReal);
+    var done={cpu:false,gpu:false};
+    function frame(now){
+      var t=Math.min(1,(now-t0)/1000/total);
+      var cp=Math.min(1,t*total/cpuReal), gp=Math.min(1,t*total/gpuReal);
+      document.getElementById('cpu-bar').style.width=(cp*100)+'%';
+      document.getElementById('gpu-bar').style.width=(gp*100)+'%';
+      document.getElementById('cpu-pct').textContent=Math.round(cp*100)+'%';
+      document.getElementById('gpu-pct').textContent=Math.round(gp*100)+'%';
+      document.getElementById('cpu-time').textContent=(cp*c.cpuV).toFixed(1)+'s';
+      document.getElementById('gpu-time').textContent=(gp*c.gpuV).toFixed(1)+'s';
+      if(mode==='parallel'){
+        lightDots(cpuDots,'on-cpu',cp); lightDots(gpuDots,'on-gpu',gp);
+      }else{
+        var cs=Math.ceil(cp*12), gs=Math.ceil(gp*12);
+        for(var i=0;i<cpuDots.length;i++){cpuDots[i].className= i<Math.min(cs,4)?'core on-cpu':'core';}
+        for(var j=0;j<gpuDots.length;j++){gpuDots[j].className= j<Math.min(gs,16)?'core on-gpu':'core';}
+      }
+      if(t<1){ raf=requestAnimationFrame(frame); }
+      else{
+        running=false; lightDots(cpuDots,'on-cpu',1); lightDots(gpuDots,'on-gpu',1);
+        document.getElementById('concl').innerHTML=c.concl;
+      }
+    }
+    raf=requestAnimationFrame(frame);
+  }
+  document.getElementById('m-parallel').addEventListener('click',function(){setMode('parallel');});
+  document.getElementById('m-serial').addEventListener('click',function(){setMode('serial');});
+  document.getElementById('run').addEventListener('click',start);
+
+  document.querySelectorAll('.quiz').forEach(function(q){
+    q.addEventListener('click',function(e){
+      var b=e.target.closest('button.opt');
+      if(!b||q.dataset.done==='1')return;
+      var ok=b.dataset.ok==='1';
+      q.querySelectorAll('.opt').forEach(function(x){
+        x.disabled=true; if(x.dataset.ok==='1')x.classList.add('right');
+      });
+      if(!ok)b.classList.add('wrong');
+      var v=q.querySelector('.verdict');
+      v.textContent=ok?'✓ 答对了':'✗ 正确答案已标绿';
+      v.className='verdict '+(ok?'ok':'bad');
+      q.dataset.done='1';
+    });
+  });
+})();
+</script>
+</body>
+</html>

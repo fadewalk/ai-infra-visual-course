@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 3 课 · 推理是怎么回事 —— Prefill、Decode 与那个关键的 KV Cache</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--purple);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  .ctl{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+  button{font:inherit;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--fg);border-radius:8px;padding:6px 14px}
+  button:hover{border-color:var(--purple)}
+  button.primary{background:var(--purple);border-color:var(--purple);color:#fff}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  input[type=text]{font:inherit;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--fg);width:280px;max-width:100%}
+  label.ck{display:flex;align-items:center;gap:6px;font-size:13px}
+  .metrics{display:flex;gap:20px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin:10px 0}
+  .metrics b{color:var(--fg);font-size:15px}
+  .sess{border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin:8px 0;background:var(--chip)}
+  .sess h4{margin:0 0 8px;font-size:12px;color:var(--muted);font-weight:500}
+  .toks{display:flex;flex-wrap:wrap;gap:4px}
+  .tok{font-size:12px;padding:2px 7px;border-radius:6px;background:var(--card);border:1px solid var(--border);opacity:.45}
+  .tok.lit{opacity:1;border-color:var(--purple)}
+  .tok.gen{opacity:1;border-color:var(--green);background:color-mix(in srgb,var(--green) 12%, var(--card))}
+  .tok.hot{opacity:1;border-color:var(--red);color:var(--red)}
+  .kv{margin-top:10px}
+  .kv .lab{font-size:12px;color:var(--muted);display:flex;justify-content:space-between}
+  .kvbar{height:16px;border-radius:8px;background:var(--chip);overflow:hidden;margin-top:4px;position:relative}
+  .kvbar>i{display:block;height:100%;width:0%;background:var(--purple);transition:width .2s}
+  .kvbar.full>i{background:var(--red)}
+  .kvbar .cap{position:absolute;top:0;bottom:0;width:2px;background:var(--red);left:100%}
+  .warn{color:var(--red);font-size:13px;margin-top:8px}
+  .grid{display:grid;gap:12px;grid-template-columns:1fr}
+  @media(min-width:700px){.grid.c3{grid-template-columns:repeat(3,1fr)}.grid.c2{grid-template-columns:repeat(2,1fr)}}
+  .kcard{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+  .kcard h4{margin:0 0 6px;font-size:14px;color:var(--purple)}
+  .kcard .def{font-size:13px;margin:0 0 8px}
+  .kcard .ana{font-size:12px;color:var(--muted);border-top:1px dashed var(--border);padding-top:6px}
+  .quiz{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin:10px 0}
+  .quiz p{margin:0 0 10px;font-size:14px}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:8px 12px}
+  .opt.right{border-color:var(--green);color:var(--green)}
+  .opt.wrong{border-color:var(--red);color:var(--red)}
+  .verdict{font-size:13px;margin-left:8px}
+  .verdict.ok{color:var(--green)} .verdict.bad{color:var(--red)}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .foot ul{margin:6px 0;padding-left:18px}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+  .say{padding:10px 14px;border-radius:8px;background:var(--chip);font-size:14px;min-height:24px;margin-top:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 第 3 课 / 共 6 课 · 建议用时 12 分钟</div>
+  <h1>推理是怎么回事？</h1>
+  <p class="subtitle">模型读你的问题叫 Prefill（一口气），吐答案叫 Decode（一个字一个字）。中间藏着一个决定并发上限的东西：KV Cache。</p>
+
+  <h2>一、动手：看一次生成的全过程</h2>
+  <div class="stage">
+    <div class="ctl">
+      <input type="text" id="prompt" value="AI 基础设施真有趣" maxlength="16" aria-label="输入提示词">
+      <label class="ck">并发会话数
+        <select id="batch" aria-label="并发会话数">
+          <option value="1">1</option><option value="2">2</option><option value="4">4</option>
+        </select>
+      </label>
+      <label class="ck"><input type="checkbox" id="kvon" checked> 开启 KV Cache</label>
+      <button id="go" class="primary" type="button">开始生成</button>
+    </div>
+    <div id="sessions"></div>
+    <div class="kv">
+      <div class="lab"><span>GPU 显存中的 KV Cache（示意）</span><span><b id="kvn">0</b> / 90 token 容量</span></div>
+      <div class="kvbar" id="kvbar"><i id="kvfill"></i></div>
+    </div>
+    <div class="warn" id="warn" hidden>⚠️ KV Cache 超过显存容量！生产里这对应请求被拒绝或旧会话被驱逐——这就是"并发上限由显存决定"的直观含义。</div>
+    <div class="metrics">
+      <span>TTFT（首 token 延迟）：<b id="ttft">–</b></span>
+      <span>TPOT（每 token 耗时）：<b id="tpot">–</b></span>
+      <span>吞吐估算：<b id="thru">–</b></span>
+    </div>
+    <div class="say" id="say">点「开始生成」。紫色是 Prefill（读问题，一口气），绿色是 Decode（吐答案，一个一个蹦）。</div>
+  </div>
+
+  <h2>二、两阶段的本质差别：一个喂得饱，一个搬不动</h2>
+  <div class="grid c2">
+    <div class="kcard"><h4>Prefill（预填充）—— compute-bound</h4>
+      <p class="def">把<b>整个 prompt 一次性并行</b>算完：token 多、矩阵大，GPU 的几万个核心全都能派上活，算力是瓶颈。它决定 <b>TTFT</b>（用户等多久看到第一个字）。</p>
+      <p class="ana">🧠 类比：一次 <code>cat</code> 整个大文件——吞吐大，单次耗时长。</p></div>
+    <div class="kcard"><h4>Decode（解码）—— memory-bound</h4>
+      <p class="def">自回归地<b>一次只生成 1 个 token</b>，但每生成一个，都要把<b>整个模型的权重从显存重新读一遍</b>。算力闲着，显存带宽是瓶颈。它决定 <b>TPOT</b> 和总吞吐。</p>
+      <p class="ana">🧠 类比：<code>tail -f</code> 逐行追日志——每次只取一行，但房租（读权重）照付。</p>
+      <p class="ana">数字感受：7B 模型 14GB 权重 ÷ 3.35TB/s 带宽 ≈ 4.2ms/token，单请求理论上限约 240 token/s（估算口径）——先撞带宽，不撞算力。</p></div>
+  </div>
+
+  <h2>三、四个关键词</h2>
+  <div class="grid c2">
+    <div class="kcard"><h4>KV Cache</h4>
+      <p class="def">生成第 N 个 token 时，前面 N-1 个 token 的中间结果（K/V 矩阵）其实不用重算——存起来直接查，这就是 KV Cache。代价：<b>显存占用随上下文长度线性增长</b>。</p>
+      <p class="ana">🧠 类比：应用层写缓存（Redis）。7B 模型每个 token 约占 0.5MB KV（32 层 FP16 估算），10 万 token 的会话 ≈ 50GB。</p></div>
+    <div class="kcard"><h4>PagedAttention</h4>
+      <p class="def">把 KV Cache 切成固定大小的"页"按需分配，而不是给每个会话预留一整块连续显存。</p>
+      <p class="ana">🧠 类比：就是操作系统的虚拟内存分页——治的是显存碎片，vLLM 的成名之作。</p></div>
+    <div class="kcard"><h4>Continuous Batching</h4>
+      <p class="def">请求随到随进批、做完即出批，而不是等一整批全部完成再换下一批。</p>
+      <p class="ana">🧠 类比：滚动发布 vs 整批重启。吞吐能差数倍。</p></div>
+    <div class="kcard"><h4>量化 / 投机解码</h4>
+      <p class="def">量化：把权重/KV 从 FP16 压到 INT8/FP8，显存减半、带宽减半。投机解码：用小模型先猜几个 token，大模型一次验证多个，"一次前向多赚几个字"。</p>
+      <p class="ana">🧠 类比：压缩传输 + 批量确认。仓库里有完整深读文章（见延伸）。</p></div>
+  </div>
+
+  <h2>四、小测验</h2>
+  <div class="quiz"><p>Q1 · Decode 阶段的瓶颈主要是？</p>
+    <button class="opt" type="button">GPU 算力（FLOPS）不够</button>
+    <button class="opt" data-ok="1" type="button">显存带宽——每生成一个 token 都要重读全部权重</button>
+    <button class="opt" type="button">网络延迟</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q2 · KV Cache 的代价是什么？</p>
+    <button class="opt" type="button">CPU 使用率升高</button>
+    <button class="opt" data-ok="1" type="button">显存占用随上下文长度线性增长，挤占可并发的空间</button>
+    <button class="opt" type="button">模型精度下降</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q3 · 为什么一台 8 卡机器跑 70B 模型，"能同时服务几个用户"主要由显存决定？</p>
+    <button class="opt" type="button">因为权重会随用户数复制多份</button>
+    <button class="opt" type="button">因为 CPU 内存不够</button>
+    <button class="opt" data-ok="1" type="button">因为每个会话的 KV Cache 都要常驻显存，会话越多吃越多</button>
+    <span class="verdict"></span>
+  </div>
+
+  <div class="foot">
+    <b>延伸阅读（本仓库硬核版）</b>
+    <ul>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/09_inference_system/prefill_decode/prefill_decode_visual.html">Prefill 与 Decode 交互可视化（官方版）</a> — 每步矩阵形状与计算量推导</li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/09_inference_system/kv_cache/01_concepts/basic/kv_cache_basics.md">KV Cache 原理简介</a></li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/09_inference_system/prefill_decode/continuous_batching.md">Continuous Batching 深度解析</a></li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/09_inference_system/kv_cache/01_concepts/capacity_planning/hbm_kv_pool_concurrency.md">L1 KV Pool 与系统并发上限</a> — 把本课的"容量红线"变成生产公式</li>
+    </ul>
+    <div class="nav"><a href="../05_model_training_and_fine_tuning/01_training_loop.html">← 第 2 课：训练是怎么回事</a><a href="../04_cloud_native_ai_platform/01_k8s_gpu.html">下一课：K8s 上跑 GPU →</a></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var CAP=90, GEN_N=14;
+  var vocab=[' 需要',' 显存',' 带宽',' 和',' 好的',' 调度',' 才',' 能',' 跑',' 得',' 快',' ，',' 尤其',' 是',' GPU',' 。',' KV',' Cache',' 的',' 世',' 界'];
+  var goBtn=document.getElementById('go'), say=document.getElementById('say');
+  var running=false;
+  function sleep(ms){return new Promise(function(r){setTimeout(r,ms);});}
+  function el(tag,cls,txt){var d=document.createElement('span');d.className=cls;if(txt)d.textContent=txt;return d;}
+
+  function reset(){
+    var box=document.getElementById('sessions');
+    box.innerHTML='';
+    document.getElementById('kvfill').style.width='0%';
+    document.getElementById('kvbar').classList.remove('full');
+    document.getElementById('kvn').textContent='0';
+    document.getElementById('warn').hidden=true;
+    document.getElementById('ttft').textContent='–';
+    document.getElementById('tpot').textContent='–';
+    document.getElementById('thru').textContent='–';
+  }
+
+  goBtn.addEventListener('click',async function(){
+    if(running)return; running=true; goBtn.disabled=true;
+    reset();
+    var prompt=Array.from(document.getElementById('prompt').value||'AI 基础设施');
+    var n=+document.getElementById('batch').value;
+    var kvOn=document.getElementById('kvon').checked;
+    var sessBox=document.getElementById('sessions'), rows=[];
+    for(var r=0;r<n;r++){
+      var s=document.createElement('div');s.className='sess';
+      var h=document.createElement('h4');h.textContent='会话 '+(r+1);s.appendChild(h);
+      var t=document.createElement('div');t.className='toks';s.appendChild(t);
+      sessBox.appendChild(s);
+      var toks=[];
+      prompt.forEach(function(ch){
+        var k=el('span','tok',ch);t.appendChild(k);toks.push(k);
+      });
+      rows.push({toks:toks,box:t});
+    }
+    say.textContent='阶段 1 / Prefill：整个 prompt 一次性并行算完（矩阵大，GPU 核心全开）…';
+    var kvTotal=rows.length*prompt.length;
+    await sleep(300);
+    rows.forEach(function(row){row.toks.forEach(function(k){k.classList.add('lit');});});
+    document.getElementById('ttft').textContent=(90+14*prompt.length)+' ms（模拟）';
+    await sleep(750);
+    say.textContent='阶段 2 / Decode：'+(kvOn?'KV Cache 已就位，每步只算新 token。':'未开 KV Cache——每生成一个 token 都要把之前全部重算一遍，看每步耗时怎么涨！');
+    var warned=false;
+    for(var i=0;i<GEN_N;i++){
+      var per=kvOn?130:(130+i*60);
+      await sleep(per);
+      var tok=vocab[i%vocab.length];
+      rows.forEach(function(row){
+        var k=el('span','tok gen',tok);
+        row.box.appendChild(k);row.toks.push(k);
+      });
+      kvTotal+=rows.length;
+      document.getElementById('kvn').textContent=kvTotal;
+      var fill=document.getElementById('kvfill');
+      fill.style.width=Math.min(100,kvTotal/CAP*100)+'%';
+      if(kvTotal>=CAP){
+        document.getElementById('kvbar').classList.add('full');
+        if(!warned){warned=true;document.getElementById('warn').hidden=false;}
+      }
+      var tpot=Math.round(1000/per);
+      document.getElementById('tpot').textContent=tpot+' ms/token'+(kvOn?'':'（每步变慢：重算历史）');
+      document.getElementById('thru').textContent=Math.round(1000/per*n)+' token/s';
+      // 让最新的生成 token 闪一下
+      rows.forEach(function(row){
+        var last=row.toks[row.toks.length-1];
+        last.classList.add('hot');setTimeout(function(){last.classList.remove('hot');},200);
+      });
+    }
+    say.textContent= kvOn
+      ? '✅ 完成。注意：并发 4 时 KV 涨了 4 倍——真实系统里"显存容量 ÷ 单会话 KV"就约等于并发上限。'
+      : '✅ 完成。没有 KV Cache 时每步耗时线性变长——这就是它存在的意义：拿显存换计算。';
+    running=false; goBtn.disabled=false;
+  });
+})();
+</script>
+</body>
+</html>

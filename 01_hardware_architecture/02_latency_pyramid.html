@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 5 课 · AI 基础设施延迟金字塔 —— 慢在哪一层</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--blue);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  .duo{display:grid;gap:16px;grid-template-columns:1fr}
+  @media(min-width:800px){.duo{grid-template-columns:6fr 5fr}}
+  .pyr{display:flex;flex-direction:column;gap:5px}
+  .layer{display:flex;align-items:center;gap:10px;cursor:pointer;border:1px solid transparent;border-radius:8px;padding:4px 8px}
+  .layer:hover{background:var(--chip)}
+  .layer.sel{border-color:var(--blue);background:color-mix(in srgb,var(--blue) 8%, var(--card))}
+  .layer .bar{height:22px;border-radius:4px;background:var(--blue);opacity:.85;min-width:26px;transition:opacity .15s}
+  .layer .nm{font-size:13px;white-space:nowrap}
+  .layer .lt{font-size:11px;color:var(--muted);margin-left:auto;white-space:nowrap}
+  .detail{border:1px solid var(--border);border-radius:10px;padding:14px 16px;background:var(--chip);min-height:180px}
+  .detail h3{margin:0 0 4px;font-size:16px}
+  .detail .lat{color:var(--blue);font-size:13px;margin-bottom:10px}
+  .detail p{font-size:13px;margin:6px 0}
+  .detail .tag{display:inline-block;font-size:11px;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:1px 8px;color:var(--muted);margin-right:6px}
+  .grid{display:grid;gap:12px;grid-template-columns:1fr}
+  @media(min-width:700px){.grid.c3{grid-template-columns:repeat(3,1fr)}.grid.c2{grid-template-columns:repeat(2,1fr)}}
+  .kcard{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+  .kcard h4{margin:0 0 6px;font-size:14px;color:var(--blue)}
+  .kcard .def{font-size:13px;margin:0 0 8px}
+  .kcard .ana{font-size:12px;color:var(--muted);border-top:1px dashed var(--border);padding-top:6px}
+  .calc{margin-top:10px;padding:12px 14px;border:1px dashed var(--border);border-radius:10px;font-size:13px}
+  .calc input[type=range]{width:100%}
+  .calc b{color:var(--blue)}
+  .quiz{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin:10px 0}
+  .quiz p{margin:0 0 10px;font-size:14px}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:8px 12px}
+  .opt.right{border-color:var(--green);color:var(--green)}
+  .opt.wrong{border-color:var(--red);color:var(--red)}
+  .verdict{font-size:13px;margin-left:8px}
+  .verdict.ok{color:var(--green)} .verdict.bad{color:var(--red)}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .foot ul{margin:6px 0;padding-left:18px}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+  .note{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 第 5 课 / 共 6 课 · 建议用时 8 分钟</div>
+  <h1>AI 基础设施延迟金字塔</h1>
+  <p class="subtitle">排障时所有的"慢"，最终都能落到这张图上的一层：算不动、搬不动，还是送不到。点每一层，看它的数字和它"逼出来"的系统设计。</p>
+
+  <h2>一、点一层，看一层</h2>
+  <div class="stage">
+    <div class="duo">
+      <div class="pyr" id="pyr"></div>
+      <div class="detail" id="detail"></div>
+    </div>
+    <p class="note" style="margin-top:10px">条宽为对数刻度（每往上一层大约慢 3–10 倍）；延迟为量级示意，具体随芯片代际变化。</p>
+  </div>
+
+  <h2>二、自己算：读一次权重要多久</h2>
+  <div class="stage">
+    <div class="calc">
+      从 HBM 显存读取 <input type="range" id="gb" min="1" max="80" value="14" aria-label="读取数据量 GB"> <b id="gbv">14 GB</b>（约一个 7B 模型的 FP16 权重）<br>
+      @ H100 带宽 3.35 TB/s → 需要 <b id="rdt">4.2 ms</b>
+      <p class="note" style="margin:6px 0 0">这就是第 3 课 Decode 每步耗时的物理下限：每个生成 token 都要重读全部权重 → 单请求理论上限约 240 token/s。<b>先撞带宽，不撞算力</b>。</p>
+    </div>
+  </div>
+
+  <h2>三、金字塔逼出来的三个系统设计</h2>
+  <div class="grid c3">
+    <div class="kcard"><h4>① HBM 带宽是推理瓶颈</h4><p class="def">Decode 每步重读权重 → 拼带宽不拼算力。于是有了：Continuous Batching（拼车摊薄读权重的钱）、FP8/INT8 量化（权重变薄）、投机解码（一次前向多赚几个 token）。</p><p class="ana">🧠 对应第 3 课的三件套。</p></div>
+    <div class="kcard"><h4>② PCIe 是窄门</h4><p class="def">CPU 内存 ↔ GPU 显存之间只有几十 GB/s，还要经过 CPU 中转（bounce buffer）。于是有了：GPUDirect P2P / RDMA / Storage——让数据绕开 CPU 直达显存。</p><p class="ana">🧠 类比：DMA 直通 vs 先拷进内核再拷出来。</p></div>
+    <div class="kcard"><h4>③ 跨节点最贵</h4><p class="def">跨机通信比单机内贵一个量级。于是有了：拓扑感知调度（相关 Pod 放同一 NVLink 域）、通信与计算重叠、以及"跨机传 KV 划不划算"的容量账（PD 分离的核心纠结）。</p><p class="ana">🧠 类比：机架内 vs 跨机房的网络资费差异。</p></div>
+  </div>
+
+  <h2>四、小测验</h2>
+  <div class="quiz"><p>Q1 · 推理 Decode 阶段扩容，优先升级什么？</p>
+    <button class="opt" type="button">FLOPS 算力</button>
+    <button class="opt" data-ok="1" type="button">HBM 显存带宽</button>
+    <button class="opt" type="button">磁盘容量</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q2 · 把 KV Cache 从 HBM 卸载到主机内存（CPU DRAM），单次读取大约慢多少？</p>
+    <button class="opt" type="button">差不多，感知不到</button>
+    <button class="opt" data-ok="1" type="button">大约一个数量级（0.5μs → 几 μs）</button>
+    <button class="opt" type="button">慢一千倍</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q3 · 为什么 TP（张量并行）一般不跨机器？</p>
+    <button class="opt" data-ok="1" type="button">它每一层都要 AllReduce，通信量太大，跨机带宽扛不住</button>
+    <button class="opt" type="button">因为跨机器不支持 CUDA</button>
+    <button class="opt" type="button">因为 PP 不需要通信</button>
+    <span class="verdict"></span>
+  </div>
+
+  <div class="foot">
+    <b>延伸阅读（上游硬核版）</b>
+    <ul>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/01_hardware_architecture/performance/ai_latency_pyramid.md">AI 基础设施延迟金字塔（原文）</a>——本课的完整展开</li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/01_hardware_architecture/gpudirect/01_gpudirect_technology.md">GPUDirect RDMA 与 Storage 详解</a>——"绕开 CPU"的三种直通</li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/01_hardware_architecture/nvlink/nvlink_intro.md">NVLink 技术入门</a></li>
+    </ul>
+    <div class="nav"><a href="../04_cloud_native_ai_platform/01_k8s_gpu.html">← 第 4 课：K8s 上跑 GPU</a><a href="../09_inference_system/02_parallelism.html">下一课：并行策略 →</a></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var LAYERS=[
+    {n:'寄存器',ns:0.8,lat:'< 1 ns',cls:'就在运算单元手边',txt:'数据与计算零距离，访问不花时间——代价是容量极小（每个线程独占几十个）。',d:'Kernel 的局部变量放这里。'},
+    {n:'共享内存 / L1',ns:30,lat:'~30 ns',cls:'≈ CPU 的 L1 缓存',txt:'每个 SM 自带的一块可编程小缓存，SM 内所有线程共用。',d:'Kernel 把热数据分块（tile）搬进来反复乘加——"分块"就是为它服务的。'},
+    {n:'L2 缓存',ns:200,lat:'~200 ns',cls:'≈ CPU 的 L2/L3',txt:'所有 SM 共享的片上二级缓存，比共享内存大、慢。',d:'跨 SM 复用的数据（如权重的一部分）会自然落在这里。'},
+    {n:'HBM 显存',ns:600,lat:'~0.5 μs · ~3.35 TB/s（H100）',cls:'≈ 主存，但是 GPU 专属',txt:'模型权重、KV Cache 的常驻地。容量几十 GB，带宽是 CPU 内存一个量级以上。',d:'Decode 每步重读全部权重 → 带宽成瓶颈 → 第 3 课的 batching / 量化 / 投机解码都为它而生。'},
+    {n:'主机内存（经 PCIe）',ns:3000,lat:'~3 μs · Gen5 x16 ≈ 64 GB/s',cls:'≈ 跨 NUMA / 慢速外设',txt:'跨过 PCIe 就要付"过路费"：延迟涨、带宽掉一个量级，默认还要 CPU 中转。',d:'KV Cache 卸载的冷层、模型加载、CPU 预处理都走这里；GPUDirect 的意义就是少过一次路。'},
+    {n:'邻卡显存（NVLink）',ns:4000,lat:'~3–5 μs · ~900 GB/s 单向（Gen5）',cls:'≈ 高速 RDMA 内网',txt:'同一台机内卡对卡的直达高速通道，延迟接近本机访存、带宽远超 PCIe。',d:'TP / EP 并行的物理前提——所以拓扑感知调度要尽量把相关 Pod 放进同一个 NVLink 域。'},
+    {n:'跨节点（IB RDMA）',ns:12000,lat:'~10 μs+ · 400 Gbps/卡',cls:'≈ 跨机房专线',txt:'最贵的一层：延迟再上一个量级，带宽还要和别的流量抢。',d:'多机训练 AllReduce、PD 分离跨机传 KV 都在这层算账；通信与计算重叠是必修课。'}
+  ];
+  var pyr=document.getElementById('pyr'),detail=document.getElementById('detail');
+  var maxLog=Math.log10(12000)+0.3;
+  function select(i){
+    var els=pyr.children;
+    for(var k=0;k<els.length;k++)els[k].classList.toggle('sel',k===i);
+    var L=LAYERS[i];
+    detail.innerHTML='<h3>'+L.n+'</h3><div class="lat">'+L.lat+'</div>'
+      +'<p><span class="tag">类比</span>'+L.cls+'</p><p>'+L.txt+'</p>'
+      +'<p style="color:var(--blue)">→ 由此推出的设计：'+L.d+'</p>';
+  }
+  LAYERS.forEach(function(L,i){
+    var row=document.createElement('div');row.className='layer';row.setAttribute('role','button');row.tabIndex=0;
+    var w=Math.max(4,(Math.log10(L.ns)+0.3)/maxLog*100);
+    row.innerHTML='<div class="bar" style="width:'+w.toFixed(1)+'%"></div><span class="nm">'+L.n+'</span><span class="lt">'+L.lat.split(' ·')[0]+'</span>';
+    row.addEventListener('click',function(){select(i);});
+    row.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();select(i);}});
+    pyr.appendChild(row);
+  });
+  select(3);
+  var gb=document.getElementById('gb');
+  gb.addEventListener('input',function(){
+    document.getElementById('gbv').textContent=gb.value+' GB';
+    var ms=gb.value/3350*1000;
+    document.getElementById('rdt').textContent=(ms>=1000?(ms/1000).toFixed(2)+' s':ms.toFixed(1)+' ms');
+  });
+  document.querySelectorAll('.quiz').forEach(function(q){
+    q.addEventListener('click',function(e){
+      var b=e.target.closest('button.opt');
+      if(!b||q.dataset.done==='1')return;
+      var ok=b.dataset.ok==='1';
+      q.querySelectorAll('.opt').forEach(function(x){x.disabled=true;if(x.dataset.ok==='1')x.classList.add('right');});
+      if(!ok)b.classList.add('wrong');
+      var v=q.querySelector('.verdict');
+      v.textContent=ok?'✓ 答对了':'✗ 正确答案已标绿';
+      v.className='verdict '+(ok?'ok':'bad');
+      q.dataset.done='1';
+    });
+  });
+})();
+</script>
+</body>
+</html>

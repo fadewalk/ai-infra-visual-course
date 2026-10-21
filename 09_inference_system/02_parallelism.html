@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 6 课 · 并行策略 —— 一个 70B 模型怎么塞进 8 张卡</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--purple);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  .ctl{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  button{font:inherit;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--fg);border-radius:8px;padding:6px 14px}
+  button:hover{border-color:var(--purple)}
+  button.seg-on{background:var(--purple);border-color:var(--purple);color:#fff}
+  .prob{display:flex;gap:14px;flex-wrap:wrap;align-items:center;background:var(--chip);border-radius:10px;padding:12px 16px;margin-bottom:14px}
+  .prob b{font-size:15px}
+  .panel{border:1px solid var(--border);border-radius:10px;padding:14px;min-height:170px}
+  .panel h3{margin:0 0 8px;font-size:15px}
+  .say{margin-top:12px;padding:10px 14px;border-radius:8px;background:var(--chip);font-size:14px}
+  .cards8{display:grid;grid-template-columns:repeat(8,1fr);gap:5px}
+  .g{aspect-ratio:.8;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted);background:var(--chip);border:1px solid var(--border);text-align:center;padding:2px}
+  .g.full{background:color-mix(in srgb,var(--red) 14%, var(--card));border-color:var(--red);color:var(--red)}
+  .g.tp{background:color-mix(in srgb,var(--blue) 16%, var(--card));border-color:var(--blue);color:var(--blue)}
+  .g.pp{background:color-mix(in srgb,var(--purple) 16%, var(--card));border-color:var(--purple);color:var(--purple)}
+  .slices{display:flex;height:44px;border-radius:8px;overflow:hidden;margin:8px 0}
+  .slices div{flex:1;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff}
+  .ar{font-size:12px;color:var(--orange);margin-top:6px}
+  .pipe{display:grid;grid-template-columns:repeat(8,1fr);gap:3px;margin:8px 0}
+  .cell{aspect-ratio:1.4;border-radius:4px;background:var(--chip);border:1px solid var(--border)}
+  .cell.on{background:color-mix(in srgb,var(--purple) 45%, transparent);border-color:var(--purple)}
+  .cell.bub{background:repeating-linear-gradient(45deg,var(--chip),var(--chip) 4px,var(--card) 4px,var(--card) 8px)}
+  .legend{font-size:11px;color:var(--muted);display:flex;gap:14px;flex-wrap:wrap}
+  .legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:4px}
+  .experts{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+  .exp{border:1px solid var(--green);color:var(--green);border-radius:8px;padding:6px 12px;font-size:12px;background:color-mix(in srgb,var(--green) 8%, var(--card))}
+  .calc{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-bottom:12px;font-size:14px}
+  select{font:inherit;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--fg)}
+  .res{padding:12px 16px;border-radius:10px;background:var(--chip);font-size:14px;min-height:24px}
+  .res.ok{color:var(--green)} .res.bad{color:var(--red)} .res.warn{color:var(--orange)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{color:var(--muted);font-weight:500;font-size:12px}
+  .quiz{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin:10px 0}
+  .quiz p{margin:0 0 10px;font-size:14px}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:8px 12px}
+  .opt.right{border-color:var(--green);color:var(--green)}
+  .opt.wrong{border-color:var(--red);color:var(--red)}
+  .verdict{font-size:13px;margin-left:8px}
+  .verdict.ok{color:var(--green)} .verdict.bad{color:var(--red)}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .foot ul{margin:6px 0;padding-left:18px}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 第 6 课 / 共 6 课 · 建议用时 10 分钟</div>
+  <h1>并行策略：一个 70B 模型怎么塞进 8 张卡</h1>
+  <p class="subtitle">第 2 课讲过：模型放不下单卡，才有了五花八门的"切法"。切数据、切层内、切层间、切专家——四种切法，四种通信代价。</p>
+
+  <h2>一、四种切法，挨个看</h2>
+  <div class="stage">
+    <div class="prob">问题设定：70B 模型 FP16 权重 ≈ <b>140 GB</b>，一张 H100 只有 <b>80 GB</b> 显存，手上有 8 张卡。</div>
+    <div class="ctl">
+      <button id="p-dp" type="button">DP 数据并行</button>
+      <button id="p-tp" type="button">TP 张量并行</button>
+      <button id="p-pp" type="button">PP 流水线并行</button>
+      <button id="p-ep" type="button">EP 专家并行</button>
+    </div>
+    <div class="panel" id="panel"></div>
+  </div>
+
+  <h2>二、算一算：你的模型放得下吗</h2>
+  <div class="stage">
+    <div class="calc">
+      模型 <select id="msz" aria-label="模型大小"><option value="14">7B（FP16 权重 14GB）</option><option value="140" selected>70B（140GB）</option><option value="810">405B（810GB）</option></select>
+      卡数 <select id="ngpu" aria-label="GPU 数量"><option value="1">1 × 80GB</option><option value="2">2 × 80GB</option><option value="4">4 × 80GB</option><option value="8" selected>8 × 80GB</option></select>
+    </div>
+    <div class="res" id="calcres"></div>
+    <p class="note" style="margin-top:8px">注意：这只算了权重。KV Cache 和激活值还要再吃 20–30% 显存（第 3 课），实际规划要留余量。更细的账见上游 <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/09_inference_system/memory_calc/memory_analysis.md">显存占用分析</a>。</p>
+  </div>
+
+  <h2>三、四种策略对照表</h2>
+  <div class="stage" style="padding:0;overflow:auto">
+    <table>
+      <thead><tr><th>策略</th><th>切什么</th><th>通信模式</th><th>通信量</th><th>典型用法</th></tr></thead>
+      <tbody>
+        <tr><td><b>DP</b> 数据并行</td><td>不切模型，切数据</td><td>AllReduce（每步同步一次梯度）</td><td>大</td><td>模型单卡放得下时，复制多份提吞吐</td></tr>
+        <tr><td><b>TP</b> 张量并行</td><td>每一层的权重矩阵切成 N 份</td><td>AllReduce / AllGather（每层多次）</td><td>最大</td><td>单机 NVLink 域内（8 卡内）</td></tr>
+        <tr><td><b>PP</b> 流水线并行</td><td>按层切成 N 段</td><td>点对点 Send/Recv（仅相邻段）</td><td>最小</td><td>跨机；生产常 TP(机内)+PP(机间) 混合</td></tr>
+        <tr><td><b>EP</b> 专家并行</td><td>MoE 的专家分布到不同卡</td><td>All-to-All（token 按路由分发）</td><td>中</td><td>MoE 模型（DeepSeek / Qwen-MoE 等）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>四、小测验</h2>
+  <div class="quiz"><p>Q1 · 8 张 80GB 卡跑 70B（FP16 权重 140GB），只用 DP 行不行？</p>
+    <button class="opt" type="button">行，8 张卡一起跑更快</button>
+    <button class="opt" data-ok="1" type="button">不行——DP 是每张卡放完整模型，140GB > 80GB 根本装不下</button>
+    <button class="opt" type="button">行，只要 batch 调小一点</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q2 · TP（张量并行）的主要代价是什么？</p>
+    <button class="opt" type="button">显存占用最大</button>
+    <button class="opt" data-ok="1" type="button">每一层都要 AllReduce，通信最频繁，必须有 NVLink 这类高带宽互联</button>
+    <button class="opt" type="button">只能用于训练不能用于推理</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q3 · 为什么跨机器扩展时常用 PP 而不是 TP？</p>
+    <button class="opt" type="button">PP 精度更高</button>
+    <button class="opt" type="button">PP 不需要 GPU</button>
+    <button class="opt" data-ok="1" type="button">PP 只在相邻段之间点对点传激活，通信量小，扛得住较慢的跨机网络</button>
+    <span class="verdict"></span>
+  </div>
+
+  <div class="foot">
+    <b>延伸阅读</b>
+    <ul>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/09_inference_system/parallelism/parallelism_strategies.md">大模型推理并行策略（原文）</a>——DP/TP/PP/EP/SP 统一拆解</li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/09_inference_system/parallelism/parallelism_visual.html">原版交互可视化（上游）</a>——更细粒度的动态演示</li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/09_inference_system/parallelism/expert_parallelism_deep_dive.md">专家并行（EP）深度解析</a>——MoE 场景的 All-to-All 与负载均衡</li>
+    </ul>
+    <div class="nav"><a href="../01_hardware_architecture/02_latency_pyramid.html">← 第 5 课：延迟金字塔</a><a href="../index.html">完成全部 6 课 → 回课程目录</a></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var P={
+    dp:{h:'DP · 数据并行',html:'<div class="cards8" id="dpc"></div><div class="ar">✗ 每卡要放完整 140GB —— 80GB 根本装不下</div>',
+      say:'DP 的思路是"每张卡一份完整模型、各吃不同的数据"，每步用 AllReduce 同步梯度（第 2 课的环形动画）。它解决的是<b>吞吐</b>，不解决<b>放不下</b>——模型单卡装得下时才轮到它出场。'},
+    tp:{h:'TP · 张量并行（层内切）',html:'<div class="slices" id="tps"></div><div class="cards8" id="tpc"></div><div class="ar">⚠ 每一层的计算都要 AllReduce 拼回结果——一层 2 次起，80 层就是上百次集合通信</div>',
+      say:'把<b>每一层的权重矩阵</b>竖着切成 8 份，每卡 140/8 ≈ 17.5GB，放得下。代价是通信密度极高：每层前向/反向都要集合通信。所以 TP 只在 NVLink 域内玩（一般单机 8 卡），跨机跑不动。'},
+    pp:{h:'PP · 流水线并行（层间切）',html:'<div class="cards8" id="ppc"></div><div class="pipe" id="pipe"></div><div class="legend"><span><i style="background:color-mix(in srgb,var(--purple) 45%,transparent)"></i>有活干</span><span><i class="cell bub" style="width:12px;height:12px"></i>空泡（干等上游）</span></div>',
+      say:'把 80 层<b>横着切成 8 段</b>，卡 1 管第 1–10 层、卡 2 管第 11–20 层……像流水线一样传"半成品"（激活值）。卡间只在相邻段点对点通信，<b>量最小</b>，所以跨机用它。代价是<b>空泡</b>：流水线没填满时，下游只能干等——用多个 micro-batch 填管道来缓解。'},
+    ep:{h:'EP · 专家并行（MoE 专用）',html:'<div class="experts"><span class="exp">专家 1 → 卡 1</span><span class="exp">专家 2 → 卡 2</span><span class="exp">专家 3 → 卡 3</span><span class="exp">专家 4 → 卡 4</span><span class="exp">…专家 N → 卡 N</span></div><div class="ar">每个 token 按路由表被送到持有对应专家的卡 → All-to-All 通信</div>',
+      say:'MoE 模型（DeepSeek、Qwen-MoE 等）的"专家"天然可拆：把专家分布到不同卡，每个 token 按路由器分配送到对应卡。通信模式是 All-to-All，负载不均时要靠 EPLB 这类均衡器（上游有专文）。'}
+  };
+  var panel=document.getElementById('panel');
+  function show(k){
+    ['dp','tp','pp','ep'].forEach(function(x){document.getElementById('p-'+x).className=(x===k)?'seg-on':'';});
+    panel.innerHTML='<h3>'+P[k].h+'</h3>'+P[k].html+'<div class="say">'+P[k].say+'</div>';
+    if(k==='dp'){
+      var c=document.getElementById('dpc');
+      for(var i=0;i<8;i++){var d=document.createElement('div');d.className='g full';d.textContent='140GB ✗';c.appendChild(d);}
+    }
+    if(k==='tp'){
+      var s=document.getElementById('tps');
+      for(var j=0;j<8;j++){
+        var d=document.createElement('div');
+        d.style.background='hsl('+(220+j*6)+',70%,'+(55-j*2)+'%)';
+        d.textContent='1/8';
+        s.appendChild(d);
+      }
+      var c=document.getElementById('tpc');
+      for(var m=0;m<8;m++){var e=document.createElement('div');e.className='g tp';e.textContent='17.5GB ✓';c.appendChild(e);}
+    }
+    if(k==='pp'){
+      var c=document.getElementById('ppc');
+      for(var n=0;n<8;n++){var f=document.createElement('div');f.className='g pp';f.textContent='层 '+(n*10+1)+'–'+((n+1)*10);c.appendChild(f);}
+      var pipe=document.getElementById('pipe');
+      for(var r=0;r<4;r++){
+        for(var col=0;col<8;col++){
+          var cell=document.createElement('div');
+          if(col<=r+1)cell.className='cell on'; else if(col>r+1&&col<=7&&r<2)cell.className='cell bub';
+          pipe.appendChild(cell);
+        }
+      }
+    }
+  }
+  ['dp','tp','pp','ep'].forEach(function(k){
+    document.getElementById('p-'+k).addEventListener('click',function(){show(k);});
+  });
+  show('tp');
+
+  var msz=document.getElementById('msz'),ngpu=document.getElementById('ngpu'),res=document.getElementById('calcres');
+  function calc(){
+    var total=+msz.value, n=+ngpu.value, per=total/n;
+    var name=msz.options[msz.selectedIndex].text.split('（')[0];
+    if(per>80){
+      res.className='res bad';
+      res.innerHTML='✗ 放不下：每卡需要 '+per.toFixed(0)+'GB > 80GB。用 DP/复制是不可能的——必须 <b>TP / PP 把权重切开</b>（或量化降精度）。'+(n<8?'（卡数加到 8 试试）':'考虑 FP8 量化后总权重减半。');
+    }else if(total>80){
+      res.className='res ok';
+      res.innerHTML='✓ 切开放得下：每卡分摊 '+per.toFixed(0)+'GB 权重，剩余显存留给 KV Cache 和激活值。单机 8 卡内选 <b>TP</b>；跨机用 <b>PP</b>（或 TP 机内 + PP 机间混合）。'+name+' 即可部署。';
+    }else{
+      res.className='res ok';
+      res.innerHTML='✓ 单卡就放得下（每卡 '+per.toFixed(0)+'GB ≤ 80GB）——不需要切模型，用 <b>DP</b> 复制多份提吞吐即可；并发上去后再关心 KV Cache 的显存账（第 3 课）。';
+    }
+  }
+  msz.addEventListener('change',calc);ngpu.addEventListener('change',calc);calc();
+
+  document.querySelectorAll('.quiz').forEach(function(q){
+    q.addEventListener('click',function(e){
+      var b=e.target.closest('button.opt');
+      if(!b||q.dataset.done==='1')return;
+      var ok=b.dataset.ok==='1';
+      q.querySelectorAll('.opt').forEach(function(x){x.disabled=true;if(x.dataset.ok==='1')x.classList.add('right');});
+      if(!ok)b.classList.add('wrong');
+      var v=q.querySelector('.verdict');
+      v.textContent=ok?'✓ 答对了':'✗ 正确答案已标绿';
+      v.className='verdict '+(ok?'ok':'bad');
+      q.dataset.done='1';
+    });
+  });
+})();
+</script>
+</body>
+</html>

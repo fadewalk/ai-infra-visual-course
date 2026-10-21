@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>加餐 · 单机 GPU 运维速查 —— 从 Linux 主机运维平移过来</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--green);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{color:var(--muted);font-weight:500;font-size:12px}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;background:var(--chip);border:1px solid var(--border);border-radius:4px;padding:1px 6px}
+  pre{background:var(--chip);border:1px solid var(--border);border-radius:8px;padding:14px;font-size:13px;overflow:auto}
+  pre code{background:none;border:none;padding:0;color:var(--fg)}
+  .pit{background:var(--card);border:1px solid var(--border);border-left:4px solid var(--orange);border-radius:10px;padding:12px 16px;margin:10px 0}
+  .pit b{color:var(--orange)}
+  .grid{display:grid;gap:12px;grid-template-columns:1fr}
+  @media(min-width:700px){.grid.c2{grid-template-columns:repeat(2,1fr)}}
+  .nav{display:flex;justify-content:space-between;margin-top:24px;font-size:13px}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .foot ul{margin:6px 0;padding-left:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 加餐课 · 建议用时 10 分钟 · 完成入门六课后阅读</div>
+  <h1>单机 GPU 运维速查</h1>
+  <p class="subtitle">把你在 Linux 主机运维上的肌肉记忆平移到 GPU 上——命令对照、三个必踩的坑、一套可照抄的健康检查。</p>
+
+  <h2>一、命令对照表：你会的 × GPU 的</h2>
+  <div class="stage" style="padding:0;overflow:auto">
+    <table>
+      <thead><tr><th>你在 Linux 上习惯做的</th><th>GPU 世界的等价命令</th><th>备注</th></tr></thead>
+      <tbody>
+        <tr><td><code>lscpu</code> 看核数</td><td><code>nvidia-smi -q</code> 看卡参数（SM 数、显存、驱动版本）</td><td>首次接手一台 GPU 机器先跑这个</td></tr>
+        <tr><td><code>top</code> / <code>htop</code></td><td><code>nvtop</code>（交互式 TUI，推荐）</td><td>能看到每进程显存和 SM 占用</td></tr>
+        <tr><td><code>systemctl status</code></td><td><code>nvidia-smi</code> 本身可用 = 驱动正常的最快信号</td><td><code>NVIDIA-SMI has failed</code> → 直接进驱动排障流程</td></tr>
+        <tr><td><code>dmesg</code> 看硬件报错</td><td><code>dmesg | grep -i xid</code></td><td><b>XID 是 GPU 的内核错误码</b>，排障第一线索</td></tr>
+        <tr><td>Prometheus node-exporter</td><td>DCGM-Exporter</td><td>集群级 GPU 监控标准方案</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>二、三个最容易踩的坑</h2>
+  <div class="pit"><b>坑 1 · GPU-Util ≠ 算力利用率。</b> nvidia-smi 的 GPU-Util 只说明"这段时间有 Kernel 在执行"，可能 100 个 SM 只有 1 个在干活。判断真忙假忙要用 DCGM 的 SM Active / DRAM Active，或 Nsight 采样。</div>
+  <div class="pit"><b>坑 2 · 显存占用高 ≠ 有问题。</b> 模型权重、KV Cache 本来就要常驻显存（第 1/3 课）；先分清"业务驻留"和"泄漏残留"再动手。</div>
+  <div class="pit"><b>坑 3 · 推理服务突然变慢，往往不是卡坏了。</b> 优先查：同卡进程挤占、PCIe/NVLink 带宽打满、温度降频（<code>nvidia-smi -q | grep -i "gpu current temp"</code>）。</div>
+
+  <h2>三、健康检查最小集（照抄可用）</h2>
+  <div class="stage">
+<pre><code># 1. 卡都在吗、驱动对吗
+nvidia-smi
+# 2. 有没有内核级错误
+dmesg -T | grep -i xid
+# 3. 显存/利用率快照（每 2 秒刷新）
+watch -n 2 nvidia-smi
+# 4. 谁在用这张卡（Linux）
+fuser -v /dev/nvidia*
+# 5. 温度与功耗墙（降频排查）
+nvidia-smi -q -d TEMPERATURE,POWER</code></pre>
+    <div class="grid c2" style="margin-top:12px">
+      <div><b style="font-size:14px">常见 XID 速记</b><br><span style="font-size:13px">XID 13（非法访存，多为程序 bug）· XID 31（显存越界）· XID 48（双 Bit ECC）· XID 63/64（ECC 页退役）· XID 79（掉总线，多为硬件）· XID 94/95（保留页上限）。完整表见延伸阅读。</span></div>
+      <div><b style="font-size:14px">集群化之后</b><br><span style="font-size:13px">单机会看了，下一步是 DCGM-Exporter + Prometheus + Grafana 的集群视图，以及健康检查自动化（L1/L2/L3 三层检查，见延伸阅读）。</span></div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <b>延伸阅读（上游硬核版）</b>
+    <ul>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/03_ai_cluster_ops/01_gpu_ops/03_nvidia_smi_guide.md">nvidia-smi 场景速查</a> · <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/03_ai_cluster_ops/01_gpu_ops/04_nvtop_guide.md">nvtop 指南</a></li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/03_ai_cluster_ops/01_gpu_ops/02_gpu_utilization_myth.md">GPU 利用率是一个误导性指标</a></li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/03_ai_cluster_ops/01_gpu_ops/05_dcgm_monitoring.md">DCGM 监控实操</a> · <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/03_ai_cluster_ops/01_gpu_ops/06_gpu_health_check.md">GPU 集群健康检查</a> · <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/03_ai_cluster_ops/01_gpu_ops/08_gpu_driver_troubleshooting.md">驱动故障速查</a></li>
+    </ul>
+    <div class="nav"><a href="../index.html">← 返回课程目录</a><a href="../04_cloud_native_ai_platform/01_k8s_gpu.html">第 4 课：K8s 上跑 GPU →</a></div>
+  </div>
+</div>
+</body>
+</html>

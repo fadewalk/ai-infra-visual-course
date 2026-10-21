@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 2 课 · 训练是怎么回事 —— 一个不断"对答案"的循环</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--green);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  .ctl{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+  button{font:inherit;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--fg);border-radius:8px;padding:6px 14px}
+  button:hover{border-color:var(--blue)}
+  button.primary{background:var(--green);border-color:var(--green);color:#fff}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .flow{display:flex;flex-wrap:wrap;gap:6px;align-items:stretch}
+  .fnode{flex:1;min-width:120px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;background:var(--chip)}
+  .fnode b{display:block;font-size:13px}
+  .fnode.active{border-color:var(--green);background:color-mix(in srgb,var(--green) 14%, var(--card));box-shadow:0 0 0 2px color-mix(in srgb,var(--green) 30%, transparent)}
+  .fnode .d{color:var(--muted);font-size:12px}
+  .arrow{align-self:center;color:var(--muted);font-size:16px}
+  .say{margin-top:12px;padding:10px 14px;border-radius:8px;background:var(--chip);font-size:14px;min-height:24px}
+  .metrics{display:flex;gap:18px;flex-wrap:wrap;margin-top:10px;font-size:13px;color:var(--muted)}
+  .metrics b{color:var(--fg);font-size:16px}
+  .duo{display:grid;gap:16px;grid-template-columns:1fr}
+  @media(min-width:760px){.duo{grid-template-columns:1fr 1fr}}
+  svg text{fill:var(--fg);font-size:12px}
+  .lr{display:flex;align-items:center;gap:8px;font-size:13px;margin:8px 0}
+  .lr input[type=range]{flex:1}
+  .msg{font-size:13px;margin-top:6px;min-height:20px}
+  .msg.ok{color:var(--green)} .msg.warn{color:var(--orange)} .msg.bad{color:var(--red)}
+  .ringwrap{text-align:center}
+  .ringbtns{margin-top:10px}
+  .membar{display:flex;height:34px;border-radius:8px;overflow:hidden;font-size:11px;color:#fff;margin:10px 0 4px}
+  .membar div{display:flex;align-items:center;justify-content:center;white-space:nowrap;overflow:hidden}
+  .m1{background:#2563eb}.m2{background:#7c3aed}.m3{background:#d97706}.m4{background:#059669}
+  .memcap{font-size:12px;color:var(--muted)}
+  .kcard{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+  .kcard h4{margin:0 0 6px;font-size:14px;color:var(--green)}
+  .kcard .def{font-size:13px;margin:0 0 8px}
+  .kcard .ana{font-size:12px;color:var(--muted);border-top:1px dashed var(--border);padding-top:6px}
+  .grid{display:grid;gap:12px;grid-template-columns:1fr}
+  @media(min-width:700px){.grid.c3{grid-template-columns:repeat(3,1fr)}.grid.c2{grid-template-columns:repeat(2,1fr)}}
+  .quiz{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin:10px 0}
+  .quiz p{margin:0 0 10px;font-size:14px}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:8px 12px}
+  .opt.right{border-color:var(--green);color:var(--green)}
+  .opt.wrong{border-color:var(--red);color:var(--red)}
+  .verdict{font-size:13px;margin-left:8px}
+  .verdict.ok{color:var(--green)} .verdict.bad{color:var(--red)}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .foot ul{margin:6px 0;padding-left:18px}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 第 2 课 / 共 6 课 · 建议用时 12 分钟</div>
+  <h1>训练是怎么回事？</h1>
+  <p class="subtitle">训练 = 把同一套"预测 → 对答案 → 找差距 → 改参数"的循环，跑几十万遍。跑这个循环的是几千张 GPU，一起跑。</p>
+
+  <h2>一、训练循环：点一下，走一步</h2>
+  <div class="stage">
+    <div class="flow" id="flow">
+      <div class="fnode" id="f0"><b>① 取一批数据</b><span class="d">从数据集拿一小批（batch）样本</span></div>
+      <div class="arrow">→</div>
+      <div class="fnode" id="f1"><b>② 前向计算</b><span class="d">数据过一遍网络，得到预测值</span></div>
+      <div class="arrow">→</div>
+      <div class="fnode" id="f2"><b>③ 算损失</b><span class="d">预测 vs 标准答案，差多少？</span></div>
+      <div class="arrow">→</div>
+      <div class="fnode" id="f3"><b>④ 反向传播</b><span class="d">逐层算出"每个参数该背多少锅"（梯度）</span></div>
+      <div class="arrow">→</div>
+      <div class="fnode" id="f4"><b>⑤ 优化器更新</b><span class="d">按梯度微微修正参数，进入下一轮</span></div>
+    </div>
+    <div class="ctl" style="margin-top:12px">
+      <button id="step" class="primary" type="button">训练一步</button>
+      <button id="auto" type="button">自动跑 20 步</button>
+    </div>
+    <div class="say" id="say">点「训练一步」，看数据怎么在 5 个阶段里流动。每完成一轮（一个 step），loss 都会往下走一点。</div>
+    <div class="metrics">
+      <span>已完成 step：<b id="stepn">0</b></span>
+      <span>当前 loss：<b id="lossv">2.40</b></span>
+    </div>
+    <svg id="losschart" viewBox="0 0 560 120" width="100%" style="margin-top:8px" role="img" aria-label="loss 曲线">
+      <line x1="30" y1="100" x2="550" y2="100" stroke="var(--border)"/>
+      <line x1="30" y1="10" x2="30" y2="100" stroke="var(--border)"/>
+      <text x="2" y="18">loss</text><text x="500" y="116">step →</text>
+      <polyline id="lossline" points="" fill="none" stroke="var(--green)" stroke-width="2"/>
+    </svg>
+  </div>
+
+  <h2>二、梯度下降 = 蒙眼下山，学习率 = 步子大小</h2>
+  <div class="stage">
+    <div class="duo">
+      <div>
+        <svg id="gd" viewBox="0 0 340 190" width="100%" role="img" aria-label="梯度下降示意">
+          <path id="gdc" fill="none" stroke="var(--border)" stroke-width="2"/>
+          <line x1="10" y1="160" x2="330" y2="160" stroke="var(--border)"/>
+          <circle id="gdnow" r="6" fill="var(--orange)"/>
+          <g id="gdtrail"></g>
+          <text x="150" y="182">参数 x →</text><text x="8" y="14">loss</text>
+          <text x="255" y="120" fill="var(--muted)" font-size="11">谷底 = 最优参数</text>
+        </svg>
+      </div>
+      <div>
+        <p style="font-size:13px;margin-top:0">球的当前位置就是"当前参数"，<b>梯度</b>告诉你下坡方向。每点一次「走一步」，参数就往低处挪一点。</p>
+        <div class="lr">学习率 <input type="range" id="lr" min="0.05" max="2.3" step="0.05" value="0.3"><span id="lrv" class="t">0.30</span></div>
+        <button id="gdstep" class="primary" type="button">走一步</button>
+        <button id="gdreset" type="button">重置</button>
+        <div class="msg ok" id="gdmsg">试试 0.05（太保守）、0.9（刚好）、2.1（要出事）三档。</div>
+      </div>
+    </div>
+  </div>
+
+  <h2>三、多卡怎么一起训：数据并行 + AllReduce</h2>
+  <div class="stage ringwrap">
+    <p style="font-size:14px;margin-top:0">最常用的并行方式叫<b>数据并行（DDP）</b>：每张卡持有<b>完整模型</b>，各自吃<b>不同的数据</b>算梯度——但"各改各的参数"会让模型分叉，所以每步之后必须把 8 张卡的梯度<b>平均</b>，这个集合通信就是 <b>AllReduce</b>（由 NCCL 在 NVLink / IB 上执行）。</p>
+    <svg id="ring" viewBox="0 0 360 260" width="300" role="img" aria-label="环形 AllReduce">
+      <g id="edges"></g><g id="nodes"></g>
+    </svg>
+    <div class="ringbtns">
+      <button id="ringgo" class="primary" type="button">同步梯度（环形 AllReduce）</button>
+    </div>
+    <div class="say" id="ringsay">8 张卡颜色深浅 = 各自算出的梯度。点按钮，看梯度怎么绕环流动、最后所有人拿到同一个平均值。</div>
+  </div>
+
+  <h2>四、显存去哪了：7B 模型为什么单卡放不下训练</h2>
+  <div class="stage">
+    <div class="membar">
+      <div class="m1" style="width:16%">权重 14GB</div>
+      <div class="m2" style="width:16%">梯度 14GB</div>
+      <div class="m3" style="width:50%">优化器状态 56GB</div>
+      <div class="m4" style="width:18%">激活值（随 batch 涨）</div>
+    </div>
+    <p class="memcap">混合精度 + Adam 优化器的常用估算口径：每参数约 16 字节（fp16 权重 2 + fp16 梯度 2 + fp32 主权重 4 + Adam 动量/方差 8）→ 7B ≈ 112GB，还没算激活值。<b>一张 80GB 的 H100 根本放不下</b> —— 这就是为什么要么多卡分摊（ZeRO / 流水线 / 张量并行），要么用 LoRA 只训一小部分参数。</p>
+    <div class="grid c2" style="margin-top:10px">
+      <div class="kcard"><h4>batch / step / epoch</h4><p class="def">batch = 一步喂多少样本；step = 参数更新一次；epoch = 全部数据过完一遍。</p><p class="ana">🧠 类比：按批处理日志 vs 全量重放。</p></div>
+      <div class="kcard"><h4>混合精度 + Checkpoint</h4><p class="def">算力用 fp16/bf16 提速，关键状态用 fp32 保精度；训练每隔一段时间把参数存盘（checkpoint），崩了能续。</p><p class="ana">🧠 类比：WAL + 定期快照。训练作业崩了恢复到最近 checkpoint，是 SRE 参与救援的高频场景。</p></div>
+    </div>
+  </div>
+
+  <h2>五、小测验</h2>
+  <div class="quiz"><p>Q1 · 一个训练 step 的正确顺序是？</p>
+    <button class="opt" type="button">反向 → 前向 → 算损失 → 更新</button>
+    <button class="opt" data-ok="1" type="button">前向 → 算损失 → 反向 → 优化器更新</button>
+    <button class="opt" type="button">取数据 → 更新 → 前向 → 反向</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q2 · 数据并行（DDP）里，每张 GPU 持有什么？</p>
+    <button class="opt" type="button">模型的 1/8，共享同一份数据</button>
+    <button class="opt" data-ok="1" type="button">完整模型 + 各自不同的数据分片，每步同步梯度</button>
+    <button class="opt" type="button">只有优化器状态</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q3 · 学习率设置过大，最可能出现什么？</p>
+    <button class="opt" type="button">收敛变慢但更稳</button>
+    <button class="opt" data-ok="1" type="button">loss 来回震荡甚至发散</button>
+    <button class="opt" type="button">没有任何影响</button>
+    <span class="verdict"></span>
+  </div>
+
+  <div class="foot">
+    <b>延伸阅读（本仓库硬核版）</b>
+    <ul>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/05_model_training_and_fine_tuning/sft_example/README.md">SFT 微调实战与指南</a>——亲手微调一次就全懂了</li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/03_ai_cluster_ops/03_nccl/01_nccl_theory.md">NCCL 教程</a>——AllReduce 背后的通信库</li>
+      <li><a href="../09_inference_system/02_parallelism.html">并行策略小白版（第 6 课）</a>——模型大到单卡装不下怎么切；进阶见上游[原版交互可视化](https://github.com/ForceInjection/AI-fundamentals/blob/main/09_inference_system/parallelism/parallelism_visual.html)</li>
+    </ul>
+    <div class="nav"><a href="../01_hardware_architecture/01_gpu_vs_cpu.html">← 第 1 课：GPU 是什么</a><a href="../09_inference_system/01_inference_pipeline.html">下一课：推理是怎么回事 →</a></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  /* ---------- 训练循环 ---------- */
+  var texts=[
+    '① 取一批数据：batch 是"一次喂给模型的样本数"。批次越大，单步越稳，但吃显存。',
+    '② 前向计算：数据层层穿过网络（全是矩阵乘法——第 1 课的 GPU 主场），得到预测输出。',
+    '③ 算损失：用损失函数量化"预测和标准答案差多远"，得到一个数：loss。',
+    '④ 反向传播：从 loss 出发反向逐层求导，算出每个参数对误差的"责任"，即梯度。',
+    '⑤ 优化器更新：Adam 等优化器按梯度微调每个参数（步子大小=学习率）。参数变好一点，进入下一轮。'
+  ];
+  var stepn=0, phase=-1, loss=2.4, pts=[2.4];
+  var fnodes=[0,1,2,3,4].map(function(i){return document.getElementById('f'+i);});
+  function drawLoss(){
+    var P='';
+    var n=pts.length, maxN=24;
+    pts.forEach(function(v,i){
+      var x=30+ (i/(maxN-1))*520;
+      var y=100 - Math.min(1, v/2.5)*88;
+      P+=x.toFixed(1)+','+y.toFixed(1)+' ';
+    });
+    document.getElementById('lossline').setAttribute('points',P.trim());
+  }
+  function clearActive(){fnodes.forEach(function(f){f.classList.remove('active');});}
+  function doStep(){
+    phase=(phase+1)%5;
+    clearActive();
+    fnodes[phase].classList.add('active');
+    document.getElementById('say').textContent=texts[phase];
+    if(phase===4){
+      stepn++;
+      loss=Math.max(0.08, loss*0.84 + (Math.random()*0.1-0.05));
+      if(pts.length>=24)pts.shift();
+      pts.push(loss);
+      document.getElementById('stepn').textContent=stepn;
+      document.getElementById('lossv').textContent=loss.toFixed(2);
+      drawLoss();
+    }
+  }
+  document.getElementById('step').addEventListener('click',doStep);
+  var autoTimer=null;
+  document.getElementById('auto').addEventListener('click',function(){
+    if(autoTimer){clearInterval(autoTimer);autoTimer=null;this.textContent='自动跑 20 步';return;}
+    this.textContent='停止';
+    var n=0;
+    autoTimer=setInterval(function(){
+      doStep(); n++;
+      if(n>=20){clearInterval(autoTimer);autoTimer=null;
+        document.getElementById('auto').textContent='自动跑 20 步';}
+    },320);
+  });
+  drawLoss();
+
+  /* ---------- 梯度下降 ---------- */
+  var gx=0.6, trail=[];
+  var gW=340,gH=170,xmin=-0.5,xmax=10.5,fmax=26;
+  function f(x){return (x-5)*(x-5)*0.5;}
+  function X(v){return (v-xmin)/(xmax-xmin)*(gW-30)+15;}
+  function Y(v){return gH-20-(v/fmax)*(gH-45);}
+  (function drawCurve(){
+    var d='';
+    for(var x=xmin;x<=xmax;x+=0.15){d+=(d?'L':'M')+X(x).toFixed(1)+' '+Y(f(x)).toFixed(1)+' ';}
+    document.getElementById('gdc').setAttribute('d',d.trim());
+  })();
+  function gdDraw(){
+    document.getElementById('gdnow').setAttribute('cx',X(gx));
+    document.getElementById('gdnow').setAttribute('cy',Y(f(gx)));
+    var g=document.getElementById('gdtrail'); g.innerHTML='';
+    trail.slice(-8).forEach(function(v){
+      var c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+      c.setAttribute('cx',X(v));c.setAttribute('cy',Y(f(v)));c.setAttribute('r','3');
+      c.setAttribute('fill','var(--orange)');c.setAttribute('opacity','0.35');
+      g.appendChild(c);
+    });
+  }
+  function gdMsg(){
+    var m=document.getElementById('gdmsg'), d=Math.abs(gx-5);
+    if(d>5.2){m.className='msg bad';m.textContent='💥 步子太大，直接越过了谷底，loss 越走越高——发散了！这就是学习率过大的下场。';}
+    else if(d<0.35){m.className='msg ok';m.textContent='✅ 收敛！参数停在谷底附近。lr 合适时几十步就能到。';}
+    else if(+document.getElementById('lr').value<0.15&&d>1){m.className='msg warn';m.textContent='🐢 步子太小，挪得极慢——训练时间就是这么被浪费的。';}
+    else{m.className='msg ok';m.textContent='正在下坡…继续点「走一步」。当前 loss='+f(gx).toFixed(2);}
+  }
+  document.getElementById('gdstep').addEventListener('click',function(){
+    var lr=+document.getElementById('lr').value;
+    trail.push(gx);
+    gx=gx - lr*(gx-5);
+    if(gx<xmin-1)gx=xmin-1; if(gx>xmax+1)gx=xmax+1;
+    gdDraw(); gdMsg();
+  });
+  document.getElementById('gdreset').addEventListener('click',function(){
+    gx=0.6;trail=[];gdDraw();
+    var m=document.getElementById('gdmsg');m.className='msg ok';
+    m.textContent='已重置。试试 0.05（太保守）、0.9（刚好）、2.1（要出事）三档。';
+  });
+  document.getElementById('lr').addEventListener('input',function(){
+    document.getElementById('lrv').textContent=(+this.value).toFixed(2);
+  });
+  gdDraw();
+
+  /* ---------- 环形 AllReduce ---------- */
+  var N=8, cx=180, cy=120, R=88;
+  var grads=[], nodeEls=[], edgeEls=[];
+  (function initRing(){
+    for(var i=0;i<N;i++)grads.push(0.15+Math.random()*0.75);
+    var edges=document.getElementById('edges'), nodes=document.getElementById('nodes');
+    for(var e=0;e<N;e++){
+      var a1=ringPos(e), a2=ringPos((e+1)%N);
+      var l=document.createElementNS('http://www.w3.org/2000/svg','line');
+      l.setAttribute('x1',a1.x);l.setAttribute('y1',a1.y);
+      l.setAttribute('x2',a2.x);l.setAttribute('y2',a2.y);
+      l.setAttribute('stroke','var(--border)');l.setAttribute('stroke-width','2');
+      edges.appendChild(l);edgeEls.push(l);
+    }
+    for(var n=0;n<N;n++){
+      var p=ringPos(n);
+      var c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+      c.setAttribute('cx',p.x);c.setAttribute('cy',p.y);c.setAttribute('r','20');
+      c.setAttribute('fill','var(--green)');c.setAttribute('fill-opacity','0.2');
+      c.setAttribute('stroke','var(--border)');
+      nodes.appendChild(c);nodeEls.push(c);
+      var t=document.createElementNS('http://www.w3.org/2000/svg','text');
+      t.setAttribute('x',p.x);t.setAttribute('y',p.y+4);t.setAttribute('text-anchor','middle');
+      t.setAttribute('font-size','11');t.textContent='GPU'+n;
+      nodes.appendChild(t);
+    }
+    paintRing();
+  })();
+  function ringPos(i){
+    var a=-Math.PI/2 + i*2*Math.PI/N;
+    return {x:cx+R*Math.cos(a), y:cy+R*Math.sin(a)};
+  }
+  function paintRing(t){
+    var avg=grads.reduce(function(a,b){return a+b;},0)/N;
+    for(var i=0;i<N;i++){
+      var v=grads[i];
+      if(t!==undefined)v=grads[i]+(avg-grads[i])*(t/N);
+      nodeEls[i].setAttribute('fill-opacity',(0.15+v*0.75).toFixed(2));
+    }
+  }
+  var ringBusy=false;
+  document.getElementById('ringgo').addEventListener('click',function(){
+    if(ringBusy)return; ringBusy=true; this.disabled=true;
+    var say=document.getElementById('ringsay'), t=0;
+    // 重新随机化梯度
+    for(var i=0;i<N;i++)grads[i]=0.15+Math.random()*0.75;
+    paintRing(0);
+    var timer=setInterval(function(){
+      t++;
+      edgeEls.forEach(function(l,idx){
+        l.setAttribute('stroke', idx===((t-1)%N)?'var(--orange)':'var(--border)');
+        l.setAttribute('stroke-width', idx===((t-1)%N)?'4':'2');
+      });
+      paintRing(t);
+      say.textContent='第 '+t+'/8 步：每张卡把自己梯度的 1/8 发给下一张卡（高亮的那条边）。全部 2×(N-1) 步后，人人拿到平均值。';
+      if(t>=8){
+        clearInterval(timer); ringBusy=false;
+        document.getElementById('ringgo').disabled=false;
+        say.innerHTML='✅ 同步完成：8 张卡颜色一致 = 梯度平均完毕，各自安全地更新参数。真实集群里这件事由 <b>NCCL</b> 在 NVLink/IB 上完成，是训练扩展效率的关键（见延伸阅读）。';
+        edgeEls.forEach(function(l){l.setAttribute('stroke','var(--border)');l.setAttribute('stroke-width','2');});
+      }
+    },420);
+  });
+
+  /* ---------- 测验 ---------- */
+  document.querySelectorAll('.quiz').forEach(function(q){
+    q.addEventListener('click',function(e){
+      var b=e.target.closest('button.opt');
+      if(!b||q.dataset.done==='1')return;
+      var ok=b.dataset.ok==='1';
+      q.querySelectorAll('.opt').forEach(function(x){
+        x.disabled=true; if(x.dataset.ok==='1')x.classList.add('right');
+      });
+      if(!ok)b.classList.add('wrong');
+      var v=q.querySelector('.verdict');
+      v.textContent=ok?'✓ 答对了':'✗ 正确答案已标绿';
+      v.className='verdict '+(ok?'ok':'bad');
+      q.dataset.done='1';
+    });
+  });
+})();
+</script>
+</body>
+</html>

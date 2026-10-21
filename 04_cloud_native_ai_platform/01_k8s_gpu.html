@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 4 课 · K8s 上跑 GPU —— 把最贵的硬件交给最熟的平台</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--orange);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  .ctl{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+  button{font:inherit;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--fg);border-radius:8px;padding:6px 14px}
+  button:hover{border-color:var(--orange)}
+  button.primary{background:var(--orange);border-color:var(--orange);color:#fff}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  button.seg-on{background:var(--orange);border-color:var(--orange);color:#fff}
+  .duo{display:grid;gap:16px;grid-template-columns:1fr}
+  @media(min-width:800px){.duo{grid-template-columns:5fr 6fr}}
+  .steps{display:flex;flex-direction:column;gap:6px}
+  .stp{border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;background:var(--chip);color:var(--muted)}
+  .stp b{display:block;color:var(--fg);font-size:13px}
+  .stp.done{border-color:var(--green)}
+  .stp.active{border-color:var(--orange);background:color-mix(in srgb,var(--orange) 10%, var(--card));color:var(--fg)}
+  pre{background:var(--chip);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:12px;overflow:auto;margin:0}
+  pre .hl{background:color-mix(in srgb,var(--orange) 25%, transparent);border-radius:3px}
+  pre code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--fg)}
+  .say{margin-top:12px;padding:10px 14px;border-radius:8px;background:var(--chip);font-size:14px;min-height:24px}
+  .gpucard{border:2px solid var(--muted);border-radius:10px;padding:12px;min-height:150px;position:relative;background:var(--chip)}
+  .gpucard .tag{position:absolute;top:-11px;left:12px;background:var(--card);padding:0 8px;font-size:11px;color:var(--muted)}
+  .pod{border-radius:8px;padding:8px 10px;font-size:12px;margin:4px 0;border:1px solid}
+  .podA{border-color:var(--blue);color:var(--blue);background:color-mix(in srgb,var(--blue) 10%, transparent)}
+  .podB{border-color:var(--purple);color:var(--purple);background:color-mix(in srgb,var(--purple) 10%, transparent)}
+  .queue{color:var(--muted);font-size:12px;border:1px dashed var(--border);border-radius:8px;padding:8px 10px;text-align:center}
+  .ts .podA{animation:blinkA 2.4s infinite}
+  .ts .podB{animation:blinkB 2.4s infinite}
+  @keyframes blinkA{0%,45%{opacity:1}55%,100%{opacity:.25}}
+  @keyframes blinkB{0%,45%{opacity:.25}55%,100%{opacity:1}}
+  .smgrid{display:grid;grid-template-columns:repeat(8,1fr);gap:3px;margin:6px 0}
+  .sm{aspect-ratio:1.6;border-radius:3px;background:var(--chip);border:1px solid var(--border)}
+  .sm.a{background:color-mix(in srgb,var(--blue) 45%, transparent);border-color:var(--blue)}
+  .sm.b{background:color-mix(in srgb,var(--purple) 45%, transparent);border-color:var(--purple)}
+  .mig2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .mig{border:2px solid var(--green);border-radius:8px;padding:8px;font-size:11px;color:var(--green)}
+  .cap{font-size:12px;color:var(--muted);margin-top:8px}
+  table{width:100%;border-collapse:collapse;font-size:13px;background:var(--card)}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{color:var(--muted);font-weight:500;font-size:12px}
+  .tcard{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+  .tcard h4{margin:0 0 6px;font-size:13px;color:var(--red)}
+  .tcard .def{font-size:12px;margin:0 0 6px}
+  .tcard .fix{font-size:12px;color:var(--muted);border-top:1px dashed var(--border);padding-top:6px}
+  .grid{display:grid;gap:12px;grid-template-columns:1fr}
+  @media(min-width:700px){.grid.c4{grid-template-columns:repeat(4,1fr)}.grid.c2{grid-template-columns:repeat(2,1fr)}}
+  .quiz{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin:10px 0}
+  .quiz p{margin:0 0 10px;font-size:14px}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:8px 12px}
+  .opt.right{border-color:var(--green);color:var(--green)}
+  .opt.wrong{border-color:var(--red);color:var(--red)}
+  .verdict{font-size:13px;margin-left:8px}
+  .verdict.ok{color:var(--green)} .verdict.bad{color:var(--red)}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .foot ul{margin:6px 0;padding-left:18px}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 第 4 课 / 共 6 课 · 建议用时 12 分钟</div>
+  <h1>K8s 上跑 GPU</h1>
+  <p class="subtitle">这是你的主场：Pod、调度、亲和性你都熟。GPU 只是多了一种"扩展资源"，但它的独占、昂贵、易故障，催生了几个 K8s 原生没有的新问题。</p>
+
+  <h2>一、一个 GPU Pod 的完整旅程（6 步）</h2>
+  <div class="stage">
+    <div class="duo">
+      <div class="steps" id="steps"></div>
+      <div>
+        <pre><code id="yaml"></code></pre>
+      </div>
+    </div>
+    <div class="ctl" style="margin-top:12px">
+      <button id="prev" type="button">← 上一步</button>
+      <button id="next" class="primary" type="button">下一步 →</button>
+      <button id="restart" type="button">重播</button>
+    </div>
+    <div class="say" id="psay">点「下一步」，左边走流程，右边看 YAML 里谁在起作用。</div>
+  </div>
+
+  <h2>二、一张卡怎么被多个 Pod 共用：四种模式</h2>
+  <div class="stage">
+    <div class="ctl">
+      <button id="md-full" class="seg-on" type="button">整卡独占（默认）</button>
+      <button id="md-ts" type="button">时间切片</button>
+      <button id="md-mps" type="button">MPS</button>
+      <button id="md-mig" type="button">MIG</button>
+    </div>
+    <div class="gpucard" id="gpuarea"><span class="tag">1 × GPU（如 H100 80GB）</span><div id="gpuinner" style="margin-top:10px"></div></div>
+    <div class="say" id="msay"></div>
+  </div>
+
+  <h2>三、SRE 概念映射表：你会的 × 你要学的</h2>
+  <div class="stage" style="padding:0;overflow:auto">
+    <table>
+      <thead><tr><th>你熟悉的（CPU 世界）</th><th>GPU 世界的对应物</th><th>关键差别</th></tr></thead>
+      <tbody>
+        <tr><td>CPU requests / limits</td><td><code>nvidia.com/gpu: 1</code> 整卡申请；细粒度靠 MIG / HAMi 切分</td><td>GPU 默认<b>无硬隔离</b>：不切分时一个进程能吃光整卡显存，把别人挤 OOM</td></tr>
+        <tr><td>Node NotReady / 硬件故障</td><td>XID 错误、ECC 不可修复错误</td><td>GPU 有自己的错误码体系（XID），掉卡常表现为"作业莫名变慢"而非节点下线</td></tr>
+        <tr><td>liveness / readiness probe</td><td>nvidia-smi / DCGM 健康检查</td><td>DCGM-Exporter + Prometheus 是 GPU 集群的标准监控栈</td></tr>
+        <tr><td>HPA 按负载扩容</td><td>推理服务按 TTFT / QPS 扩缩容</td><td>扩容单位是" expensive GPU"，冷启动要拉镜像 + 加载几十 GB 权重</td></tr>
+        <tr><td>Deployment 滚动更新</td><td>训练作业 Gang Scheduling（Volcano / Kueue）</td><td>8 卡训练作业<b>要么 8 卡全到位，要么一个都别起</b>——否则先起的卡干等，白烧钱</td></tr>
+        <tr><td>cgroup 限制 CPU / 内存</td><td>GPU 没有原生 cgroup 等价物</td><td>所以才有 HAMi / vGPU 这一层"补课"（仓库 gpu_manager 专题）</td></tr>
+        <tr><td>PV / CSI 存储编排</td><td>Device Plugin 管理算力编排</td><td>同一个思路：kubelet 通过 gRPC 找"插件"要资源</td></tr>
+        <tr><td>OOMKilled</td><td>CUDA out of memory</td><td>进程不会被杀，而是报错退出；显存碎片也能导致"明明够却分配失败"</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>四、故障速查（SRE 视角四连卡）</h2>
+  <div class="grid c4">
+    <div class="tcard"><h4>CUDA out of memory</h4><p class="def">现象：任务报 OOM 退出；nvidia-smi 显示显存被别的进程占着。</p><p class="fix">定位：先查"谁占着"（fuser -v /dev/nvidia*），再看是否该上切分/配额。</p></div>
+    <div class="tcard"><h4>XID 79（GPU 掉总线）</h4><p class="def">现象：作业报错、dmesg 出现 XID 79，卡"掉了"。</p><p class="fix">典型处置：重置 GPU（nvidia-smi --gpu-reset）或重启节点；频繁出现则报硬件。</p></div>
+    <div class="tcard"><h4>ECC 不可修复错误</h4><p class="def">现象：DCGM 报 Remapped Rows / Uncorrectable ECC，作业反复失败。</p><p class="fix">这是显存硬件损伤信号：摘除节点、报修换卡，别让作业再往坏卡上调度。</p></div>
+    <div class="tcard"><h4>驱动 / 内核模块不匹配</h4><p class="def">现象：nvidia-smi 直接不可用，"NVIDIA-SMI has failed"。</p><p class="fix">查内核升级后模块没重编、驱动版本与容器内 libcuda 不匹配（版本对齐表见仓库）。</p></div>
+  </div>
+
+  <h2>五、小测验</h2>
+  <div class="quiz"><p>Q1 · Pod 里的 <code>nvidia.com/gpu: 1</code> 这个资源，是谁上报给 K8s 的？</p>
+    <button class="opt" type="button">kubelet 内置功能</button>
+    <button class="opt" data-ok="1" type="button">节点上的 NVIDIA Device Plugin（gRPC 向 kubelet 上报扩展资源）</button>
+    <button class="opt" type="button">GPU 驱动自己</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q2 · 8 卡训练作业为什么需要 Gang Scheduling？</p>
+    <button class="opt" data-ok="1" type="button">分布式训练必须全员同时在线，部分调度会让先启动的卡空等烧钱</button>
+    <button class="opt" type="button">为了提高调度器吞吐</button>
+    <button class="opt" type="button">因为 K8s 不支持多容器 Pod</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q3 · 整卡 / 时间切片 / MPS / MIG 四种共享方式里，隔离性最强的是？</p>
+    <button class="opt" type="button">时间切片</button>
+    <button class="opt" type="button">MPS</button>
+    <button class="opt" data-ok="1" type="button">MIG——硬件级切分，SM 和显存物理隔离</button>
+    <span class="verdict"></span>
+  </div>
+
+  <div class="foot">
+    <b>延伸阅读（本仓库硬核版）</b>
+    <ul>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/04_cloud_native_ai_platform/k8s/01_nvidia_container_toolkit_analysis.md">NVIDIA Container Toolkit 原理</a>——第 5 步"往容器里塞 GPU"的底层机制</li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/04_cloud_native_ai_platform/k8s/02_nvidia_k8s_device_plugin_analysis.md">Device Plugin 源码分析</a></li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/03_ai_cluster_ops/04_gpu_scheduling/01_gpu_scheduling_problem.md">GPU 调度问题总览</a>——Gang Scheduling / 拓扑感知 / 共享策略的概念先行篇</li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/04_cloud_native_ai_platform/gpu_manager/01_basic_theory.md">GPU 资源管理与虚拟化 · 基础理论</a>——HAMi / vGPU 的来龙去脉</li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/03_ai_cluster_ops/01_gpu_ops/06_gpu_health_check.md">GPU 集群健康检查</a>——故障速查的完整版</li>
+    </ul>
+    <div class="nav"><a href="../09_inference_system/01_inference_pipeline.html">← 第 3 课：推理是怎么回事</a><a href="../index.html">完成全部 6 课 → 回课程目录</a></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  /* ---------- 生命周期 ---------- */
+  var STEPS=[
+    {t:'① 提交 Pod',d:'用户声明 resources.limits: nvidia.com/gpu: 1',yaml:[13,14],
+     say:'GPU 在 K8s 里是一种"扩展资源"，名字叫 nvidia.com/gpu。它不是 CPU/内存那种可压缩资源——要么给你，要么不给。'},
+    {t:'② Device Plugin 上报',d:'每台 GPU 节点上的 Device Plugin 把卡数上报为节点资源',yaml:[],
+     say:'每台 GPU 节点跑着一个 Device Plugin Pod（DaemonSet），它通过 gRPC 告诉 kubelet："本机有 8 张卡"。kubectl describe node 能看到 nvidia.com/gpu: 8。'},
+    {t:'③ 调度器绑定节点',d:'过滤 GPU 数量够的节点，按拓扑 / 打分选最优',yaml:[16],
+     say:'调度逻辑你很熟：过滤 + 打分。GPU 专属的加分项是拓扑（NVLink 亲和、PCIe 同桥），8 卡训练作业还需要 Gang Scheduling——8 张卡全有位子才放行。'},
+    {t:'④ kubelet 领取设备 ID',d:'kubelet 调 Device Plugin 拿到具体分到哪几张卡',yaml:[],
+     say:'注意：调度器只知道"数量"，具体分到 0 号卡还是 3 号卡，是 kubelet 在容器启动前向 Device Plugin 要的设备 ID。'},
+    {t:'⑤ 容器运行时注入 GPU',d:'NVIDIA Container Toolkit 挂载设备文件和驱动库',yaml:[9],
+     say:'容器里没有内核——驱动在宿主机，Container Toolkit 负责把 /dev/nvidia* 设备文件和 libcuda 等用户态库挂进容器。所以"容器内 CUDA 版本"和"宿主机驱动版本"要对齐。'},
+    {t:'⑥ 容器内跑起来',d:'进程调 CUDA → 驱动 → GPU',yaml:[10],
+     say:'容器内 nvidia-smi 能看到卡了。生产集群一般用 GPU Operator 把以上所有组件（驱动、Container Toolkit、Device Plugin、DCGM 监控）自动化部署。✅ 旅程结束。'}
+  ];
+  var yamlLines=['apiVersion: v1','kind: Pod','metadata:','  name: cuda-test','spec:','  restartPolicy: Never','  containers:','  - name: cuda','    image: nvidia/cuda:12.4.0-base','    command: ["nvidia-smi"]','    resources:','      limits:','        nvidia.com/gpu: 1','  # ↑ 扩展资源，由 Device Plugin 提供','  nodeSelector:','    nvidia.com/gpu.product: NVIDIA-H100'];
+  var cur=-1;
+  var stepBox=document.getElementById('steps');
+  STEPS.forEach(function(s){
+    var d=document.createElement('div');d.className='stp';
+    d.innerHTML='<b>'+s.t+'</b>'+s.d;
+    stepBox.appendChild(d);
+  });
+  var stpEls=stepBox.children;
+  function renderYaml(hl){
+    var out='';
+    yamlLines.forEach(function(l,i){
+      var hit=hl.indexOf(i)>=0;
+      out+= hit? '<span class="hl">'+l+'</span>' : l;
+      out+='\n';
+    });
+    document.getElementById('yaml').innerHTML=out;
+  }
+  function go(dir){
+    cur=Math.max(-1,Math.min(STEPS.length-1,cur+dir));
+    for(var i=0;i<stpEls.length;i++){
+      stpEls[i].className='stp'+(i<cur?' done':'')+(i===cur?' active':'');
+    }
+    if(cur<0){renderYaml([]);document.getElementById('psay').textContent='点「下一步」，左边走流程，右边看 YAML 里谁在起作用。';return;}
+    renderYaml(STEPS[cur].yaml);
+    document.getElementById('psay').innerHTML=STEPS[cur].say;
+  }
+  document.getElementById('next').addEventListener('click',function(){go(1);});
+  document.getElementById('prev').addEventListener('click',function(){go(-1);});
+  document.getElementById('restart').addEventListener('click',function(){cur=-1;go(0);});
+  renderYaml([]);
+
+  /* ---------- 共享模式 ---------- */
+  var MODES={
+    full:{say:'整卡独占（K8s 默认）：Pod A 拿走整张卡，Pod B 只能排队等下一张空卡。简单可靠，但 80GB 只跑 2GB 的任务就是巨大浪费——GPU 太贵，裸独占经常供不起。',
+      html:'<div class="pod podA">Pod A —— 独占整卡（80GB 全归它）</div><div class="queue">Pod B —— Pending：排队等下一张卡</div>'},
+    ts:{say:'时间切片：A、B 轮流占用整张卡，秒级来回切换。都能跑，但互相拖慢、显存还是会互相挤（切换不清理显存），适合低优先级任务混跑（仓库 KAI 专题）。注意动画：同一时刻只有一方在用。',
+      html:'<div class="ts"><div class="pod podA">Pod A —— 此刻在我的时间片里</div><div class="pod podB">Pod B —— 马上轮到我</div></div>'},
+    mps:{say:'MPS（Multi-Process Service）：两个 Pod 同时跑在同一张卡上，SM 网格被分成两片（下图蓝 5 格 / 紫 3 格），空间共享、吞吐更高。但隔离弱——一个进程崩了可能殃及同卡邻居，显存也没有硬上限。',
+      html:'<div class="pod podA">Pod A —— 分到 5/8 个 SM</div><div class="pod podB">Pod B —— 分到 3/8 个 SM</div><div class="smgrid" id="smg"></div>'},
+    mig:{say:'MIG（Multi-Instance GPU，A100/H100 支持）：把卡在硬件层面切成独立实例，每个实例有自己的 SM 和显存，互不干扰——隔离最强，K8s 里以 nvidia.com/mig-1g.10gb 这类资源名调度。代价是切法固定、粒度粗。',
+      html:'<div class="mig2"><div class="mig">MIG 实例 1<br>自己的 SM + 40GB<br><span style="opacity:.8">Pod A 独享</span></div><div class="mig">MIG 实例 2<br>自己的 SM + 40GB<br><span style="opacity:.8">Pod B 独享</span></div></div>'}
+  };
+  function setMode(m){
+    ['full','ts','mps','mig'].forEach(function(k){
+      document.getElementById('md-'+k).className= k===m?'seg-on':'';
+    });
+    var inner=document.getElementById('gpuinner');
+    inner.innerHTML=MODES[m].html;
+    if(m==='mps'){
+      var g=document.getElementById('smg');
+      if(g){for(var i=0;i<8;i++){var d=document.createElement('div');d.className='sm '+(i<5?'a':'b');g.appendChild(d);}}
+    }
+    document.getElementById('msay').textContent=MODES[m].say;
+  }
+  ['full','ts','mps','mig'].forEach(function(k){
+    document.getElementById('md-'+k).addEventListener('click',function(){setMode(k);});
+  });
+  setMode('full');
+
+  /* ---------- 测验 ---------- */
+  document.querySelectorAll('.quiz').forEach(function(q){
+    q.addEventListener('click',function(e){
+      var b=e.target.closest('button.opt');
+      if(!b||q.dataset.done==='1')return;
+      var ok=b.dataset.ok==='1';
+      q.querySelectorAll('.opt').forEach(function(x){
+        x.disabled=true; if(x.dataset.ok==='1')x.classList.add('right');
+      });
+      if(!ok)b.classList.add('wrong');
+      var v=q.querySelector('.verdict');
+      v.textContent=ok?'✓ 答对了':'✗ 正确答案已标绿';
+      v.className='verdict '+(ok?'ok':'bad');
+      q.dataset.done='1';
+    });
+  });
+})();
+</script>
+</body>
+</html>

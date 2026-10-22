@@ -20,6 +20,7 @@
 | 8 | **RAG 是怎么回事** —— 检索增强全流程动画、微调 vs RAG 选型 | [07_rag_and_tools/01_rag_basics.html](07_rag_and_tools/01_rag_basics.html) |
 | 9 | **Agent 是怎么回事** —— 运维 Agent 实况推演、ReAct 循环、MCP | [08_agentic_system/01_agent_basics.html](08_agentic_system/01_agent_basics.html) |
 | 10 | **Transformer 拆解** —— token 穿层动画、Q/K/V、FFN/残差/RoPE | [06_llm_theory_and_fundamentals/02_transformer.html](06_llm_theory_and_fundamentals/02_transformer.html) |
+| 11 | **对齐算法是怎么回事** —— 亲手标注偏好对、PPO/DPO/GRPO 显存对比、β 旋钮 | [05_model_training_and_fine_tuning/04_alignment.html](05_model_training_and_fine_tuning/04_alignment.html) |
 | 实验室 | **KV 容量计算器** · **训练显存对比（全参 vs LoRA）** · **Gang 调度演示** | [09_inference_system/03_kv_capacity_calc.html](09_inference_system/03_kv_capacity_calc.html) · [05_model_training_and_fine_tuning/02_memory_calc.html](05_model_training_and_fine_tuning/02_memory_calc.html) · [04_cloud_native_ai_platform/02_scheduling_demo.html](04_cloud_native_ai_platform/02_scheduling_demo.html) |
 | 加餐 | **硬件与网络四页**：PCIe/CXL · GPUDirect · NVLink · IB/RDMA · **NCCL 导读** | [01_hardware_architecture/03_pcie_cxl.html](01_hardware_architecture/03_pcie_cxl.html) 等同目录 |
 | 加餐 | **推理深入**：Batching/PagedAttention · $/token 成本速算 · 引擎与 KV 系统导读 | [09_inference_system/04_batching_attention.html](09_inference_system/04_batching_attention.html) 等 |
@@ -32,7 +33,7 @@
 
 ## 学习路径
 
-第 0 阶段刷完七课（约 2 小时）→ 玩排障模拟器、逛术语图鉴 → 按站点首页的**六阶段路径**进入上游硬核文档 → 自测四问（站点首页）：为什么 7B 训练单卡放不下 / decode 慢在带宽不在算力 / `nvidia.com/gpu` 从 Pod 到卡经过谁 / GPU-Util 90% 为什么不代表忙。
+第 0 阶段刷完十一课（约 2.5 小时）→ 玩排障模拟器、逛术语图鉴 → 按站点首页的**六阶段路径**进入上游硬核文档 → 自测四问（站点首页）：为什么 7B 训练单卡放不下 / decode 慢在带宽不在算力 / `nvidia.com/gpu` 从 Pod 到卡经过谁 / GPU-Util 90% 为什么不代表忙。
 
 ## 部署
 

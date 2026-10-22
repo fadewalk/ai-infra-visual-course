@@ -134,6 +134,10 @@
     {n:'LoRA',e:'Low-Rank Adaptation',c:'train',d:'冻结原模型，只训练两块小矩阵的微调方法；显存从 100GB 级降到个位数 GB。',a:'不动主代码，只打一层可插拔补丁。'},
     {n:'SFT 监督微调',e:'Supervised Fine-Tuning',c:'train',d:'用人工标注的问答对教预训练模型"听话、按格式回答"。',a:'岗前培训：会说话 → 会干活。',l:'06_llm_theory_and_fundamentals/01_llm_basics.html|第 7 课'},
     {n:'RLHF',e:'Reinforcement Learning from Human Feedback',c:'train',d:'用人类偏好评分训练奖励模型，再强化学习对齐输出风格。',a:'按客户满意度反馈调优。',l:'06_llm_theory_and_fundamentals/01_llm_basics.html|第 7 课'},
+    {n:'DPO 直接偏好优化',e:'Direct Preference Optimization',c:'train',d:'跳过奖励模型与在线 RL，直接用偏好对（好答案,坏答案）做稳定训练。',a:'不上评分系统，直接从历史工单对里学规则。',l:'05_model_training_and_fine_tuning/04_alignment.html|第 11 课'},
+    {n:'GRPO',e:'Group Relative Policy Optimization',c:'train',d:'DeepSeek 系的 RL 简化：去掉 Critic，用同一题采样一组回答的组内相对得分当基线。',a:'不请教练，看"你比同组人平均强多少"。',l:'05_model_training_and_fine_tuning/04_alignment.html|第 11 课'},
+    {n:'奖励模型',e:'Reward Model',c:'train',d:'从人类偏好数据训出的"回答打分器"，RLHF 里当优化目标。',a:'自动化评分脚本。',l:'05_model_training_and_fine_tuning/04_alignment.html|第 11 课'},
+    {n:'KL 约束',e:'KL Penalty',c:'train',d:'惩罚策略偏离参考模型太远，防止"奖励黑客"（跑分高、答案空）。',a:'变更窗口：只允许在基线附近改动。',l:'05_model_training_and_fine_tuning/04_alignment.html|第 11 课'},
     {n:'预训练',e:'Pre-training',c:'train',d:'用海量文本做自监督"接龙"训练，花几个月、几千张卡，产出基座模型。',a:'读书阶段：读完全网再说。',l:'06_llm_theory_and_fundamentals/01_llm_basics.html|第 7 课'},
     /* ---------- 推理 ---------- */
     {n:'Prefill 预填充',e:'Prefill',c:'infer',d:'一次性并行读完整 prompt：compute-bound，决定 TTFT。',a:'cat 整个大文件。',l:'09_inference_system/01_inference_pipeline.html|第 3 课'},

@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 11 课 · 对齐算法是怎么回事 —— SFT 之后，模型怎么"变乖"</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--green);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  .ctl{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+  button{font:inherit;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--fg);border-radius:8px;padding:6px 14px}
+  button:hover{border-color:var(--green)}
+  button.primary{background:var(--green);border-color:var(--green);color:#fff}
+  button.seg-on{background:var(--green);border-color:var(--green);color:#fff}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .models{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+  .m{border:2px solid var(--border);border-radius:10px;padding:8px 12px;font-size:12px;text-align:center;min-width:110px;background:var(--chip)}
+  .m b{display:block;font-size:13px}
+  .m.train{border-color:var(--green)}
+  .m.frozen{border-color:var(--muted);opacity:.75}
+  .m.gone{display:none}
+  .verdictline{font-size:13px;margin-top:10px;font-weight:500;min-height:20px}
+  .verdictline.ok{color:var(--green)} .verdictline.bad{color:var(--red)} .verdictline.warn{color:var(--orange)}
+  .pair{display:grid;gap:10px;grid-template-columns:1fr}
+  @media(min-width:760px){.pair{grid-template-columns:1fr 1fr}}
+  .ans{border:1px solid var(--border);border-radius:10px;padding:12px 14px;font-size:13px;cursor:pointer;background:var(--card)}
+  .ans:hover{border-color:var(--green)}
+  .ans.chosen{border-color:var(--green);background:color-mix(in srgb,var(--green) 10%, var(--card))}
+  .ans .lbl{font-size:11px;color:var(--muted);display:block;margin-bottom:4px}
+  .prog{display:flex;gap:6px;margin:8px 0}
+  .prog i{flex:1;height:8px;border-radius:4px;background:var(--chip)}
+  .prog i.on{background:var(--green)}
+  .lr{display:flex;align-items:center;gap:8px;font-size:13px}
+  .lr input[type=range]{flex:1;max-width:280px}
+  .bal{margin-top:10px}
+  .bal .row{display:flex;align-items:center;gap:8px;font-size:12px;margin:4px 0}
+  .bal .nm{width:150px;color:var(--muted)}
+  .bal .track{flex:1;height:14px;border-radius:6px;background:var(--chip);overflow:hidden}
+  .bal .track i{display:block;height:100%;transition:width .3s}
+  .say{margin-top:12px;padding:10px 14px;border-radius:8px;background:var(--chip);font-size:14px;min-height:24px}
+  .grid{display:grid;gap:12px;grid-template-columns:1fr}
+  @media(min-width:700px){.grid.c2{grid-template-columns:repeat(2,1fr)}.grid.c3{grid-template-columns:repeat(3,1fr)}}
+  .kcard{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+  .kcard h4{margin:0 0 6px;font-size:14px;color:var(--green)}
+  .kcard .def{font-size:13px;margin:0 0 8px}
+  .kcard .ana{font-size:12px;color:var(--muted);border-top:1px dashed var(--border);padding-top:6px}
+  .quiz{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin:10px 0}
+  .quiz p{margin:0 0 10px;font-size:14px}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:8px 12px}
+  .opt.right{border-color:var(--green);color:var(--green)}
+  .opt.wrong{border-color:var(--red);color:var(--red)}
+  .verdict{font-size:13px;margin-left:8px}
+  .verdict.ok{color:var(--green)} .verdict.bad{color:var(--red)}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .foot ul{margin:6px 0;padding-left:18px}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+  .note{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 第 11 课 / 共 11 课 · 建议用时 12 分钟 · 配合第 2/7 课</div>
+  <h1>对齐算法是怎么回事？</h1>
+  <p class="subtitle">SFT 教会模型"听话"，但对齐算法教会它"哪种回答<b>更好</b>"。RLHF/PPO、DPO、GRPO 是同一目标的三条路线——差别在工程复杂度和显存账。</p>
+
+  <h2>一、先动手：偏好数据是怎么来的</h2>
+  <div class="stage">
+    <div class="ctl"><span style="font-size:13px">问题：<b>"新手想开始定投基金，给点建议。"</b>——下面两个回答，点你更偏好的那个（共 3 组）：</span></div>
+    <div class="prog" id="prog"><i class="on"></i><i></i><i></i></div>
+    <div class="pair" id="pairbox"></div>
+    <div class="say" id="psay">点击选择后自动进入下一组。</div>
+  </div>
+
+  <h2>二、三条路线：显存里各摆几个模型</h2>
+  <div class="stage">
+    <div class="ctl">
+      <button id="a-ppo" type="button">RLHF / PPO（经典）</button>
+      <button id="a-dpo" class="seg-on" type="button">DPO（直偏好优化）</button>
+      <button id="a-grpo" type="button">GRPO（DeepSeek 系）</button>
+    </div>
+    <div class="models" id="models"></div>
+    <div class="verdictline" id="mverdict"></div>
+    <p class="note" style="margin-top:8px">方块 = 参与训练过程的模型副本（以 7B 模型 fp16 驻留 ≈ 14GB/个 粗估，训练态的梯度/优化器开销另计——第 2 课的 16 字节/参数口径只作用于"训练中"的方块）。标注<b>估算口径</b>，生产常用 LoRA 或流水线拆分压显存。</p>
+  </div>
+
+  <h2>三、DPO 里的 β：贴多近、拉多开</h2>
+  <div class="stage">
+    <div class="lr">β（偏移系数）<input type="range" id="beta" min="0.05" max="1" step="0.05" value="0.3"><b id="betav">0.30</b></div>
+    <div class="bal">
+      <div class="row"><span class="nm">贴近参考模型的约束</span><span class="track"><i id="b1" style="background:var(--blue);width:30%"></i></span></div>
+      <div class="row"><span class="nm">拉开偏好差距的力度</span><span class="track"><i id="b2" style="background:var(--orange);width:70%"></i></span></div>
+    </div>
+    <div class="say" id="bsay">β 大 → 模型改动被"拴"在参考模型附近（保守、稳）；β 小 → 更用力拉开好/坏回答的差距（激进，易过拟合偏好甚至"奖励黑客"）。训练里调它 = SRE 调"变更幅度"旋钮。</div>
+  </div>
+
+  <h2>四、关键词卡</h2>
+  <div class="grid c2">
+    <div class="kcard"><h4>RLHF / PPO</h4><p class="def">先训奖励模型（RM）给回答打分，再用强化学习（PPO）最大化得分。效果成熟，但 4 个模型在场、工程复杂、训练不稳出名。</p><p class="ana">🧠 类比：装一套自动评分系统 + 在线试错改流程——能力最强，运维最重。</p></div>
+    <div class="kcard"><h4>DPO</h4><p class="def">数学上证明可以跳过奖励模型：直接用"偏好对（好答案, 坏答案）"优化策略，监督学习式的稳定训练。</p><p class="ana">🧠 类比：不用上线评分服务，直接从历史工单对里学规则。</p></div>
+    <div class="kcard"><h4>GRPO</h4><p class="def">DeepSeek 系的简化：去掉 PPO 的 Critic 模型，同一问题采样一组回答，用<b>组内相对得分</b>当基线。</p><p class="ana">🧠 类比：不请教练打分，看"你比同组人平均强多少"。推理型任务的主力算法。</p></div>
+    <div class="kcard"><h4>KL 约束 & 奖励黑客</h4><p class="def">所有对齐算法都要防止策略漂移太远：跑分高但答案空洞（奖励黑客）。手段是惩罚与参考模型的偏离（KL）。</p><p class="ana">🧠 类比：只刷 SLA 数字不解决真实故障——指标对了，事情坏了。</p></div>
+  </div>
+
+  <h2>五、小测验</h2>
+  <div class="quiz"><p>Q1 · DPO 相比 PPO 的主要简化是？</p>
+    <button class="opt" type="button">不需要 SFT 预训练</button>
+    <button class="opt" data-ok="1" type="button">跳过显式奖励模型与在线 RL 采样，直接用偏好对做稳定训练</button>
+    <button class="opt" type="button">不需要人类标注数据</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q2 · GRPO 相比 PPO 省掉了什么？</p>
+    <button class="opt" type="button">奖励模型</button>
+    <button class="opt" data-ok="1" type="button">Critic 价值模型——用组内相对得分当基线</button>
+    <button class="opt" type="button">参考模型</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q3 · 训练后模型"跑分很高但回答变得空洞冗长"，这叫什么、怎么防？</p>
+    <button class="opt" type="button">过拟合，靠加大 batch 防止</button>
+    <button class="opt" data-ok="1" type="button">奖励黑客——靠 KL 惩罚把策略拴在参考模型附近</button>
+    <button class="opt" type="button">梯度消失，靠残差连接解决</button>
+    <span class="verdict"></span>
+  </div>
+
+  <div class="foot">
+    <b>延伸阅读</b>
+    <ul>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/05_model_training_and_fine_tuning/rl_training/miles-train-rollout-alignment.md">训练不稳，可能是推理引擎的锅（上游 RL 系统约束深读）</a>——RL 训练里"推理侧"的坑，SRE 视角</li>
+      <li><a href="https://github.com/datawhalechina/happy-llm">Datawhale happy-llm 第 8 章</a>——Agentic-RL（GRPO/OPD/Search-R1）的动手教程</li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/05_model_training_and_fine_tuning/sft_example/README.md">SFT 实战</a>——对齐前的上一阶段，先跑通它</li>
+    </ul>
+    <div class="nav"><a href="../06_llm_theory_and_fundamentals/02_transformer.html">← 第 10 课：Transformer 拆解</a><a href="../index.html">完成全部 11 课 → 回课程目录</a></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  /* ---------- 偏好标注 ---------- */
+  var PAIRS=[
+    {a:'先说明基金类型与风险等级，给出定投的三个步骤和常见误区，提醒"不构成投资建议"。',b:'定投基金很简单！直接全仓买入，涨了就卖，稳赚不赔！'},
+    {a:'列出 3 只代表性宽基指数基金的特点对比表，说明费率与跟踪误差的意义，建议先做风险测评。',b:'买基金就要买收益率最高的，别想太多，冲就完事了。'},
+    {a:'解释定投平滑成本的原理（微笑曲线），并给出止盈的两种常见策略。',b:'定投就是无脑每个月买，永远不要卖，卖就输了。'}
+  ];
+  var pi=0,log=document.getElementById('pairbox'),prog=document.getElementById('prog'),psay=document.getElementById('psay');
+  function renderPair(){
+    if(pi>=PAIRS.length){
+      log.innerHTML='<div class="say" style="margin:0">✅ 收集完成：你的 3 次"更好"选择就是 3 组 <b>(chosen, rejected) 偏好对</b>——对齐算法的原料。往下看这些对儿怎么被用。</div>';
+      psay.textContent='人类标注员干的正是这件事，每天几千组。';
+      return;
+    }
+    var p=PAIRS[pi];
+    log.innerHTML='<div style="font-size:12px;color:var(--muted)">候选回答 第'+(pi+1)+'/3 组：</div>';
+    [p.a,p.b].forEach(function(txt,idx){
+      var d=document.createElement('div');d.className='ans';
+      d.innerHTML='<span class="lbl">回答 '+String.fromCharCode(65+idx)+'</span>'+txt;
+      d.addEventListener('click',function(){
+        d.classList.add('chosen');
+        log.querySelector('.ans').style.pointerEvents='none';
+        log.querySelectorAll('.ans').forEach(function(x){if(x!==d)x.style.opacity='.45';});
+        pi++;
+        prog.children[pi-1]&&prog.children[pi-1].classList.add('on');
+        setTimeout(renderPair,650);
+      });
+      log.appendChild(d);
+    });
+  }
+  renderPair();
+
+  /* ---------- 三路线模型数 ---------- */
+  var M={
+    ppo:{v:'❌ 显存与工程复杂度双高：4 个模型在场，训练稳定性是出了名的难调。',
+      ms:[['Actor 策略模型','train'],['Critic 价值模型','train'],['Reward 奖励模型','frozen'],['Reference 参考模型','frozen']],
+      note:'7B 示例：4 个模型 fp16 驻留 ≈ 56GB 起，Actor 还要叠加梯度/优化器（第 2 课口径）——这就是为什么生产上 PPO 常配 LoRA 或流水线拆分。'},
+    dpo:{v:'✅ 2 个模型：Actor + Reference。监督学习式的稳定训练，显存减半、代码简单——中小团队与学术界的默认选择。',
+      ms:[['Actor 策略模型（训练）','train'],['Reference 参考模型（冻结）','frozen']],
+      note:'7B 示例：驻留 ≈ 28GB，LoRA 下更低。偏好对数据质量决定上限。'},
+    grpo:{v:'✅ 2 个模型：去掉 Critic，用"同一题采样一组回答"的组内相对得分当基线。推理/数学任务的主力，采样开销换模型开销。',
+      ms:[['Actor 策略模型（训练）','train'],['Reference 参考模型（冻结）','frozen']],
+      note:'与 DPO 同为 2 模型，但训练时每个问题要多采样几个回答（rollout 由推理引擎产生——上游 RL 系统约束文章讲的坑就在这一步）。'}
+  };
+  var mBox=document.getElementById('models'),mv=document.getElementById('mverdict');
+  function showAlgo(k){
+    ['ppo','dpo','grpo'].forEach(function(x){document.getElementById('a-'+x).classList.toggle('seg-on',x===k);});
+    mBox.innerHTML='';
+    M[k].ms.forEach(function(m){
+      var d=document.createElement('div');d.className='m '+m[1];
+      d.innerHTML='<b>'+m[0]+'</b>'+(m[1]==='train'?'训练中（更新参数）':'冻结（只推理）');
+      mBox.appendChild(d);
+    });
+    mv.className='verdictline '+(k==='ppo'?'warn':'ok');
+    mv.textContent=M[k].v;
+    var n=document.createElement('p');n.className='note';n.textContent=M[k].note;n.style.marginTop='6px';
+    mBox.appendChild(n);
+  }
+  ['ppo','dpo','grpo'].forEach(function(k){
+    document.getElementById('a-'+k).addEventListener('click',function(){showAlgo(k);});
+  });
+  showAlgo('dpo');
+
+  /* ---------- β 旋钮 ---------- */
+  var beta=document.getElementById('beta');
+  beta.addEventListener('input',function(){
+    var v=+beta.value;
+    document.getElementById('betav').textContent=v.toFixed(2);
+    document.getElementById('b1').style.width=(v*90)+'%';
+    document.getElementById('b2').style.width=((1.05-v)*80)+'%';
+    document.getElementById('bsay').innerHTML = v>=0.7
+      ? 'β 大：模型被"拴"在参考模型旁边——几乎不会变坏，但偏好也学不进去多少（保守派）。'
+      : (v<=0.15
+        ? 'β 很小：放开手脚拉开好坏差距——学得猛，也最容易过拟合偏好甚至出现"奖励黑客"（跑分高、答案空）。'
+        : 'β 适中：在"贴近参考模型"与"拉开偏好差距"之间平衡——大多数生产 DPO 的常用区间。');
+  });
+  beta.dispatchEvent(new Event('input'));
+
+  document.querySelectorAll('.quiz').forEach(function(q){
+    q.addEventListener('click',function(e){
+      var b=e.target.closest('button.opt');
+      if(!b||q.dataset.done==='1')return;
+      var ok=b.dataset.ok==='1';
+      q.querySelectorAll('.opt').forEach(function(x){x.disabled=true;if(x.dataset.ok==='1')x.classList.add('right');});
+      if(!ok)b.classList.add('wrong');
+      var v=q.querySelector('.verdict');
+      v.textContent=ok?'✓ 答对了':'✗ 正确答案已标绿';
+      v.className='verdict '+(ok?'ok':'bad');
+      q.dataset.done='1';
+    });
+  });
+})();
+</script>
+</body>
+</html>

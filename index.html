@@ -73,7 +73,7 @@
     <p>写给有 <b>Linux / Kubernetes / 云原生</b> 基础、但对 GPU 训练、推理、调度陌生的工程师（SRE、运维、平台工程）。目标：用一天建立直觉，再回硬核文档深入，支撑你转向 AI SRE / AI Infra 岗位。</p>
     <div class="badges">
       <span class="badge b">GitHub Pages 在线站点</span>
-      <span class="badge g">✅ 全目录覆盖 · 10 课 + 27 加餐/实验室/导读 + 术语图鉴</span>
+      <span class="badge g">✅ 全目录覆盖 · 11 课 + 27 加餐/实验室/导读 + 术语图鉴</span>
       <span class="badge">目录与 <a href="https://github.com/ForceInjection/AI-fundamentals">AI-fundamentals</a> 1:1 对齐</span>
       <span class="badge">单文件 HTML · 无依赖 · 可离线</span>
     </div>
@@ -91,6 +91,7 @@
     <a class="lcard" href="07_rag_and_tools/01_rag_basics.html"><span class="no">第 8 课 · 应用</span><h3>RAG 是怎么回事？</h3><p>检索增强全流程步进动画 · 知识库命中演示 · 微调 vs RAG 选型</p></a>
     <a class="lcard" href="08_agentic_system/01_agent_basics.html"><span class="no">第 9 课 · 应用</span><h3>Agent 是怎么回事？</h3><p>运维 Agent 实况推演 · ReAct 循环步进 · MCP / 上下文工程</p></a>
     <a class="lcard" href="06_llm_theory_and_fundamentals/02_transformer.html"><span class="no">第 10 课 · 进阶</span><h3>Transformer 拆解</h3><p>token 穿层动画 · Q/K/V 角色 · FFN / 残差 / RoPE</p></a>
+    <a class="lcard" href="05_model_training_and_fine_tuning/04_alignment.html"><span class="no">第 11 课 · 训练</span><h3>对齐算法是怎么回事？</h3><p>亲手标注偏好对 · PPO/DPO/GRPO 显存模型数对比 · β 旋钮</p></a>
     <a class="lcard" href="03_ai_cluster_ops/02_gpu_troubleshoot_sim.html"><span class="no">实操实验室</span><h3>GPU 排障模拟器</h3><p>伪终端亲手修三起"生产事故"：找隐形进程 / 读 XID 日志 / 识破假忙</p></a>
     <a class="lcard" href="09_inference_system/03_kv_capacity_calc.html"><span class="no">实验室 · 计算器</span><h3>KV Cache 容量计算器</h3><p>模型×会话长度×显存 → 并发上限，公式实时拆解</p></a>
     <a class="lcard" href="05_model_training_and_fine_tuning/02_memory_calc.html"><span class="no">实验室 · 计算器</span><h3>训练显存对比</h3><p>全参 vs LoRA 显存对照，批量调节，速查表</p></a>
@@ -104,7 +105,7 @@
     <table class="path">
       <thead><tr><th>阶段</th><th>目标</th><th>学什么</th></tr></thead>
       <tbody>
-        <tr><td>0 · 建立直觉</td><td>3 小时看懂全景</td><td>本站十课 + 实验室</td></tr>
+        <tr><td>0 · 建立直觉</td><td>3 小时看懂全景</td><td>本站十一课 + 实验室</td></tr>
         <tr><td>1 · 硬件</td><td>看懂一块卡和它的总线</td><td>GPU 架构、NVLink、PCIe、GPUDirect（<a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/01_hardware_architecture/README.md">上游 01 章</a>）</td></tr>
         <tr><td>2 · 单机运维</td><td>nvidia-smi 时代基本功</td><td>利用率误区、DCGM、XID（<a href="03_ai_cluster_ops/01_gpu_ops.html">加餐速查</a> + <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/03_ai_cluster_ops/README.md">上游 03 章</a>）</td></tr>
         <tr><td>3 · 集群与云原生</td><td>你的主场移植到 GPU</td><td>Device Plugin、HAMi/Kueue、Gang Scheduling、IB、NCCL（<a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/04_cloud_native_ai_platform/README.md">上游 04 章</a>）</td></tr>
@@ -191,6 +192,7 @@
         <tr><td>并行策略 DP/TP/PP/EP</td><td><a href="09_inference_system/02_parallelism.html">第 6 课</a>（+<a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/09_inference_system/parallelism/parallelism_visual.html">上游交互版</a>）</td><td><span class="st done">✅</span></td></tr>
         <tr><td>SFT 实战 / 垂域微调</td><td><a href="05_model_training_and_fine_tuning/02_memory_calc.html">训练显存对比计算器（全参 vs LoRA）</a></td><td><span class="st done">✅</span></td></tr>
         <tr><td>70B 从零训练四部曲 / RL 后训练</td><td><a href="05_model_training_and_fine_tuning/03_70b_lessons.html">70B 复盘导读（含 RL 进阶入口）</a></td><td><span class="st done">✅</span></td></tr>
+        <tr><td>RL 后训练 / 对齐算法（DPO · PPO · GRPO）</td><td><a href="05_model_training_and_fine_tuning/04_alignment.html">第 11 课：对齐算法是怎么回事</a></td><td><span class="st done">✅</span></td></tr>
       </tbody>
     </table></div>
   </div>

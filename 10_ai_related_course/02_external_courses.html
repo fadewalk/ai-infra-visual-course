@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>导读 · 外部优质教程地图 —— 别重复造轮子</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--orange);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  .ecard{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:10px 0}
+  .ecard h3{margin:0 0 4px;font-size:16px;display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .ecard .stars{font-size:11px;color:var(--muted);font-weight:400}
+  .ecard .what{font-size:13px;margin:4px 0}
+  .ecard .use{font-size:13px;margin:6px 0 0;padding:8px 12px;border-radius:8px;background:var(--chip)}
+  .ecard .use b{color:var(--green)}
+  .tag{display:inline-block;font-size:11px;border-radius:999px;padding:1px 10px;border:1px solid var(--border);color:var(--muted);margin-right:4px}
+  .tag.stage{border-color:var(--green);color:var(--green)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{color:var(--muted);font-weight:500;font-size:12px}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+  .note{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 系列导读 · 外部资源整合</div>
+  <h1>外部优质教程地图</h1>
+  <p class="subtitle">首页推荐过的几个学习仓库，这里逐个给出"是什么 / 对你的价值 / 什么时候用"的判断结论——<b>好教程不必重复造，接进路径就行</b>。其中 AI 编译器主题已吸收为本站新课（见下）。</p>
+
+  <h2>一、逐个判断</h2>
+
+  <div class="ecard">
+    <h3><span>chenzomi12/AISystem（ZOMI 酱）</span><span class="stars">文字 + B 站视频 + PPT，中文</span></h3>
+    <p class="what">AI 系统全栈课程五卷：概述 → 芯片硬件 → <b>AI 编译器</b> → 推理系统 → 框架核心技术（自动微分/计算图）。有完整文字版与视频。</p>
+    <p class="use"><b>判断：强烈推荐，且已吸收。</b>它的 03Compiler（AI 编译原理）与 05Framework（计算图/自动微分）是本站此前没有的主题——已吸收成新课 <a href="03_ai_compiler.html">《AI 编译器是怎么回事》</a>，想深入时读它的原章（含 PyTorch 2.0 编译栈专章）。阶段 1-5 刷完后按需深入，视频适合通勤补课。</p>
+    <p><span class="tag stage">补阶段 4-5</span><a href="https://github.com/chenzomi12/AISystem">仓库 ↗</a> · <a href="https://infrasys-ai.github.io/aisystem-docs/">文字版 ↗</a>（仓库约 10G，用 Releases 下载，别直接 clone）</p>
+  </div>
+
+  <div class="ecard">
+    <h3><span>microsoft/AI-System（微软）</span><span class="stars">课件 + 实验代码 + 教材，英文为主</span></h3>
+    <p class="what">系统视角课程三段：基础（分布式训练、异构集群调度 Kubeflow/OpenPAI/Gandiva、推理系统 TensorRT/ONNX）→ 高阶（XLA/MLIR/TVM 编译、模型压缩、AutoML）→ <b>9 个动手实验</b>（含 AllReduce 实现、CUDA 优化、调度系统）。</p>
+    <p class="use"><b>判断：值得精读两块</b>——① 异构集群调度讲次（对照本站第 4 课，看"学术版"怎么讲 Gandiva 的 GPU 分时复用）；② Labs 里的 AllReduce 实现实验（第 2 课环形动画的代码版）。LLM serving 未覆盖，别指望它替代本站推理章。英语阅读有压力时优先 ZOMI 版。</p>
+    <p><span class="tag stage">补阶段 3-4</span><a href="https://github.com/microsoft/AI-System">仓库 ↗</a></p>
+  </div>
+
+  <div class="ecard">
+    <h3><span>datawhalechina/happy-llm（Datawhale）</span><span class="stars">文字教程 + Notebook，中文</span></h3>
+    <p class="what">从零构建大模型：Transformer 手把手实现 → 用 PyTorch 手写 LLaMA2 → 训练 Tokenizer → 预训练 + SFT + LoRA/QLoRA 全流程，还放出了训练好的 <b>215M 小模型</b>可直接下载体验。</p>
+    <p class="use"><b>判断：动手线的最佳入口。</b>本站偏"看得懂"，它补"写得出来"——读完第 10 课后照着第 5 章手写一遍，概念全部落地。215M 小模型在你自己的机器上微调是绝佳的第一次训练体验（对比第 2 课的显存账：小模型全参微调单卡轻松放下）。</p>
+    <p><span class="tag stage">补阶段 4 动手</span><a href="https://github.com/datawhalechina/happy-llm">仓库 ↗</a></p>
+  </div>
+
+  <div class="ecard">
+    <h3><span>datawhalechina/self-llm（Datawhale）</span><span class="stars">部署手册，中文，32.6k stars</span></h3>
+    <p class="what">《开源大模型食用指南》：50+ 主流模型（Qwen/GLM/DeepSeek/Llama…）的 Linux 环境配置 → 部署 → 微调步骤手册，另有 AMD ROCm / 昇腾 NPU / Apple MLX 硬件专区。</p>
+    <p class="use"><b>判断：当工具书，不当教程。</b>步骤是"抄作业"级别地详细——你做 99 章任务卡（本地跑 7B）时，环境问题直接查它对应模型的章节。NPU 专区与上游昇腾系列呼应。</p>
+    <p><span class="tag stage">阶段 4-5 随用随查</span><a href="https://github.com/datawhalechina/self-llm">仓库 ↗</a></p>
+  </div>
+
+  <div class="ecard">
+    <h3><span>datawhalechina/llm-cookbook（Datawhale）</span><span class="stars">Notebook + 中文教程，24.8k stars</span></h3>
+    <p class="what">吴恩达大模型系列课程的中文版：Prompt Engineering、RAG、LangChain、微调、评估等 11 门课，中文 Prompt 已复现调优。</p>
+    <p class="use"><b>判断：按需选修。</b>对转 AI Infra 的你不是主线，但第 8/9 课（RAG/Agent）想往应用层走一步时，它的 RAG 与 Agents 课程是最平缓的入口。必修 4 门里挑《Prompt Engineering》一门即可建立语感。</p>
+    <p><span class="tag stage">阶段 6 按需</span><a href="https://github.com/datawhalechina/llm-cookbook">仓库 ↗</a></p>
+  </div>
+
+  <h2>二、接进六阶段路径</h2>
+  <div class="stage" style="padding:0;overflow:auto">
+    <table>
+      <thead><tr><th>本站阶段</th><th>主线（本站课程）</th><th>外部补充</th></tr></thead>
+      <tbody>
+        <tr><td>0-3 · 直觉到运维</td><td>第 1-4 课 + 加餐</td><td>微软 AI-System 异构调度讲次（对照）</td></tr>
+        <tr><td>4 · 训练</td><td>第 2 课 + 显存计算器</td><td><b>happy-llm 从零手写</b> · self-llm 微调手册 · ZOMI 框架章</td></tr>
+        <tr><td>5 · 推理</td><td>第 3/5/6 课 + KV 计算器</td><td>微软推理系统讲次 · self-llm 部署手册</td></tr>
+        <tr><td>深化</td><td><a href="03_ai_compiler.html">AI 编译器新课</a></td><td><b>ZOMI 03Compiler</b> · 微软 XLA/MLIR/TVM 讲次</td></tr>
+        <tr><td>6 · 应用与成本</td><td>成本速算 + 第 8/9 课</td><td>llm-cookbook（按需）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="foot">
+    <p class="note">本页为资源导览与学习建议；外部课程版权归原作者，协议以各仓库为准（Datawhale 系多为 CC BY-NC-SA 非商用，微软课程 CC-BY/MIT，引用学习无碍）。</p>
+    <div class="nav"><a href="01_overview.html">← 上一页：课程章导读</a><a href="03_ai_compiler.html">新课：AI 编译器是怎么回事 →</a></div>
+  </div>
+</div>
+</body>
+</html>

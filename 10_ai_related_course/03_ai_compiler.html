@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>新课 · AI 编译器是怎么回事 —— 从一行 PyTorch 到 GPU Kernel</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--orange);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  .ctl{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  button{font:inherit;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--fg);border-radius:8px;padding:6px 14px}
+  button:hover{border-color:var(--orange)}
+  button.primary{background:var(--orange);border-color:var(--orange);color:#fff}
+  .fusewrap{display:grid;gap:14px;grid-template-columns:1fr}
+  @media(min-width:820px){.fusewrap{grid-template-columns:1fr 1fr}}
+  .fuse{border:1px solid var(--border);border-radius:10px;padding:12px;background:var(--chip)}
+  .fuse h4{margin:0 0 10px;font-size:13px;display:flex;justify-content:space-between}
+  .fuse h4 .tm{font-weight:500;color:var(--muted)}
+  .kchain{display:flex;flex-direction:column;gap:4px;align-items:stretch}
+  .k{border-radius:8px;padding:8px 12px;font-size:12px;text-align:center;border:1px solid var(--border);background:var(--card);position:relative}
+  .k .rw{font-size:10px;color:var(--muted);display:block}
+  .k.hot{border-color:var(--red)}
+  .wirev{height:22px;position:relative;overflow:hidden}
+  .wirev i{position:absolute;left:50%;top:-30%;width:8px;height:30%;border-radius:50%;background:var(--red);animation:down 1.1s linear infinite}
+  @keyframes down{to{top:110%}}
+  .fusedone .k{border-color:var(--green);background:color-mix(in srgb,var(--green) 10%, var(--card))}
+  .fusedone .inner{font-size:10px;color:var(--green);text-align:center;padding:4px 0}
+  .fusionstat{margin-top:10px;font-size:13px}
+  .fusionstat b{color:var(--green)}
+  .tc{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+  .tcr{display:flex;align-items:center;gap:10px;font-size:12px}
+  .tcr .nm{width:150px;color:var(--muted);white-space:nowrap}
+  .tcr .track{flex:1;height:16px;border-radius:6px;background:var(--chip);overflow:hidden}
+  .tcr .track i{display:block;height:100%;width:0%;background:var(--orange);transition:width .6s}
+  .tcr .v{width:52px;font-size:12px}
+  .grid{display:grid;gap:12px;grid-template-columns:1fr}
+  @media(min-width:700px){.grid.c2{grid-template-columns:repeat(2,1fr)}.grid.c3{grid-template-columns:repeat(3,1fr)}}
+  .kcard{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+  .kcard h4{margin:0 0 6px;font-size:14px;color:var(--orange)}
+  .kcard .def{font-size:13px;margin:0 0 8px}
+  .kcard .ana{font-size:12px;color:var(--muted);border-top:1px dashed var(--border);padding-top:6px}
+  .pipe{display:flex;flex-wrap:wrap;gap:6px;align-items:stretch}
+  .pnode{flex:1;min-width:110px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:12px;background:var(--chip)}
+  .pnode b{display:block;font-size:13px}
+  .pnode .d{color:var(--muted);font-size:11px}
+  .parrow{align-self:center;color:var(--muted)}
+  .code{font-family:ui-monospace,Menlo,monospace;font-size:12px;background:var(--chip);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin:8px 0;overflow:auto;white-space:pre}
+  .quiz{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin:10px 0}
+  .quiz p{margin:0 0 10px;font-size:14px}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:8px 12px}
+  .opt.right{border-color:var(--green);color:var(--green)}
+  .opt.wrong{border-color:var(--red);color:var(--red)}
+  .verdict{font-size:13px;margin-left:8px}
+  .verdict.ok{color:var(--green)} .verdict.bad{color:var(--red)}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .foot ul{margin:6px 0;padding-left:18px}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+  .note{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 新课 · 吸收自 ZOMI 酱 AISystem 03Compiler 与微软 AI-System 编译讲次</div>
+  <h1>AI 编译器是怎么回事？</h1>
+  <p class="subtitle">你写 <code>y = x @ w + b</code> 一行代码，GPU 上要跑成千上万个线程——中间的"翻译官"就是 AI 编译器。它决定了同一份模型在不同卡上快慢的很大一部分。</p>
+
+  <h2>一、动手：算子融合前后</h2>
+  <div class="stage">
+    <div class="ctl">
+      <button id="m-off" class="primary" type="button">融合前（3 个 Kernel 各自为政）</button>
+      <button id="m-on" type="button">融合后（1 个 Kernel）</button>
+    </div>
+    <div class="fusewrap">
+      <div class="fuse">
+        <h4>计算过程<span class="tm">Conv → BN → ReLU（经典三连）</span></h4>
+        <div class="kchain" id="chain"></div>
+      </div>
+      <div>
+        <div class="fusionstat" id="fstat">融合前：每个 Kernel 都要"把结果写回显存 → 下一个再从显存读回来"——中间结果在显存里打了三个来回。</div>
+        <p class="note">示意图：红色圆点 = 中间结果在显存里的往返。融合后中间值留在寄存器/共享内存（片上，第 5 课金字塔顶层），只做一次读入和一次写出。</p>
+        <p class="note">收益量级：融合通常带来 1.3-3× 的层耗时下降（视算子与形状，行业常见口径），且省下的显存往返 = 更低的延迟抖动。</p>
+      </div>
+    </div>
+  </div>
+
+  <h2>二、翻译流水线：四个阶段</h2>
+  <div class="stage">
+    <div class="pipe">
+      <div class="pnode"><b>① 捕获计算图</b><span class="d">把 Python 代码变成图（TorchDynamo / tracing）</span></div>
+      <div class="parrow">→</div>
+      <div class="pnode"><b>② 图优化</b><span class="d">算子融合、常量折叠、死代码消除</span></div>
+      <div class="parrow">→</div>
+      <div class="pnode"><b>③ 算子选择</b><span class="d">用库（cuBLAS/CuDNN）还是生成专用 Kernel</span></div>
+      <div class="parrow">→</div>
+      <div class="pnode"><b>④ 代码生成</b><span class="d">Triton / TVM 生成 Kernel 并自动调优</span></div>
+    </div>
+    <div class="code"># 你唯一要做的事，可能就是这一行（PyTorch 2.x）：
+model = torch.compile(model)          # 默认策略
+model = torch.compile(model, mode="max-autotune")   # 更激进：编译更久，跑得更快</div>
+    <p class="note">代价：首次运行要等编译（几十秒到几分钟）；动态变化的输入形状会触发重编译——生产上要固定形状或做 warmup。SRE 视角：这解释了"容器启动后第一笔请求特别慢"的一类原因。</p>
+  </div>
+
+  <h2>三、关键词卡</h2>
+  <div class="grid c2">
+    <div class="kcard"><h4>计算图</h4><p class="def">把模型的运算表示成"节点=算子、边=数据"的图，编译器的一切优化都发生在图上。</p><p class="ana">🧠 类比：CI 流水线的 DAG——先有图，才能调度优化。</p></div>
+    <div class="kcard"><h4>算子融合</h4><p class="def">把相邻的小算子合并成一个大 Kernel，中间数据留在片上——上图演示的核心优化。</p><p class="ana">🧠 类比：三次落盘合并成一次批量写。</p></div>
+    <div class="kcard"><h4>自动调优</h4><p class="def">同一个计算有多种 Kernel 写法（不同 tile/线程安排），编译器在真实硬件上实测挑最快的（Triton autotune / TVM / TensorRT）。</p><p class="ana">🧠 类比：参数搜索——对 Kernel 形状做 CARBS。</p></div>
+    <div class="kcard"><h4>XLA / MLIR / TVM</h4><p class="def">三大主流编译技术栈：XLA（Google）、MLIR（LLVM 系基础设施）、TVM（开源 AI 编译器）。PyTorch 的 Inductor 底层就是生成 Triton。</p><p class="ana">🧠 类比：GCC/LLVM 之于 CPU 代码。</p></div>
+  </div>
+
+  <h2>四、小测验</h2>
+  <div class="quiz"><p>Q1 · 算子融合省的是什么？</p>
+    <button class="opt" data-ok="1" type="button">中间结果的显存往返——留在片上直接给下一个算子用</button>
+    <button class="opt" type="button">减少模型参数量</button>
+    <button class="opt" type="button">提高 GPU 频率</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q2 · torch.compile 之后"第一笔请求特别慢"，最可能因为？</p>
+    <button class="opt" type="button">KV Cache 没预热</button>
+    <button class="opt" data-ok="1" type="button">编译在首次执行时发生（JIT），要等图捕获与 Kernel 生成完成</button>
+    <button class="opt" type="button">网络冷启动</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q3 · 为什么 NPU（如昇腾）比 GPU 更依赖编译器？</p>
+    <button class="opt" type="button">NPU 没有显存</button>
+    <button class="opt" type="button">NPU 更快所以不需要</button>
+    <button class="opt" data-ok="1" type="button">专用硬件的算子库覆盖更少，新算子往往要靠编译器现场生成或降级</button>
+    <span class="verdict"></span>
+  </div>
+
+  <div class="foot">
+    <b>延伸阅读</b>
+    <ul>
+      <li><a href="https://github.com/chenzomi12/AISystem/tree/main/03Compiler">ZOMI 酱 AISystem · 03 AI 编译原理</a>——本课的完整展开（含 PyTorch 2.0 编译栈专章）</li>
+      <li><a href="https://github.com/microsoft/AI-System">微软 AI-System</a> 高阶课程：计算图编译与优化（XLA / MLIR / TVM）</li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/02_gpu_programming/03_tilelang/01_tilelang_quick_start.md">TileLang 快速入门</a>——想亲手写 Kernel 时的下一站</li>
+    </ul>
+    <div class="nav"><a href="02_external_courses.html">← 上一页：外部教程地图</a><a href="../98_llm_programming/01_overview.html">LLM 编程章导读 →</a></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var chain=document.getElementById('chain'),stat=document.getElementById('fstat');
+  function draw(fused){
+    chain.innerHTML='';
+    if(!fused){
+      var ks=[['Kernel 1 · Conv','写结果 → 显存'],['Kernel 2 · BN','读显存 → 算 → 写回'],['Kernel 3 · ReLU','读显存 → 算 → 写回']];
+      ks.forEach(function(k,i){
+        var d=document.createElement('div');d.className='k hot';
+        d.innerHTML='<b>'+k[0]+'</b><span class="rw">'+k[1]+'</span>';
+        chain.appendChild(d);
+        if(i<ks.length-1){
+          var w=document.createElement('div');w.className='wirev';w.innerHTML='<i></i>';
+          chain.appendChild(w);
+        }
+      });
+      var last=document.createElement('div');last.className='k';last.innerHTML='<b>结果</b><span class="rw">显存</span>';
+      chain.appendChild(last);
+      stat.innerHTML='融合前：<b style="color:var(--red)">显存往返 6 次</b>（3 次写 + 3 次读），3 个 Kernel 启动开销 ×3。红色圆点 = 中间结果在显存里打转。';
+    }else{
+      var d=document.createElement('div');d.className='k fusedone';
+      d.innerHTML='<b>Kernel 1·融合版 · Conv+BN+ReLU</b><div class="inner">Conv → BN → ReLU 中间值全程留在寄存器/共享内存（片上）</div><span class="rw">只读一次输入 · 只写一次输出</span>';
+      chain.appendChild(d);
+      stat.innerHTML='融合后：<b>显存往返 2 次</b>（1 读 1 写），中间值全程在片上（第 5 课金字塔顶层）——层耗时通常降到原来的 1/3 ~ 2/3（示意口径）。';
+    }
+  }
+  var off=document.getElementById('m-off'),on=document.getElementById('m-on');
+  off.addEventListener('click',function(){
+    off.classList.add('primary');on.classList.remove('primary');draw(false);
+  });
+  on.addEventListener('click',function(){
+    on.classList.add('primary');off.classList.remove('primary');draw(true);
+  });
+  draw(false);
+  document.querySelectorAll('.quiz').forEach(function(q){
+    q.addEventListener('click',function(e){
+      var b=e.target.closest('button.opt');
+      if(!b||q.dataset.done==='1')return;
+      var ok=b.dataset.ok==='1';
+      q.querySelectorAll('.opt').forEach(function(x){x.disabled=true;if(x.dataset.ok==='1')x.classList.add('right');});
+      if(!ok)b.classList.add('wrong');
+      var v=q.querySelector('.verdict');
+      v.textContent=ok?'✓ 答对了':'✗ 正确答案已标绿';
+      v.className='verdict '+(ok?'ok':'bad');
+      q.dataset.done='1';
+    });
+  });
+})();
+</script>
+</body>
+</html>

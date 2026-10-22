@@ -24,6 +24,8 @@
 | 加餐 | **硬件与网络四页**：PCIe/CXL · GPUDirect · NVLink · IB/RDMA · **NCCL 导读** | [01_hardware_architecture/03_pcie_cxl.html](01_hardware_architecture/03_pcie_cxl.html) 等同目录 |
 | 加餐 | **推理深入**：Batching/PagedAttention · $/token 成本速算 · 引擎与 KV 系统导读 | [09_inference_system/04_batching_attention.html](09_inference_system/04_batching_attention.html) 等 |
 | 加餐 | **其余**：芯片三路线对比 · LWS/llm-d · 存储三篇 · 70B 复盘 · NPU 对照 · 各章导读 | [index.html](index.html) 完整目录 |
+| 新课 | **AI 编译器是怎么回事** —— 算子融合动画（吸收 ZOMI/微软课程） | [10_ai_related_course/03_ai_compiler.html](10_ai_related_course/03_ai_compiler.html) |
+| 导读 | **外部优质教程地图** —— Datawhale/ZOMI/微软课程的价值判断与接入时机 | [10_ai_related_course/02_external_courses.html](10_ai_related_course/02_external_courses.html) |
 | 参考 | **术语图鉴** —— 60+ 个黑话的一句话解释 + SRE 类比，可搜索、带思维导图 | [glossary.html](glossary.html) |
 
 完整 1:1 课程目录（含全部章节的制作状态）见 [index.html](index.html)。

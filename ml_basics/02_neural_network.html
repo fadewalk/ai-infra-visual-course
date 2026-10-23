@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 13 课 · 神经网络与深度学习 —— 亲手调出过拟合</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--green);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  .duo{display:grid;gap:16px;grid-template-columns:1fr}
+  @media(min-width:820px){.duo{grid-template-columns:6fr 5fr}}
+  .neuron{display:flex;align-items:center;justify-content:center;gap:10px;margin:8px 0;flex-wrap:wrap;font-size:12px}
+  .nc{border:1px solid var(--border);border-radius:50%;width:56px;height:56px;display:flex;align-items:center;justify-content:center;background:var(--chip);font-size:11px}
+  .no{color:var(--muted);font-size:14px}
+  .lr{display:flex;align-items:center;gap:10px;font-size:13px;margin:8px 0}
+  .lr input[type=range]{flex:1;max-width:320px}
+  .lr b{min-width:30px}
+  .resrow{display:flex;align-items:center;gap:8px;font-size:12px;margin:4px 0}
+  .resrow .nm{width:96px;color:var(--muted)}
+  .resrow .track{flex:1;height:14px;border-radius:6px;background:var(--chip);overflow:hidden}
+  .resrow .track i{display:block;height:100%;transition:width .3s}
+  .resrow .v{width:56px;font-size:11px}
+  .verdictbox{font-size:14px;font-weight:500;margin-top:10px;min-height:22px}
+  .verdictbox.u{color:var(--orange)} .verdictbox.g{color:var(--green)} .verdictbox.o{color:var(--red)}
+  svg text{fill:var(--fg);font-size:11px}
+  .grid{display:grid;gap:12px;grid-template-columns:1fr}
+  @media(min-width:700px){.grid.c2{grid-template-columns:repeat(2,1fr)}.grid.c3{grid-template-columns:repeat(3,1fr)}}
+  .kcard{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+  .kcard h4{margin:0 0 6px;font-size:14px;color:var(--green)}
+  .kcard .def{font-size:13px;margin:0 0 8px}
+  .kcard .ana{font-size:12px;color:var(--muted);border-top:1px dashed var(--border);padding-top:6px}
+  .quiz{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin:10px 0}
+  .quiz p{margin:0 0 10px;font-size:14px}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:8px 12px}
+  .opt.right{border-color:var(--green);color:var(--green)}
+  .opt.wrong{border-color:var(--red);color:var(--red)}
+  .verdict{font-size:13px;margin-left:8px}
+  .verdict.ok{color:var(--green)} .verdict.bad{color:var(--red)}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .foot ul{margin:6px 0;padding-left:18px}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+  .note{font-size:12px;color:var(--muted)}
+  .code{font-family:ui-monospace,Menlo,monospace;font-size:12px;background:var(--chip);border:1px solid var(--border);border-radius:8px;padding:8px 12px;overflow:auto;white-space:pre}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 第 13 课 / 共 14 课 · 基础补全模块</div>
+  <h1>神经网络与深度学习</h1>
+  <p class="subtitle">第 2 课看过训练循环，这一课补它的地基：神经元怎么组成网络、为什么需要激活函数——然后<b>亲手把"过拟合"调出来</b>，这个 ML 最大的坑就再也忘不掉了。</p>
+
+  <h2>一、神经元：加权和 + 激活</h2>
+  <div class="stage">
+    <div class="neuron">
+      <span class="nc">x₁×w₁</span><span class="no">+</span>
+      <span class="nc">x₂×w₂</span><span class="no">+</span>
+      <span class="nc">x₃×w₃</span><span class="no">→</span>
+      <span class="nc" style="border-color:var(--green)">Σ 求和</span><span class="no">→</span>
+      <span class="nc" style="border-color:var(--orange)">激活 f</span><span class="no">→</span>
+      <span class="nc">输出</span>
+    </div>
+    <p class="note" style="text-align:center">一个"神经元" = 线性加权求和，再过一个非线性函数 f（如 ReLU：负数归零）。深度学习的一切复杂行为，都是几百万个这个小单元堆出来的。</p>
+    <div class="grid c2">
+      <div class="kcard"><h4>为什么必须激活函数？</h4><p class="def">没有非线性激活，100 层线性层叠起来仍等价于<b>一层</b>（线性套线性还是线性）——网络再深也只会画直线。</p><p class="ana">🧠 类比：全是线性环节的电路，增益再大也只会放大失真。</p></div>
+      <div class="kcard"><h4>MLP 多层感知机</h4><p class="def">神经元按层排：输入层 → 隐藏层×N → 输出层。第 10 课 Transformer 里的 FFN 就是一个 MLP。</p><p class="ana">🧠 万能近似定理：够宽的 MLP 理论上能逼近任何函数——"够数据就行"。</p></div>
+    </div>
+  </div>
+
+  <h2>二、亲手实验：调出过拟合</h2>
+  <div class="stage">
+    <div class="duo">
+      <svg id="fitplot" viewBox="0 0 460 240" width="100%" role="img" aria-label="拟合曲线图"></svg>
+      <div>
+        <div class="lr">模型复杂度（多项式阶数）<input type="range" id="deg" min="1" max="15" value="1"><b id="degv">1</b></div>
+        <div class="resrow"><span class="nm">训练误差</span><span class="track"><i id="tr" style="background:var(--blue);width:0%"></i></span><span class="v" id="trv">–</span></div>
+        <div class="resrow"><span class="nm">测试误差（新数据）</span><span class="track"><i id="te" style="background:var(--orange);width:0%"></i></span><span class="v" id="tev">–</span></div>
+        <div class="verdictbox" id="vd"></div>
+        <p class="note">蓝点 = 训练数据（20 个带噪声的样本）；橙点 = 测试数据（模型没见过）；绿线 = 模型拟合出的曲线。拖动阶数，盯住两条误差的反向变化。</p>
+      </div>
+    </div>
+    <p class="note" style="margin-top:10px">这就是第 12 课"过拟合/欠拟合"的亲手版：<b>复杂度低</b> → 训练测试都差（欠拟合，模型能力不足）；<b>复杂度刚好</b> → 双低；<b>复杂度过高</b> → 训练误差趋近 0 但测试误差爆炸（模型开始"背噪声"）。真实深度学习里，网络容量、训练轮数、正则化的权衡一模一样。</p>
+  </div>
+
+  <h2>三、CNN → RNN → Transformer：一分钟演化史</h2>
+  <div class="grid c3">
+    <div class="kcard"><h4>CNN（图像时代）</h4><p class="def">卷积核扫过图片提局部特征，参数共享让图像任务在 2012 年起飞。</p><p class="ana">🧠 带局部感受野的模板匹配。</p></div>
+    <div class="kcard"><h4>RNN / LSTM（序列尝试）</h4><p class="def">按时间步串行处理序列、有"记忆"。致命伤：串行没法并行、长序列记不住远处的词。</p><p class="ana">🧠 单线程逐行处理日志，读到尾巴忘了头。</p></div>
+    <div class="kcard"><h4>Transformer（第 10 课）</h4><p class="def">用注意力替代串行循环：全序列并行 + 任意两词直连。GPU 并行优势全兑现——深度学习与大模型的汇合点。</p><p class="ana">🧠 把"逐行读"换成"全文检索"。</p></div>
+  </div>
+
+  <h2>四、深度学习爆发的三要素</h2>
+  <div class="grid c3">
+    <div class="kcard"><h4>数据</h4><p class="def">互联网把标注/半标注数据规模拉升了几个量级——喂不饱的网络谈不上智能。</p><p class="ana">🧠 数据是新的燃料。</p></div>
+    <div class="kcard"><h4>算力</h4><p class="def">GPU 并行恰好匹配矩阵乘法（第 1 课）——没有算力革命就没有深度学习革命。</p><p class="ana">🧠 你现在学的整个 Infra 体系，都是这条的延伸。</p></div>
+    <div class="kcard"><h4>算法</h4><p class="def">ReLU、更好的初始化、BatchNorm、残差连接（第 10 课）、Adam（第 2 课）——让深网络真正训得动。</p><p class="ana">🧠 每个都是一块"训得深"的垫脚石。</p></div>
+  </div>
+
+  <h2>五、小测验</h2>
+  <div class="quiz"><p>Q1 · 多层网络去掉所有激活函数会发生什么？</p>
+    <button class="opt" type="button">训练更稳定</button>
+    <button class="opt" data-ok="1" type="button">整个网络退化成一层线性变换，只能学线性关系</button>
+    <button class="opt" type="button">没有影响</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q2 · 训练误差很低、测试误差很高，这是？</p>
+    <button class="opt" type="button">欠拟合，该加复杂度</button>
+    <button class="opt" data-ok="1" type="button">过拟合——模型在背训练数据的噪声，泛化失败</button>
+    <button class="opt" type="button">学习率太小</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q3 · Transformer 相比 RNN 的关键优势？</p>
+    <button class="opt" type="button">参数更少</button>
+    <button class="opt" data-ok="1" type="button">注意力并行处理全序列 + 任意位置直连，吃满 GPU 并行能力</button>
+    <button class="opt" type="button">不需要数据</button>
+    <span class="verdict"></span>
+  </div>
+
+  <div class="foot">
+    <b>延伸阅读</b>
+    <ul>
+      <li>第 10 课：<a href="../06_llm_theory_and_fundamentals/02_transformer.html">Transformer 拆解</a>——本课"演化史"的终点站</li>
+      <li>第 2 课：<a href="../05_model_training_and_fine_tuning/01_training_loop.html">训练循环</a>——反向传播就是给这张网求梯度</li>
+      <li>系统理论延伸：<a href="https://github.com/microsoft/AI-System">微软 AI-System</a> 矩阵运算与体系结构讲次</li>
+    </ul>
+    <div class="nav"><a href="01_ml_map.html">← 第 12 课：机器学习全景</a><a href="03_rl_basics.html">下一课：强化学习入门 →</a></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  /* seeded rng */
+  function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
+  var rng=mulberry32(42);
+  function f(x){return 0.5+0.7*Math.sin(2.2*Math.PI*x);}
+  var train=[],test=[];
+  for(var i=0;i<20;i++){var x=i/19;train.push({x:x,y:f(x)+(rng()-0.5)*0.36});}
+  for(var j=0;j<40;j++){var x2=(j+rng())/40;test.push({x:x2,y:f(x2)+(rng()-0.5)*0.36});}
+  var W=440,H=210;
+  function X(x){return 35+x*(W-50);}
+  function Y(y){return H-20-y*(H-45);}
+  /* ridge polyfit on normalized x */
+  function fit(data,deg){
+    var n=data.length,dim=deg+1,lam=1e-9;
+    var A=[],b=[];
+    for(var r=0;r<dim;r++){A.push(new Array(dim).fill(0));b.push(0);}
+    data.forEach(function(p){
+      var px=p.x*2-1;
+      var pw=[1];for(var k=1;k<=deg;k++)pw.push(pw[k-1]*px);
+      for(var r2=0;r2<dim;r2++){b[r2]+=pw[r2]*p.y;for(var c=0;c<dim;c++)A[r2][c]+=pw[r2]*pw[c];}
+    });
+    for(var r3=0;r3<dim;r3++)A[r3][r3]+=lam;
+    for(var col=0;col<dim;col++){
+      var piv=col;
+      for(var r4=col+1;r4<dim;r4++)if(Math.abs(A[r4][col])>Math.abs(A[piv][col]))piv=r4;
+      var tmp=A[col];A[col]=A[piv];A[piv]=tmp;
+      var tb=b[col];b[col]=b[piv];b[piv]=tb;
+      if(Math.abs(A[col][col])<1e-12)continue;
+      for(var r5=col+1;r5<dim;r5++){
+        var fac=A[r5][col]/A[col][col];
+        for(var c2=col;c2<dim;c2++)A[r5][c2]-=fac*A[col][c2];
+        b[r5]-=fac*b[col];
+      }
+    }
+    var coef=new Array(dim).fill(0);
+    for(var r6=dim-1;r6>=0;r6--){
+      var s=b[r6];
+      for(var c3=r6+1;c3<dim;c3++)s-=A[r6][c3]*coef[c3];
+      coef[r6]=Math.abs(A[r6][r6])>1e-12? s/A[r6][r6]:0;
+    }
+    return function(x){var px=x*2-1,v=0,p=1;for(var k=0;k<=deg;k++){v+=coef[k]*p;p*=px;}return v;};
+  }
+  function mse(data,model){
+    var s=0;data.forEach(function(p){var e=model(p.x)-p.y;s+=e*e;});
+    return s/data.length;
+  }
+  var svg=document.getElementById('fitplot'),NS='http://www.w3.org/2000/svg';
+  function render(deg){
+    svg.innerHTML='';
+    [0.25,0.5,0.75].forEach(function(g){
+      var l=document.createElementNS(NS,'line');
+      l.setAttribute('x1',35);l.setAttribute('y1',Y(g));l.setAttribute('x2',W-15);l.setAttribute('y2',Y(g));
+      l.setAttribute('stroke','var(--border)');l.setAttribute('stroke-width','.5');
+      svg.appendChild(l);
+    });
+    var l1=document.createElementNS(NS,'line');
+    l1.setAttribute('x1',35);l1.setAttribute('y1',15);l1.setAttribute('x2',35);l1.setAttribute('y2',H-20);
+    l1.setAttribute('stroke','var(--border)');svg.appendChild(l1);
+    var l2=document.createElementNS(NS,'line');
+    l2.setAttribute('x1',35);l2.setAttribute('y1',H-20);l2.setAttribute('x2',W-15);l2.setAttribute('y2',H-20);
+    l2.setAttribute('stroke','var(--border)');svg.appendChild(l2);
+    var model=fit(train,deg);
+    var d='';
+    for(var x=0;x<=1.001;x+=0.01){
+      var y=Math.max(-0.4,Math.min(1.6,model(x)));
+      d+=(d?'L':'M')+X(x).toFixed(1)+' '+Y(y).toFixed(1)+' ';
+    }
+    var path=document.createElementNS(NS,'path');
+    path.setAttribute('d',d.trim());path.setAttribute('fill','none');
+    path.setAttribute('stroke','var(--green)');path.setAttribute('stroke-width','2');
+    svg.appendChild(path);
+    train.forEach(function(p){
+      var c=document.createElementNS(NS,'circle');
+      c.setAttribute('cx',X(p.x));c.setAttribute('cy',Y(Math.max(-0.4,Math.min(1.6,p.y))));
+      c.setAttribute('r',3.5);c.setAttribute('fill','var(--blue)');
+      svg.appendChild(c);
+    });
+    test.forEach(function(p){
+      var c=document.createElementNS(NS,'circle');
+      c.setAttribute('cx',X(p.x));c.setAttribute('cy',Y(Math.max(-0.4,Math.min(1.6,p.y))));
+      c.setAttribute('r',3);c.setAttribute('fill','none');c.setAttribute('stroke','var(--orange)');c.setAttribute('stroke-width','1.5');
+      svg.appendChild(c);
+    });
+    var tr=Math.sqrt(mse(train,model)),te=Math.sqrt(mse(test,model));
+    var max=0.55;
+    document.getElementById('tr').style.width=Math.min(100,tr/max*100)+'%';
+    document.getElementById('te').style.width=Math.min(100,te/max*100)+'%';
+    document.getElementById('trv').textContent=tr.toFixed(3);
+    document.getElementById('tev').textContent=te.toFixed(3);
+    var vd=document.getElementById('vd');
+    if(te>0.30&&tr<te*0.6){vd.className='verdictbox o';vd.textContent='💥 过拟合：训练误差极低，但曲线在"背噪声"——测试点（橙圈）全被甩开。真实网络里这就是"背题库"。';}
+    else if(tr>0.28){vd.className='verdictbox u';vd.textContent='🐢 欠拟合：一条直线/低阶曲线画不出正弦形态——模型能力不足，训练测试双差。';}
+    else{vd.className='verdictbox g';vd.textContent='✅ 拟合良好：两条误差都低且接近——泛化成立。记住这个区间。';}
+  }
+  var deg=document.getElementById('deg');
+  deg.addEventListener('input',function(){
+    document.getElementById('degv').textContent=deg.value;
+    render(+deg.value);
+  });
+  render(1);
+  document.querySelectorAll('.quiz').forEach(function(q){
+    q.addEventListener('click',function(e){
+      var b=e.target.closest('button.opt');
+      if(!b||q.dataset.done==='1')return;
+      var ok=b.dataset.ok==='1';
+      q.querySelectorAll('.opt').forEach(function(x){x.disabled=true;if(x.dataset.ok==='1')x.classList.add('right');});
+      if(!ok)b.classList.add('wrong');
+      var v=q.querySelector('.verdict');
+      v.textContent=ok?'✓ 答对了':'✗ 正确答案已标绿';
+      v.className='verdict '+(ok?'ok':'bad');
+      q.dataset.done='1';
+    });
+  });
+})();
+</script>
+</body>
+</html>

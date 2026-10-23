@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 12 课 · 机器学习全景 —— AI / ML / DL / RL 到底是什么关系</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--blue);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  .duo{display:grid;gap:16px;grid-template-columns:1fr}
+  @media(min-width:820px){.duo{grid-template-columns:6fr 5fr}}
+  svg text{fill:var(--fg)}
+  .mring{cursor:pointer}
+  .detail{border:1px solid var(--border);border-radius:10px;padding:12px 14px;background:var(--chip);min-height:190px}
+  .detail h3{margin:0 0 4px;font-size:16px}
+  .detail .lat{color:var(--blue);font-size:12px;margin-bottom:8px}
+  .detail p{font-size:13px;margin:6px 0}
+  .scenario{border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin:8px 0;font-size:13px;background:var(--chip)}
+  .scenario .q{margin-bottom:6px}
+  .scenario select{font:inherit;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--fg);margin-right:6px}
+  .scenario .ok{color:var(--green);font-weight:500;margin-left:6px}
+  .scenario .bad{color:var(--red);font-weight:500;margin-left:6px}
+  .grid{display:grid;gap:12px;grid-template-columns:1fr}
+  @media(min-width:700px){.grid.c2{grid-template-columns:repeat(2,1fr)}.grid.c3{grid-template-columns:repeat(3,1fr)}}
+  .kcard{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+  .kcard h4{margin:0 0 6px;font-size:14px;color:var(--blue)}
+  .kcard .def{font-size:13px;margin:0 0 8px}
+  .kcard .ana{font-size:12px;color:var(--muted);border-top:1px dashed var(--border);padding-top:6px}
+  .quiz{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin:10px 0}
+  .quiz p{margin:0 0 10px;font-size:14px}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:8px 12px}
+  .opt.right{border-color:var(--green);color:var(--green)}
+  .opt.wrong{border-color:var(--red);color:var(--red)}
+  .verdict{font-size:13px;margin-left:8px}
+  .verdict.ok{color:var(--green)} .verdict.bad{color:var(--red)}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .foot ul{margin:6px 0;padding-left:18px}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+  .note{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 第 12 课 / 共 14 课 · 基础补全模块（零基础建议最先读）</div>
+  <h1>机器学习全景</h1>
+  <p class="subtitle">AI、机器学习、深度学习、强化学习——四个天天混用的词，一张图分清。以及：机器学习的三种"学习方式"和最核心的几个理论概念。</p>
+
+  <h2>一、点圈看定义：谁包含谁</h2>
+  <div class="stage">
+    <div class="duo">
+      <svg id="rings" viewBox="0 0 420 300" width="100%" role="img" aria-label="AI ML DL RL 关系图"></svg>
+      <div class="detail" id="rd"></div>
+    </div>
+    <p class="note">记忆口诀：<b>AI 是愿景，机器学习是实现路径，深度学习是其中一种技术，强化学习是一种学习范式</b>——它可以和深度学习结合（深度强化学习，AlphaGo / RLHF 都是）。</p>
+  </div>
+
+  <h2>二、三种学习范式：给场景选方法</h2>
+  <div class="stage">
+    <p style="font-size:13px;margin-top:0">机器学习（不管用什么模型）按"从什么反馈中学习"分三大范式。给下面 4 个真实场景选范式，选完点「判卷」：</p>
+    <div class="scenario"><div class="q">① 银行有 10 万条历史贷款记录（标注了"违约/未违约"），要预测新申请人会不会违约。</div>
+      <select id="s1"><option value="">选范式</option><option>监督学习</option><option>无监督学习</option><option>强化学习</option></select><span id="r1"></span></div>
+    <div class="scenario"><div class="q">② 手里有 100 万条用户消费记录，没有任何标签，想把用户分成几类做运营。</div>
+      <select id="s2"><option value="">选范式</option><option>监督学习</option><option>无监督学习</option><option>强化学习</option></select><span id="r2"></span></div>
+    <div class="scenario"><div class="q">③ 训练一个程序下围棋：只告诉它规则和胜负，让它自己下、自己总结。</div>
+      <select id="s3"><option value="">选范式</option><option>监督学习</option><option>无监督学习</option><option>强化学习</option></select><span id="r3"></span></div>
+    <div class="scenario"><div class="q">④ 让大模型学会"回答得更符合人类偏好"——人对两个回答排序，模型据此改进。</div>
+      <select id="s4"><option value="">选范式</option><option>监督学习</option><option>无监督学习</option><option>强化学习</option></select><span id="r4"></span></div>
+    <div class="ctl" style="margin-top:10px">
+      <button id="check" class="primary" type="button">判卷</button>
+      <span id="score" style="font-size:13px"></span>
+    </div>
+    <p class="note">④ 是个陷阱题：RLHF 里的"偏好排序"本质是给强化学习提供奖励信号——所以归强化学习族（第 11 课展开）。</p>
+  </div>
+
+  <h2>三、核心理论概念（全系列通用）</h2>
+  <div class="grid c2">
+    <div class="kcard"><h4>泛化（Generalization）</h4><p class="def">模型在<b>没见过</b>的数据上表现好，才叫学到了——在训练数据上刷高分不算。</p><p class="ana">🧠 类比：背题库考满分 ≠ 会做题。一切训练技巧都为泛化服务。</p></div>
+    <div class="kcard"><h4>训练 / 验证 / 测试集</h4><p class="def">训练集调参、验证集选模型、测试集只许最后碰一次——提前偷看测试集，成绩就是自欺欺人。</p><p class="ana">🧠 类比：作业 / 模拟考 / 高考。</p></div>
+    <div class="kcard"><h4>损失函数</h4><p class="def">量化"预测和正确答案差多远"的尺子。分类用交叉熵，回归用均方误差——第 2 课训练循环里那个 loss 就是它。</p><p class="ana">🧠 类比：KPI 里的偏差度量。选错尺子=优化错方向。</p></div>
+    <div class="kcard"><h4>过拟合 / 欠拟合</h4><p class="def">过拟合：训练分高、测试拉胯（死记硬背）；欠拟合：训练都学不会（能力不足）。下一课亲手调出来看。</p><p class="ana">🧠 类比：背题背到原题都会、换题就废 = 过拟合。</p></div>
+  </div>
+
+  <h2>六、小测验</h2>
+  <div class="quiz"><p>Q1 · 深度学习和机器学习的关系是？</p>
+    <button class="opt" data-ok="1" type="button">深度学习是机器学习的一个分支（用多层神经网络）</button>
+    <button class="opt" type="button">并列的两门学科</button>
+    <button class="opt" type="button">深度学习包含机器学习</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q2 · "没有标签的数据做分群"属于？</p>
+    <button class="opt" type="button">监督学习</button>
+    <button class="opt" data-ok="1" type="button">无监督学习</button>
+    <button class="opt" type="button">强化学习</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q3 · 验证集（Validation Set）的作用是？</p>
+    <button class="opt" type="button">用来训练参数</button>
+    <button class="opt" data-ok="1" type="button">训练之外用来选模型/调超参，测试集留到最后评估</button>
+    <button class="opt" type="button">和训练集一样反复用</button>
+    <span class="verdict"></span>
+  </div>
+
+  <div class="foot">
+    <b>延伸阅读</b>
+    <ul>
+      <li>上游 <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/06_llm_theory_and_fundamentals/README.md">06 章</a>与 <a href="https://datawhalechina.github.io/math-for-ai/#/">Datawhale 数学基础</a>——补数学推导</li>
+      <li>下一课把"过拟合"亲手调出来：<a href="02_neural_network.html">第 13 课 · 神经网络与深度学习</a></li>
+    </ul>
+    <div class="nav"><a href="../05_model_training_and_fine_tuning/04_alignment.html">← 第 11 课：对齐算法</a><a href="02_neural_network.html">下一课：神经网络与深度学习 →</a></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var svg=document.getElementById('rings'),NS='http://www.w3.org/2000/svg';
+  var INFO={
+    ai:{n:'人工智能 AI',s:'最大愿景',t:'让机器表现出智能的总称：包括规则系统、搜索、机器学习……大模型只是其中一条技术路线的最新成果。',x:'1956 年达特茅斯会议起的七十年愿景。'},
+    ml:{n:'机器学习 ML',s:'实现路径',t:'不从规则写起，而从数据中自动学规律：监督、无监督、强化三大范式。你学的训练循环、损失函数、泛化，都在这一层。',x:'"从数据学"而不是"人来写规则"——这是与传统编程的分界线。'},
+    dl:{n:'深度学习 DL',s:'ML 的一种技术',t:'用多层神经网络自动学特征。Transformer（第 10 课）、CNN、RNN 都是深度学习家族。',x:'2012 年 AlexNet 之后爆发：数据 + GPU 算力（第 1 课）+ 算法改进三线齐备。'},
+    rl:{n:'强化学习 RL',s:'ML 的一种范式',t:'与监督/无监督并列的第三种范式：不靠标注，靠"试错 + 奖励信号"学习。深度强化学习 = DL + RL（AlphaGo、RLHF 第 11 课）。',x:'第 14 课会在浏览器里真跑一个强化学习算法。'}
+  };
+  function ring(cx,cy,r,fill,stroke,key,label,ly){
+    var g=document.createElementNS(NS,'g');g.setAttribute('class','mring');
+    var c=document.createElementNS(NS,'circle');
+    c.setAttribute('cx',cx);c.setAttribute('cy',cy);c.setAttribute('r',r);
+    c.setAttribute('fill',fill);c.setAttribute('fill-opacity','.12');c.setAttribute('stroke',stroke);c.setAttribute('stroke-width','2');
+    c.addEventListener('click',function(){show(key);});
+    g.appendChild(c);
+    var t=document.createElementNS(NS,'text');
+    t.setAttribute('x',cx);t.setAttribute('y',ly);t.setAttribute('text-anchor','middle');
+    t.setAttribute('font-size','13');t.setAttribute('font-weight','500');
+    t.textContent=label;t.style.cursor='pointer';
+    t.addEventListener('click',function(){show(key);});
+    g.appendChild(t);
+    svg.appendChild(g);
+  }
+  function show(key){
+    var d=INFO[key];
+    document.getElementById('rd').innerHTML='<h3>'+d.n+'</h3><div class="lat">'+d.s+'</div><p>'+d.t+'</p><p class="note">'+d.x+'</p>';
+  }
+  ring(210,150,140,'var(--blue)','var(--blue)','ai','人工智能 AI',38);
+  ring(210,165,105,'var(--green)','var(--green)','ml','机器学习 ML',78);
+  ring(155,195,58,'var(--purple)','var(--purple)','dl','深度学习',225);
+  ring(268,195,58,'var(--orange)','var(--orange)','rl','强化学习',225);
+  var cap=document.createElementNS(NS,'text');
+  cap.setAttribute('x',210);cap.setAttribute('y',290);cap.setAttribute('text-anchor','middle');
+  cap.setAttribute('font-size','11');cap.setAttribute('fill','var(--muted)');
+  cap.textContent='点圈看定义 · 深度强化学习 = DL ∩ RL（AlphaGo、RLHF）';
+  svg.appendChild(cap);
+  show('ai');
+  /* 范式选择 */
+  var ANS={s1:'监督学习',s2:'无监督学习',s3:'强化学习',s4:'强化学习'};
+  document.getElementById('check').addEventListener('click',function(){
+    var sc=0;
+    for(var k in ANS){
+      var sel=document.getElementById(k),r=document.getElementById(k.replace('s','r'));
+      if(sel.value===ANS[k]){r.className='ok';r.textContent='✓ '+ANS[k];sc++;}
+      else{r.className='bad';r.textContent='✗ 应为：'+ANS[k];}
+    }
+    document.getElementById('score').textContent='得分：'+sc+' / 4';
+  });
+  document.querySelectorAll('.quiz').forEach(function(q){
+    q.addEventListener('click',function(e){
+      var b=e.target.closest('button.opt');
+      if(!b||q.dataset.done==='1')return;
+      var ok=b.dataset.ok==='1';
+      q.querySelectorAll('.opt').forEach(function(x){x.disabled=true;if(x.dataset.ok==='1')x.classList.add('right');});
+      if(!ok)b.classList.add('wrong');
+      var v=q.querySelector('.verdict');
+      v.textContent=ok?'✓ 答对了':'✗ 正确答案已标绿';
+      v.className='verdict '+(ok?'ok':'bad');
+      q.dataset.done='1';
+    });
+  });
+})();
+</script>
+</body>
+</html>

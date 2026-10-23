@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 14 课 · 强化学习入门 —— 在浏览器里真跑一个 Q-learning</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--orange);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  .ctl{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+  button{font:inherit;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--fg);border-radius:8px;padding:6px 14px}
+  button:hover{border-color:var(--orange)}
+  button.primary{background:var(--orange);border-color:var(--orange);color:#fff}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .duo{display:grid;gap:16px;grid-template-columns:1fr}
+  @media(min-width:820px){.duo{grid-template-columns:5fr 6fr}}
+  .loopd{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;font-size:13px}
+  .lnode{border:2px solid var(--border);border-radius:10px;padding:10px 16px;font-weight:500}
+  .lnode.agent{border-color:var(--orange)}
+  .lnode.env{border-color:var(--blue)}
+  .larr{color:var(--muted);font-size:12px;text-align:center;line-height:1.4}
+  .gridw{display:grid;grid-template-columns:repeat(5,44px);gap:4px;justify-content:center}
+  .cell{width:44px;height:44px;border:1px solid var(--border);border-radius:6px;background:var(--chip);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted);position:relative}
+  .cell.goal{background:color-mix(in srgb,var(--green) 30%, var(--card));border-color:var(--green);color:var(--green);font-weight:500}
+  .cell.agent{background:var(--orange);color:#fff;font-weight:500}
+  .pathcurve{margin-top:10px}
+  .statrow{display:flex;gap:20px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-top:8px}
+  .statrow b{color:var(--orange)}
+  .lr{display:flex;align-items:center;gap:8px;font-size:13px}
+  .lr input[type=range]{flex:1;max-width:240px}
+  .say{margin-top:12px;padding:10px 14px;border-radius:8px;background:var(--chip);font-size:14px;min-height:24px}
+  svg text{fill:var(--fg);font-size:11px}
+  .grid{display:grid;gap:12px;grid-template-columns:1fr}
+  @media(min-width:700px){.grid.c2{grid-template-columns:repeat(2,1fr)}.grid.c3{grid-template-columns:repeat(3,1fr)}}
+  .kcard{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+  .kcard h4{margin:0 0 6px;font-size:14px;color:var(--orange)}
+  .kcard .def{font-size:13px;margin:0 0 8px}
+  .kcard .ana{font-size:12px;color:var(--muted);border-top:1px dashed var(--border);padding-top:6px}
+  .genealogy{display:flex;flex-direction:column;gap:6px}
+  .grow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .gnode{border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:12px;background:var(--chip)}
+  .gnode.hl{border-color:var(--purple);background:color-mix(in srgb,var(--purple) 10%, var(--card));font-weight:500}
+  .garrow{color:var(--muted)}
+  .quiz{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin:10px 0}
+  .quiz p{margin:0 0 10px;font-size:14px}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:8px 12px}
+  .opt.right{border-color:var(--green);color:var(--green)}
+  .opt.wrong{border-color:var(--red);color:var(--red)}
+  .verdict{font-size:13px;margin-left:8px}
+  .verdict.ok{color:var(--green)} .verdict.bad{color:var(--red)}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .foot ul{margin:6px 0;padding-left:18px}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+  .note{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 第 14 课 / 共 14 课 · 基础补全模块 · 与第 11 课呼应</div>
+  <h1>强化学习入门</h1>
+  <p class="subtitle">不喂答案，只给奖励，让程序自己试错学出策略——第 11 课的 RLHF、AlphaGo、自动驾驶决策，全都是它。这一课我们<b>在浏览器里真跑一个 Q-learning</b>。</p>
+
+  <h2>一、循环：Agent 与环境的对话</h2>
+  <div class="stage">
+    <div class="loopd">
+      <span class="lnode agent">🤖 Agent（学习程序）</span>
+      <span class="larr">动作 Action ↓<br>↑ 状态 State + 奖励 Reward</span>
+      <span class="lnode env">🌍 Environment（环境）</span>
+    </div>
+    <p class="note" style="text-align:center">目标是学出一个<b>策略（Policy）</b>：在每个状态下选什么动作，能让长期累计奖励最大。</p>
+    <div class="grid c3">
+      <div class="kcard"><h4>State 状态</h4><p class="def">环境当前的样子（你在棋盘哪个位置）。</p><p class="ana">🧠 类比：监控面板当前的快照。</p></div>
+      <div class="kcard"><h4>Action 动作</h4><p class="def">Agent 能做的选择（上下左右 / 扩容或不动）。</p><p class="ana">🧠 类比：可执行的变更操作。</p></div>
+      <div class="kcard"><h4>Reward 奖励</h4><p class="def">每步环境的即时反馈（+1 到达 / -0.04 耗步）。</p><p class="ana">🧠 类比：报警降了加分，成本超了扣分。</p></div>
+    </div>
+  </div>
+
+  <h2>二、真跑一个 Q-learning：5×3 网格世界</h2>
+  <div class="stage">
+    <div class="duo">
+      <div>
+        <div class="gridw" id="gridw"></div>
+        <div class="lr" style="margin-top:12px">探索率 ε <input type="range" id="eps" min="0" max="1" step="0.05" value="0.3"><b id="epsv">0.30</b></div>
+        <div class="ctl" style="margin-top:8px">
+          <button id="run" class="primary" type="button">训练 80 局</button>
+          <button id="demo" type="button">看学到的策略走一遍</button>
+          <button id="reset" type="button">重置</button>
+        </div>
+        <div class="say" id="gsay">规则：从左下角出发，每走一步 -0.04 分，到达右下角 ★ +1 分并结束。<b>真正的 Q-learning 就在你的浏览器里跑</b>——看学习曲线怎么收敛。</div>
+      </div>
+      <div>
+        <svg id="curve" viewBox="0 0 420 160" width="100%" role="img" aria-label="每局步数学习曲线">
+          <line x1="30" y1="135" x2="410" y2="135" stroke="var(--border)"/>
+          <line x1="30" y1="10" x2="30" y2="135" stroke="var(--border)"/>
+          <text x="0" y="16">步数</text><text x="360" y="152">局数 →</text>
+          <polyline id="curvepoly" points="" fill="none" stroke="var(--orange)" stroke-width="1.5"/>
+        </svg>
+        <div class="statrow">
+          <span>已完成局数：<b id="epn">0</b></span>
+          <span>近 10 局平均步数：<b id="avg">–</b></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h2>三、探索 vs 利用：那个 ε 的意义</h2>
+  <div class="stage">
+    <div class="grid c2">
+      <div class="kcard"><h4>ε-greedy 策略</h4><p class="def">以 ε 概率<b>随机探索</b>（试没试过的路），以 1-ε 概率<b>走已知最优</b>。训练时 ε 从大到小退火。</p><p class="ana">🧠 类比：A/B 测试的流量切分——不试新方案怎么知道有更好的？</p></div>
+      <div class="kcard"><h4>做个实验</h4><p class="def">把 ε 拉到 0 再点「训练 80 局」：<b>学不动</b>——从不探索就永远发现不了通往终点的路。这就是"探索不足"的直观感受。</p><p class="ana">🧠 线上灰度 0% = 永远不知道新版本更好。</p></div>
+    </div>
+  </div>
+
+  <h2>四、算法谱系：从 Q-learning 到第 11 课</h2>
+  <div class="stage">
+    <div class="genealogy">
+      <div class="grow"><span class="gnode">Q-learning（值函数：学"每个状态-动作值多少分"）</span><span class="garrow">→ 表格装不下大世界时</span><span class="gnode">DQN（用神经网络当 Q 表）</span><span class="garrow">→</span><span class="gnode">Policy Gradient（直接学策略）</span></div>
+      <div class="grow"><span class="garrow">└→</span><span class="gnode">Actor-Critic</span><span class="garrow">→</span><span class="gnode">PPO（加裁剪，稳）</span><span class="garrow">→</span><span class="gnode hl">RLHF：奖励换成"人类偏好" → 对齐大模型（第 11 课）</span><span class="garrow">→</span><span class="gnode hl">GRPO（DeepSeek）</span></div>
+    </div>
+    <p class="note">谱系记忆：先有"学分数"（值方法），再有"学动作"（策略方法），PPO 是两者融合的工程稳定形态——第 11 课的显存对比图在这一课找到了技术根源。</p>
+  </div>
+
+  <h2>五、小测验</h2>
+  <div class="quiz"><p>Q1 · 强化学习区别于监督学习的根本点？</p>
+    <button class="opt" type="button">它不需要数据</button>
+    <button class="opt" data-ok="1" type="button">没有标准答案，只有环境的奖励反馈，靠试错学策略</button>
+    <button class="opt" type="button">它不用神经网络</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q2 · ε=0（完全不探索）训练会怎样？</p>
+    <button class="opt" data-ok="1" type="button">大概率学不动——没探索过的动作永远不知道好不好</button>
+    <button class="opt" type="button">学得最快最好</button>
+    <button class="opt" type="button">只影响速度不影响结果</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q3 · RLHF 与游戏 RL 的本质差别？</p>
+    <button class="opt" type="button">没有差别</button>
+    <button class="opt" data-ok="1" type="button">奖励来源变了：从规则得分换成（奖励模型给出的）人类偏好分</button>
+    <button class="opt" type="button">不再需要策略</button>
+    <span class="verdict"></span>
+  </div>
+
+  <div class="foot">
+    <b>延伸阅读</b>
+    <ul>
+      <li>第 11 课：<a href="../05_model_training_and_fine_tuning/04_alignment.html">对齐算法（RLHF/DPO/GRPO）</a>——本课谱系图的尽头</li>
+      <li>动手深化：<a href="https://github.com/datawhalechina/happy-llm">happy-llm 第 8 章 Agentic-RL</a>（GRPO 实战）</li>
+      <li>系统视角：<a href="https://github.com/microsoft/AI-System">微软 AI-System</a> 强化学习系统讲次</li>
+    </ul>
+    <div class="nav"><a href="02_neural_network.html">← 第 13 课：神经网络与深度学习</a><a href="../index.html">完成全部 14 课 → 回课程目录</a></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  /* ---------- 网格世界 Q-learning ---------- */
+  var GW=5,GH=3,GOAL=14,START=10;
+  var ACT=[[0,-1],[1,0],[0,1],[-1,0]]; // 上右下左
+  var Q=new Float32Array(GW*GH*4);
+  var gridEl=document.getElementById('gridw');
+  function cellName(i){return i===GOAL?'★':String(i);}
+  function initGrid(){
+    gridEl.innerHTML='';
+    for(var i=0;i<GW*GH;i++){
+      var d=document.createElement('div');d.className='cell';d.id='c'+i;
+      d.textContent=cellName(i);
+      gridEl.appendChild(d);
+    }
+    drawAgent(START);
+  }
+  function drawAgent(pos){
+    for(var i=0;i<GW*GH;i++){
+      var d=document.getElementById('c'+i);
+      d.className='cell'+(i===GOAL?' goal':'')+(i===pos?' agent':'');
+    }
+  }
+  initGrid();
+  function step(s,a){
+    var x=s%GW,y=(s/GW)|0;
+    var nx=Math.max(0,Math.min(GW-1,x+ACT[a][0]));
+    var ny=Math.max(0,Math.min(GH-1,y+ACT[a][1]));
+    var ns=ny*GW+nx;
+    var r=(ns===GOAL)?1:-0.04;
+    return {ns:ns,r:r};
+  }
+  function argmaxQ(s){
+    var best=0,bv=Q[s*4];
+    for(var a=1;a<4;a++)if(Q[s*4+a]>bv){bv=Q[s*4+a];best=a;}
+    return best;
+  }
+  function runEpisode(eps,alpha){
+    var s=START,steps=0,total=100;
+    while(steps<total){
+      var a;
+      if(Math.random()<eps)a=Math.floor(Math.random()*4);
+      else a=argmaxQ(s);
+      var out=step(s,a);
+      var nextMax=(out.ns===GOAL)?0:Q[out.ns*4+argmaxQ(out.ns)];
+      var idx=s*4+a;
+      Q[idx]=Q[idx]+alpha*(out.r+0.95*nextMax-Q[idx]);
+      s=out.ns;steps++;
+      if(s===GOAL)break;
+    }
+    return steps;
+  }
+  var pts=[];
+  function drawCurve(){
+    var P='',maxN=90;
+    pts.forEach(function(v,i){
+      var x=30+(i/(maxN-1))*380;
+      var y=135-Math.min(1,v/90)*120;
+      P+=x.toFixed(1)+','+y.toFixed(1)+' ';
+    });
+    document.getElementById('curvepoly').setAttribute('points',P.trim());
+  }
+  var runBtn=document.getElementById('run');
+  runBtn.addEventListener('click',function(){
+    runBtn.disabled=true;
+    var eps=+document.getElementById('eps').value;
+    var n=0,total=80;
+    var timer=setInterval(function(){
+      for(var k=0;k<2;k++){
+        var st=runEpisode(eps,0.5);
+        if(pts.length>=90)pts.shift();
+        pts.push(st);
+        n++;
+      }
+      document.getElementById('epn').textContent=n;
+      var last=pts.slice(-10);
+      var avg=last.reduce(function(a,b){return a+b;},0)/last.length;
+      document.getElementById('avg').textContent=avg.toFixed(1);
+      drawCurve();
+      if(n>=total){
+        clearInterval(timer);runBtn.disabled=false;
+        document.getElementById('gsay').innerHTML='✅ 训练完成：学习曲线从每局几十步收敛到接近最短 '+(GW-1)+(GH-1)+' 步。点「看学到的策略走一遍」验证。';
+      }
+    },60);
+  });
+  document.getElementById('demo').addEventListener('click',function(){
+    var s=START,i=0;
+    drawAgent(s);
+    var timer=setInterval(function(){
+      var a=argmaxQ(s);
+      var out=step(s,a);
+      s=out.ns;
+      drawAgent(s);
+      i++;
+      if(s===GOAL||i>30){
+        clearInterval(timer);
+        document.getElementById('gsay').innerHTML=i<=8?'✅ 走的是学到的最优路径（'+i+' 步）——这就是"策略"。':'（策略未收敛：先训练几局再看）';
+      }
+    },260);
+  });
+  document.getElementById('reset').addEventListener('click',function(){
+    Q=new Float32Array(GW*GH*4);pts=[];drawCurve();
+    document.getElementById('epn').textContent='0';
+    document.getElementById('avg').textContent='–';
+    drawAgent(START);
+    document.getElementById('gsay').textContent='已重置。调 ε 后再训练，对比收敛速度与效果。';
+  });
+  var eps=document.getElementById('eps');
+  eps.addEventListener('input',function(){
+    document.getElementById('epsv').textContent=(+eps.value).toFixed(2);
+  });
+  document.querySelectorAll('.quiz').forEach(function(q){
+    q.addEventListener('click',function(e){
+      var b=e.target.closest('button.opt');
+      if(!b||q.dataset.done==='1')return;
+      var ok=b.dataset.ok==='1';
+      q.querySelectorAll('.opt').forEach(function(x){x.disabled=true;if(x.dataset.ok==='1')x.classList.add('right');});
+      if(!ok)b.classList.add('wrong');
+      var v=q.querySelector('.verdict');
+      v.textContent=ok?'✓ 答对了':'✗ 正确答案已标绿';
+      v.className='verdict '+(ok?'ok':'bad');
+      q.dataset.done='1';
+    });
+  });
+})();
+</script>
+</body>
+</html>

@@ -139,6 +139,10 @@
     {n:'奖励模型',e:'Reward Model',c:'train',d:'从人类偏好数据训出的"回答打分器"，RLHF 里当优化目标。',a:'自动化评分脚本。',l:'05_model_training_and_fine_tuning/04_alignment.html|第 11 课'},
     {n:'KL 约束',e:'KL Penalty',c:'train',d:'惩罚策略偏离参考模型太远，防止"奖励黑客"（跑分高、答案空）。',a:'变更窗口：只允许在基线附近改动。',l:'05_model_training_and_fine_tuning/04_alignment.html|第 11 课'},
     {n:'预训练',e:'Pre-training',c:'train',d:'用海量文本做自监督"接龙"训练，花几个月、几千张卡，产出基座模型。',a:'读书阶段：读完全网再说。',l:'06_llm_theory_and_fundamentals/01_llm_basics.html|第 7 课'},
+    {n:'监督学习',e:'Supervised Learning',c:'train',d:'用带标签的数据学"输入→输出"映射（分类/回归）。',a:'有标准答案的刷题。',l:'ml_basics/01_ml_map.html|第 12 课'},
+    {n:'无监督学习',e:'Unsupervised Learning',c:'train',d:'没有标签，自己发现数据结构（聚类/降维）。',a:'没人教，自己归纳分类。',l:'ml_basics/01_ml_map.html|第 12 课'},
+    {n:'过拟合 / 欠拟合',e:'Overfitting / Underfitting',c:'train',d:'训练好测试差=背题；训练测试都差=能力不足。深度学习调参的第一矛盾。',a:'背题库 vs 没学会。',l:'ml_basics/02_neural_network.html|第 13 课'},
+    {n:'马尔可夫决策过程',e:'MDP',c:'train',d:'强化学习的数学框架：状态、动作、奖励、转移概率。',a:'"下一步只取决于现在"的决策模型。',l:'ml_basics/03_rl_basics.html|第 14 课'},
     /* ---------- 推理 ---------- */
     {n:'Prefill 预填充',e:'Prefill',c:'infer',d:'一次性并行读完整 prompt：compute-bound，决定 TTFT。',a:'cat 整个大文件。',l:'09_inference_system/01_inference_pipeline.html|第 3 课'},
     {n:'Decode 解码',e:'Decode',c:'infer',d:'一个 token 一个 token 往外吐：每步重读全部权重，memory-bound。',a:'tail -f 逐行追日志，房租照付。',l:'09_inference_system/01_inference_pipeline.html|第 3 课'},

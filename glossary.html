@@ -60,7 +60,7 @@
 
   <div class="crumbs"><a href="index.html">← 返回课程目录</a> · 随身参考 · 遇到黑话就查</div>
   <h1>术语图鉴</h1>
-  <p class="subtitle">AI Infra 高频黑话的集中翻译：每条 = 一句话定义 + SRE 大脑能记住的类比。支持搜索；点思维导图的分支可快速过滤。</p>
+  <p class="subtitle">AI Infra 高频黑话的集中翻译（<b id="tcount">–</b> 条）：每条 = 一句话定义 + SRE 大脑能记住的类比。支持搜索；点思维导图的分支可快速过滤。</p>
 
   <div class="toolbar">
     <input id="q" type="search" placeholder="搜索：如 KV Cache / AllReduce / XID…" aria-label="搜索术语">
@@ -287,6 +287,7 @@
     });
   });
   render();
+  document.getElementById('tcount').textContent=T.length;
 })();
 </script>
 </body>

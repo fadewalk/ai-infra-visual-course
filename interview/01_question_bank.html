@@ -51,6 +51,17 @@
   .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
   .nav{display:flex;justify-content:space-between;margin-top:24px}
   .note{font-size:12px;color:var(--muted)}
+
+  /* ---- 移动端适配 ---- */
+  @media(max-width:720px){
+    .wrap{padding:14px 12px 56px}
+    h1{font-size:22px}
+    .toolbar{gap:6px}
+    .pill{padding:4px 10px;font-size:12px}
+    .progress{margin-left:0;width:100%}
+    summary{font-size:13px}
+    .qt{flex-wrap:wrap}
+  }
 </style>
 </head>
 <body>
@@ -58,7 +69,7 @@
 
   <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 面试准备 · 全站课程的实战检验</div>
   <h1>AI Infra / AI SRE 面试自测题库</h1>
-  <p class="subtitle">28 道高频问答 + 3 道系统设计，按主题分类。每题给出<b>答题要点</b>与对应课程链接——先自己口述，再展开对照。点「已掌握」追踪进度（本次浏览内有效）。</p>
+  <p class="subtitle">28 道高频问答 + 3 道系统设计，按主题分类。每题给出<b>答题要点</b>与对应课程链接——先自己口述，再展开对照。点「已掌握」追踪进度（浏览器本地保存，跨访问持续）。</p>
 
   <div class="toolbar">
     <button class="pill on" data-c="all">全部</button>
@@ -74,8 +85,8 @@
   <div id="bank"></div>
 
   <div class="foot">
-    <p class="note">用法建议：面试前 48 小时过一遍；每题先说 60 秒版本，再对照要点查漏。答不上的题直接点链接回课程复习。趋势类话题（Agent 负载、线性注意力等）见 <a href="02_trends_2026.html">2026 趋势速览</a>。</p>
-    <div class="nav"><a href="../09_inference_system/10_spec_quant.html">← 上一页：投机解码与量化</a><a href="02_trends_2026.html">2026 趋势速览 →</a></div>
+    <p class="note">用法建议：面试前 48 小时过一遍；每题先说 60 秒版本，再对照要点查漏。答不上的题直接点链接回课程复习。趋势类话题见 <a href="02_trends_2026.html">2026 趋势速览</a>；指标类问题见 <a href="03_metrics.html">生产指标体系</a>。</p>
+    <div class="nav"><a href="../09_inference_system/10_spec_quant.html">← 上一页：投机解码与量化</a><a href="03_metrics.html">生产指标体系 →</a></div>
   </div>
 </div>
 
@@ -128,8 +139,9 @@
     {t:'系统设计 ③：把 API 成本降 50%（不换模型）',cond:'现状：月账单 $80K，TTFT/质量不能劣化超过 10%。',a:['第一步永远是拆账：输入 token×单价 + 输出 token×单价 + 缓存命中的折扣结构','杠杆排序：前缀缓存（系统提示词+多轮共享）> 批处理利用率 > 量化降档 > 投机解码 > 错峰','每上一招灰度验证质量回归，量化必须业务 case 兜底'],ref:'综合：$/token 速算 + 投机解码加餐 + 工程概念页'}
   ];
   var bank=document.getElementById('bank');
-  var done={},doneN=document.getElementById('doneN');
-  function countDone(){var n=0;for(var k in done)if(done[k])n++;doneN.textContent=n;}
+  var done={};try{done=JSON.parse(localStorage.getItem('ivbank')||'{}');}catch(e){}
+var doneN=document.getElementById('doneN');
+  function countDone(){var n=0;for(var k in done)if(done[k])n++;doneN.textContent=n;try{localStorage.setItem('ivbank',JSON.stringify(done));}catch(e){}}
   function esc(s){return s;}
   function render(filter){
     bank.innerHTML='';

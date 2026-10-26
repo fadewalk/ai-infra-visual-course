@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>加餐 · 生产指标体系 —— 从 GPU 到 token 的四层健康账本</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--blue);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{color:var(--muted);font-weight:500;font-size:12px}
+  .grid{display:grid;gap:12px;grid-template-columns:1fr}
+  @media(min-width:700px){.grid.c2{grid-template-columns:repeat(2,1fr)}.grid.c3{grid-template-columns:repeat(3,1fr)}}
+  .kcard{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+  .kcard h4{margin:0 0 6px;font-size:14px;color:var(--blue)}
+  .kcard .def{font-size:13px;margin:0 0 8px}
+  .kcard .ana{font-size:12px;color:var(--muted);border-top:1px dashed var(--border);padding-top:6px}
+  .drill{background:var(--chip);border-radius:10px;padding:10px 14px;margin:8px 0;font-size:13px}
+  .drill b{color:var(--orange)}
+  .quiz{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin:10px 0}
+  .quiz p{margin:0 0 10px;font-size:14px}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:8px 12px}
+  .opt.right{border-color:var(--green);color:var(--green)}
+  .opt.wrong{border-color:var(--red);color:var(--red)}
+  .verdict{font-size:13px;margin-left:8px}
+  .verdict.ok{color:var(--green)} .verdict.bad{color:var(--red)}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .foot ul{margin:6px 0;padding-left:18px}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+  .note{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 面试准备 · 指标篇 · 面试高频："生产上你看哪些指标"</div>
+  <h1>生产指标体系：四层健康账本</h1>
+  <p class="subtitle">面试官问"你怎么知道系统是健康的"，答单个指标就输了。正确姿势是一套<b>自上而下对齐业务、自下而上可定位根因</b>的分层账本——业务层 token → 服务层 SLO → 引擎层效率 → 硬件层健康。</p>
+
+  <h2>一、四层账本总览</h2>
+  <div class="stage" style="padding:0;overflow:auto">
+    <table>
+      <thead><tr><th>层</th><th>核心指标</th><th>回答什么问题</th><th>谁消费</th></tr></thead>
+      <tbody>
+        <tr><td><b>L4 业务</b></td><td>$/M token · 日 token 量 · 缓存命中率</td><td>这门生意赚不赚、省不省</td><td>管理层 / FinOps</td></tr>
+        <tr><td><b>L3 服务 SLO</b></td><td>TTFT（P50/P99）· TPOT · 可用性 · 拒绝率</td><td>用户体验有没有达标</td><td>SRE / 业务方</td></tr>
+        <tr><td><b>L2 引擎效率</b></td><td>推理：并发/批次利用率/KV 占用；训练：MFU、损失尖刺、通信占比</td><td>资源用得值不值</td><td>性能工程师</td></tr>
+        <tr><td><b>L1 硬件健康</b></td><td>SM Active · DRAM Active · ECC/Remapped Rows · XID · 温度功耗</td><td>哪台机器在拖后腿</td><td>SRE / 硬件团队</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="drill">🔑 <b>面试标准答法</b>："我看四层——业务看 $/token 和缓存命中，服务看 TTFT/TPOT 的 P99，引擎看批次利用率/MFU，硬件看 SM Active 和 ECC。每层都有告警阈值和向下一层的定位路径。" —— 一句话展示体系化。</div>
+
+  <h2>二、训练侧：MFU 是核心</h2>
+  <div class="stage">
+    <div class="grid c2">
+      <div class="kcard"><h4>MFU 模型算力利用率</h4><p class="def">实际消耗 FLOPs ÷（卡数 × 峰值 FLOPS × 时间）。大模型训练健康区间通常 35-50%（口径不同差异大）——低于 30% 先查通信占比和数据 IO。</p><p class="ana">🧠 类比：CPU 利用率的"含金量版"——把墙钟时间折算成理论峰值占比。</p></div>
+      <div class="kcard"><h4>训练三大报警信号</h4><p class="def">① loss 尖刺（数据脏/某个 rank 异常）② 吞吐台阶式下降（坏卡/降频/网络降级）③ 通信等待占比升高（IB 丢包重传/NVLink 降速）。</p><p class="ana">🧠 类比：QPS 正常但 P99 抖——问题往往不在应用层。</p></div>
+    </div>
+  </div>
+
+  <h2>三、推理侧：SLO 黄金四件套</h2>
+  <div class="stage" style="padding:0;overflow:auto">
+    <table>
+      <thead><tr><th>指标</th><th>定义</th><th>典型目标（示例）</th><th>超标第一怀疑</th></tr></thead>
+      <tbody>
+        <tr><td>TTFT P99</td><td>请求到首 token</td><td>&lt; 1-2s</td><td>长 prompt 阻塞（PD 混布）/ 排队过深</td></tr>
+        <tr><td>TPOT / ITL</td><td>后续每 token 间隔</td><td>&lt; 50-100ms</td><td>批次过挤 / 带宽瓶颈 / 降频</td></tr>
+        <tr><td>拒绝率 / 排队时长</td><td>被限流或超时比例</td><td>&lt; 1%</td><td>KV 显存满（并发×长度超容量——KV 计算器）</td></tr>
+        <tr><td>输出质量回归</td><td>业务 case 集通过率</td><td>版本变更前后持平</td><td>量化/模型版本/温度变更没走灰度</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="drill">⚠️ <b>P99 陷阱</b>：均值正常 P99 爆表 = 长尾请求（长上下文用户）在挨饿——PD 分离/按长度路由就是治这个的。这也是"均值叙事"在 LLM 服务失效的经典例子。</div>
+
+  <h2>四、质量与漂移：LLM 特有的监控</h2>
+  <div class="stage">
+    <div class="grid c3">
+      <div class="kcard"><h4>输出分布漂移</h4><p class="def">token 长度分布、拒答率、敏感词率突然变化——上游模型/提示词被改了而没人告诉你。</p><p class="ana">🧠 类比：API 响应 schema 突变。</p></div>
+      <div class="kcard"><h4>采样质量抽检</h4><p class="def">线上流量按比例抽样跑 LLM-as-Judge 或人工抽检——质量是"监控"出来的，不是"部署"完就没事的。</p><p class="ana">🧠 类比：混沌演练——定期主动验证。</p></div>
+      <div class="kcard"><h4>成本异常告警</h4><p class="def">$/M token 突涨往往比质量投诉先出现：某租户 prompt 暴涨 / 缓存命中率崩了 / 有人把 max-length 调到 128K。</p><p class="ana">🧠 类比：云账单异常告警。</p></div>
+    </div>
+  </div>
+
+  <h2>五、小测验</h2>
+  <div class="quiz"><p>Q1 · "GPU-Util 都 95% 了为什么还慢"——用四层账本定位，先看哪个引擎层指标？</p>
+    <button class="opt" type="button">直接重启节点</button>
+    <button class="opt" data-ok="1" type="button">SM Active / DRAM Active——Util 只说明有 kernel 在跑，不代表算力真被用满</button>
+    <button class="opt" type="button">看 loss 曲线</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q2 · 训练作业 MFU 从 45% 掉到 25%，以下最值得先查的是？</p>
+    <button class="opt" data-ok="1" type="button">通信等待占比与 IB 错误计数——台阶式下降常是网络/坏卡</button>
+    <button class="opt" type="button">换个更大的模型</button>
+    <button class="opt" type="button">调大学习率</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q3 · TTFT 均值 0.8s 很健康，但 P99 到了 9s，最可能的画像？</p>
+    <button class="opt" type="button">所有用户都慢</button>
+    <button class="opt" data-ok="1" type="button">长上下文长尾用户被 Prefill 阻塞——考虑 PD 分离或长度路由</button>
+    <button class="opt" type="button">监控坏了</button>
+    <span class="verdict"></span>
+  </div>
+
+  <div class="foot">
+    <b>延伸阅读</b>
+    <ul>
+      <li>本站关联：<a href="../09_inference_system/01_inference_pipeline.html">第 3 课（TTFT/TPOT 本质）</a> · <a href="../03_ai_cluster_ops/01_gpu_ops.html">运维速查（DCGM 指标）</a> · <a href="../09_inference_system/09_pd_disaggregation.html">PD 分离（治 TTFT 长尾）</a> · <a href="../09_inference_system/05_cost_calc.html">$/token（L4 层）</a></li>
+      <li>上游：<a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/03_ai_cluster_ops/01_gpu_ops/05_dcgm_monitoring.md">DCGM 监控实操</a> · <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/09_inference_system/reference_design/05-性能评估指标体系.md">推理性能评估指标体系（完整版）</a></li>
+    </ul>
+    <div class="nav"><a href="02_trends_2026.html">← 2026 趋势速览</a><a href="../index.html">回课程目录</a></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  document.querySelectorAll('.quiz').forEach(function(q){
+    q.addEventListener('click',function(e){
+      var b=e.target.closest('button.opt');
+      if(!b||q.dataset.done==='1')return;
+      var ok=b.dataset.ok==='1';
+      q.querySelectorAll('.opt').forEach(function(x){x.disabled=true;if(x.dataset.ok==='1')x.classList.add('right');});
+      if(!ok)b.classList.add('wrong');
+      var v=q.querySelector('.verdict');
+      v.textContent=ok?'✓ 答对了':'✗ 正确答案已标绿';
+      v.className='verdict '+(ok?'ok':'bad');
+      q.dataset.done='1';
+    });
+  });
+})();
+</script>
+</body>
+</html>

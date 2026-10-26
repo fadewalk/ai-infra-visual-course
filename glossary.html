@@ -156,7 +156,7 @@
     {n:'TTFT',e:'Time To First Token',c:'infer',d:'从发出请求到吐出第一个 token 的时间——用户体感的"首字节"。',a:'HTTP 的 TTFB。',l:'09_inference_system/01_inference_pipeline.html|第 3 课'},
     {n:'TPOT',e:'Time Per Output Token',c:'infer',d:'每生成一个 token 的耗时，决定"打字机速度"。',a:'流式响应的每帧间隔。',l:'09_inference_system/01_inference_pipeline.html|第 3 课'},
     {n:'量化',e:'Quantization INT8/FP8/INT4',c:'infer',d:'把权重从 FP16 压到低精度：显存减半再减半，速度更快，略损精度。',a:'有损压缩，压的是数字精度。'},
-    {n:'投机解码',e:'Speculative Decoding',c:'infer',d:'小模型先猜几个 token，大模型一次前向验证多个——"一次打草稿多赚几个字"。',a:'批量确认。'},
+    {n:'投机解码',e:'Speculative Decoding',c:'infer',d:'小模型先猜几个 token，大模型一次前向验证多个——无损加速，接受率决定收益。',a:'实习生写 PR、架构师一次 review 全部。',l:'09_inference_system/10_spec_quant.html|投机解码与量化加餐'},
     {n:'自回归',e:'Autoregressive',c:'infer',d:'输出拼回输入、循环生成直到结束符——LLM 生成的本质循环。',a:'文字接龙。',l:'06_llm_theory_and_fundamentals/01_llm_basics.html|第 7 课'},
     {n:'温度 / Top-p',e:'Temperature / Nucleus Sampling',c:'infer',d:'采样随机性旋钮：温度低→保守稳定；高→发散有创意。Top-p 截断长尾候选。',a:'随机数种子的"胆量"档位。',l:'06_llm_theory_and_fundamentals/01_llm_basics.html|第 7 课'},
     {n:'上下文窗口',e:'Context Window',c:'infer',d:'模型一次能看的最大 token 数；超了装不下或要外挂记忆。',a:'工作内存上限。',l:'06_llm_theory_and_fundamentals/01_llm_basics.html|第 7 课'},

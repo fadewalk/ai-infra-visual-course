@@ -63,7 +63,7 @@
         <tr><td>PagedAttention / Continuous Batching / KV Cache 原理</td><td>几乎全部</td><td><a href="../09_inference_system/04_batching_attention.html">Batching 加餐</a> · <a href="../09_inference_system/01_inference_pipeline.html">第 3 课</a> · <a href="../09_inference_system/03_kv_capacity_calc.html">KV 计算器</a></td><td><span class="st ok">✅ 覆盖</span></td></tr>
         <tr><td>量化 GPTQ / AWQ / FP8</td><td>腾讯、B站、NVIDIA</td><td><a href="../09_inference_system/10_spec_quant.html">量化小白版（含算法名与坑）</a></td><td><span class="st ok">✅ 覆盖</span></td></tr>
         <tr><td>TTFT / 吞吐量 / 显存占用优化</td><td>B站、滴滴</td><td><a href="../interview/03_metrics.html">指标体系</a> · <a href="../09_inference_system/09_pd_disaggregation.html">PD 分离</a> · <a href="../09_inference_system/05_cost_calc.html">成本速算</a></td><td><span class="st ok">✅ 覆盖</span></td></tr>
-        <tr><td>自定义算子 / PyTorch 扩展机制</td><td>算能、NVIDIA、字节</td><td>上游 <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/02_gpu_programming/README.md">02 章 CUDA 编程</a>（SRE 向读原文，开发向需动手）</td><td><span class="st part">🟠 概念有，开发需练</span></td></tr>
+        <tr><td>自定义算子 / PyTorch 扩展机制</td><td>算能、NVIDIA、字节</td><td><a href="../02_gpu_programming/01_cuda_primer.html">CUDA 算子入门（本站新页：第一个 Kernel + 五周路线）</a> + 上游 02 章</td><td><span class="st ok">✅ 入口已建</span></td></tr>
         <tr><td>多模态模型部署（加分项）</td><td>腾讯、字节</td><td>无专页——面试按"视觉编码器+LLM，瓶颈在图像 token 化"一句话带过即可</td><td><span class="st part">🟠 一句话策略</span></td></tr>
       </tbody>
     </table>
@@ -79,7 +79,7 @@
         <tr><td>分布式训练（DP/TP/PP/EP）</td><td>普遍</td><td><a href="../09_inference_system/02_parallelism.html">第 6 课</a> · <a href="../05_model_training_and_fine_tuning/01_training_loop.html">第 2 课</a></td><td><span class="st ok">✅ 覆盖</span></td></tr>
         <tr><td>训练/推理存储 IO 性能</td><td>滴滴（训练存储）</td><td><a href="../04_cloud_native_ai_platform/05_storage.html">存储三篇一页通</a></td><td><span class="st ok">✅ 覆盖</span></td></tr>
         <tr><td>K8s 生态 / 容器化</td><td>阿里云容器方向</td><td><a href="../04_cloud_native_ai_platform/01_k8s_gpu.html">第 4 课</a> · <a href="../04_cloud_native_ai_platform/03_hami_kueue.html">HAMi/Kueue</a></td><td><span class="st ok">✅ 覆盖</span></td></tr>
-        <tr><td>PyTorch / 框架源码级</td><td>字节、百度</td><td>第 2/13 课概念齐；源码级需 <a href="https://github.com/datawhalechina/happy-llm">happy-llm 动手</a></td><td><span class="st part">🟠 概念有，需动手</span></td></tr>
+        <tr><td>PyTorch / 框架源码级</td><td>字节、百度</td><td><a href="../05_model_training_and_fine_tuning/06_framework_map.html">训练框架地图（本站新页：DDP/FSDP/DeepSpeed/Megatron + ZeRO 交互）</a>；源码级 happy-llm 动手</td><td><span class="st ok">✅ 框架地图已建</span></td></tr>
         <tr><td>C++ / Python / 算法与并发</td><td>普遍（硬门槛）</td><td>非本站职责——刷题与语言功底按传统路径准备</td><td><span class="st part">🟠 课前置</span></td></tr>
       </tbody>
     </table>
@@ -128,7 +128,7 @@
 
   <div class="foot">
     <p class="src">JD 来源（2026-10 检索）：<a href="https://careers.tencent.com/jobdesc.html?postId=2113089272218300416">腾讯 AI Infra SRE</a> · <a href="https://careers.tencent.com/jobdesc.html?postId=2095496373041545216">腾讯推理优化</a> · <a href="https://campus-talent.alibaba.com/campus/position/199904060014">阿里 AI Infra 计算</a> · <a href="https://talent-holding.alibaba.com/off-campus/position-detail?positionId=1038409">阿里训练架构</a> · <a href="https://talent.didiglobal.com/social/p/57383">滴滴训练存储</a> · <a href="https://talent.didiglobal.com/social/p/59514">滴滴模型服务化</a> · <a href="https://jobs.bytedance.com/experienced/position/7343213427458050341/detail">字节推理框架</a> · <a href="https://jobs.bilibili.com/social/positions/28366">B 站推理优化</a> · <a href="https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/AI-Computing-Software-Development-Engineer--TensorRT-LLM_JR2022327">NVIDIA TRT-LLM</a></p>
-    <div class="nav"><a href="03_metrics.html">← 生产指标体系</a><a href="../09_inference_system/11_engine_choice.html">加餐：引擎三选一 →</a></div>
+    <div class="nav"><a href="03_metrics.html">← 生产指标体系</a><a href="05_career_paths.html">岗位全覆盖路线 →</a></div>
   </div>
 </div>
 </body>

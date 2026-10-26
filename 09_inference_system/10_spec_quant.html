@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>加餐 · 投机解码与量化小白版 —— 推理加速两大必考</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--green);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  .ctl{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+  button{font:inherit;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--fg);border-radius:8px;padding:6px 14px}
+  button:hover{border-color:var(--green)}
+  button.primary{background:var(--green);border-color:var(--green);color:#fff}
+  .specrow{display:flex;gap:6px;align-items:center;margin:10px 0;flex-wrap:wrap}
+  .tok{padding:6px 12px;border-radius:8px;border:1px solid var(--border);font-size:13px;background:var(--chip)}
+  .tok.draft{border-color:var(--blue);color:var(--blue)}
+  .tok.ok{border-color:var(--green);background:color-mix(in srgb,var(--green) 14%, var(--card));color:var(--green)}
+  .tok.bad{border-color:var(--red);color:var(--red);text-decoration:line-through}
+  .tok.fallback{border-style:dashed}
+  .lane{font-size:12px;color:var(--muted);min-width:88px}
+  .say{margin-top:10px;padding:10px 14px;border-radius:8px;background:var(--chip);font-size:14px;min-height:24px}
+  .statrow{display:flex;gap:22px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-top:8px}
+  .statrow b{color:var(--green)}
+  .lr{display:flex;align-items:center;gap:8px;font-size:13px;margin:8px 0}
+  .lr input[type=range]{flex:1;max-width:300px}
+  .lr b{min-width:36px}
+  .qgrid{display:grid;gap:6px;grid-template-columns:1fr}
+  @media(min-width:760px){.qgrid{grid-template-columns:repeat(3,1fr)}}
+  .qopt{border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:12px;text-align:center;background:var(--chip)}
+  .qopt.on{border-color:var(--green);background:color-mix(in srgb,var(--green) 12%, var(--card))}
+  .qrow{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px;font-size:13px}
+  .qstat{background:var(--chip);border-radius:8px;padding:6px 14px}
+  .qstat b{color:var(--green)}
+  .grid{display:grid;gap:12px;grid-template-columns:1fr}
+  @media(min-width:700px){.grid.c2{grid-template-columns:repeat(2,1fr)}.grid.c3{grid-template-columns:repeat(3,1fr)}}
+  .kcard{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+  .kcard h4{margin:0 0 6px;font-size:14px;color:var(--green)}
+  .kcard .def{font-size:13px;margin:0 0 8px}
+  .kcard .ana{font-size:12px;color:var(--muted);border-top:1px dashed var(--border);padding-top:6px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{color:var(--muted);font-weight:500;font-size:12px}
+  .quiz{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin:10px 0}
+  .quiz p{margin:0 0 10px;font-size:14px}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:8px 12px}
+  .opt.right{border-color:var(--green);color:var(--green)}
+  .opt.wrong{border-color:var(--red);color:var(--red)}
+  .verdict{font-size:13px;margin-left:8px}
+  .verdict.ok{color:var(--green)} .verdict.bad{color:var(--red)}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .foot ul{margin:6px 0;padding-left:18px}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+  .note{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 加餐 · 推理优化必考 · 承接第 3 课与工程概念页</div>
+  <h1>投机解码与量化小白版</h1>
+  <p class="subtitle">推理加速的两大面试必考：投机解码用"小模型打草稿、大模型批改"骗过串行依赖；量化把数字压瘦换取带宽与显存。两个都有动手交互。</p>
+
+  <h2>一、动手：投机解码一轮</h2>
+  <div class="stage">
+    <div class="ctl"><button id="spec" class="primary" type="button">跑一轮投机解码</button><span class="note">Draft（0.5B 小模型）猜 4 个，Target（70B）一次验证</span></div>
+    <div class="specrow"><span class="lane">① 小模型起草</span><span class="tok draft" id="d0">–</span><span class="tok draft" id="d1">–</span><span class="tok draft" id="d2">–</span><span class="tok draft" id="d3">–</span></div>
+    <div class="specrow"><span class="lane">② 大模型批改</span><span class="tok" id="v0">–</span><span class="tok" id="v1">–</span><span class="tok" id="v2">–</span><span class="tok" id="v3">–</span><span class="tok fallback" id="v4">纠错</span></div>
+    <div class="say" id="ssay">点按钮：看小模型一次猜 4 个 token，大模型<b>一次前向全部验证</b>——对了几个就白赚几个。</div>
+    <div class="statrow"><span>本轮产出：<b id="gain">–</b> 个 token</span><span>大模型前向次数：<b>1</b> 次（普通解码要 N 次）</span></div>
+    <p class="note">关键性质：投机解码<b>不改变输出分布</b>（大模型逐位验证，错了就地纠正）——是无损加速。收益取决于"小模型猜得多准"：文本续写类接受率高，代码更高（语法可预测）；开放创作类收益低。</p>
+  </div>
+
+  <h2>二、量化：压数字，换显存与带宽</h2>
+  <div class="stage">
+    <div class="ctl">
+      <button class="qopt on" data-q="fp16" type="button">FP16 基准</button>
+      <button class="qopt" data-q="int8" type="button">INT8 / FP8</button>
+      <button class="qopt" data-q="int4" type="button">INT4 / NVFP4</button>
+    </div>
+    <div class="qrow">
+      <div class="qstat">70B 权重体积：<b id="qs">140 GB</b></div>
+      <div class="qstat">Decode 单步读权重耗时：<b id="qt">–</b></div>
+      <div class="qstat">质量：<b id="qq">无损基准</b></div>
+    </div>
+    <p class="note" style="margin-top:10px">原理一句话：把 16 位浮点压成 8/4 位整数存储——Decode 是带宽瓶颈（第 3 课），权重瘦一半，每步时间就近乎减半。代价是精度：权重扰动带来输出质量下降，需要校准数据（AWQ/GPTQ 等算法找最优缩放因子）+ 回归测试兜底。KV Cache 也能量化（FP8 KV 已是生产标配，官方精度表见延伸阅读）。</p>
+  </div>
+
+  <h2>三、面试要点速记</h2>
+  <div class="grid c2">
+    <div class="kcard"><h4>投机解码三问</h4><p class="def">为什么快？——串行依赖被"批发验证"打破：N 次前向变 1 次。<br>为什么无损？——大模型逐位验证+纠错，输出分布不变。<br>什么时候失效？——小模型与任务分布不匹配时接受率低，反而更慢（草稿也要算）。</p><p class="ana">🧠 类比：实习生写 PR、架构师一次 review 全部——接受率高就赚。</p></div>
+    <div class="kcard"><h4>量化三问</h4><p class="def">压什么？——权重（省显存/带宽）、KV（省显存）、激活（部分算子）。<br>怎么不坏？——校准数据集 + 逐层缩放（AWQ/GPTQ）。<br>线上的坑？——长尾精度劣化（基准分不降但个别 case 崩）、与投机解码 draft 模型的精度组合。</p><p class="ana">🧠 类比：有损压缩——码率高没人发现，码率低关键帧糊了。</p></div>
+  </div>
+  <div class="stage" style="margin-top:12px">
+    <b style="font-size:14px">组合拳（加分项）</b>
+    <p style="font-size:13px;margin:6px 0 0">生产引擎把几招叠着用：量化（权重 FP8）× Continuous Batching（摊薄读权重）× 投机解码（一次多 token）× PD 分离（各自最优）——分别对应"每步更便宜 / 每步服务更多人 / 每步多产出 / 全局不互相拖累"。面试能讲清<b>每招作用于成本公式的哪个变量</b>（$token 速算页），就是体系化理解。</p>
+  </div>
+
+  <h2>四、小测验</h2>
+  <div class="quiz"><p>Q1 · 投机解码为什么是无损加速？</p>
+    <button class="opt" data-ok="1" type="button">大模型逐位验证并纠错，最终输出分布与直接生成一致</button>
+    <button class="opt" type="button">小模型比大模型更准</button>
+    <button class="opt" type="button">它偷偷降低了温度</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q2 · INT4 量化的 70B 模型最直接的变化？</p>
+    <button class="opt" type="button">算力 FLOPS 翻四倍</button>
+    <button class="opt" data-ok="1" type="button">权重体积 140GB→约 35GB，Decode 每步读权重时间大幅下降</button>
+    <button class="opt" type="button">不再需要 GPU</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q3 · 哪种任务上投机解码收益最低？</p>
+    <button class="opt" type="button">代码补全</button>
+    <button class="opt" type="button">格式化输出 JSON</button>
+    <button class="opt" data-ok="1" type="button">高度开放的创意写作——小模型难猜中大模型的下一个词</button>
+    <span class="verdict"></span>
+  </div>
+
+  <div class="foot">
+    <b>延伸阅读</b>
+    <ul>
+      <li>上游：<a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/09_inference_system/model_optimization/illustrated-speculative-decoding.md">图解投机解码</a> · <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/09_inference_system/model_optimization/dflash-block-diffusion-speculative-decoding.md">DFlash 块扩散投机解码</a> · <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/06_llm_theory_and_fundamentals/llm_basic_concepts/quantization/visual_guide_to_quantization.md">量化可视化指南</a> · <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/09_inference_system/deployment/b300-deployment-and-kv-cache.md">B300 部署（KV 量化官方精度表）</a></li>
+      <li>本站关联：<a href="01_inference_pipeline.html">第 3 课</a>（为什么 Decode 吃带宽）· <a href="05_cost_calc.html">$/token 速算</a>（每招拧哪个变量）</li>
+    </ul>
+    <div class="nav"><a href="09_pd_disaggregation.html">← 上一页：PD 分离</a><a href="../interview/01_question_bank.html">面试自测题库 →</a></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  /* ---------- 投机解码 ---------- */
+  var DRAFT=['服','务','器','的'],ACCEPT=[true,true,false,false],CORRECT='磁';
+  var ids=['d0','d1','d2','d3'],vids=['v0','v1','v2','v3','v4'];
+  document.getElementById('spec').addEventListener('click',function(){
+    ids.forEach(function(id,i){var el=document.getElementById(id);el.textContent='…';el.className='tok draft';});
+    vids.forEach(function(id){var el=document.getElementById(id);el.textContent='–';el.className='tok';});
+    document.getElementById('ssay').textContent='① 0.5B 小模型一口气猜 4 个 token…';
+    document.getElementById('gain').textContent='–';
+    setTimeout(function(){
+      ids.forEach(function(id,i){document.getElementById(id).textContent=DRAFT[i];});
+      document.getElementById('ssay').textContent='② 70B 大模型一次前向验证 4 个（串行验证不需要 4 次前向）…';
+      setTimeout(function(){
+        var n=0;
+        vids.forEach(function(id,i){
+          var el=document.getElementById(id);
+          if(i<4){
+            if(ACCEPT[i]){el.textContent=DRAFT[i]+'✓';el.className='tok ok';n++;}
+            else{el.textContent=DRAFT[i]+'✗';el.className='tok bad';}
+          }else{
+            el.textContent=CORRECT+'（纠正）';el.className='tok fallback';
+          }
+        });
+        document.getElementById('gain').textContent=n+1;
+        document.getElementById('ssay').innerHTML='✅ 结果：猜对 '+n+' 个 + 纠错 1 个 = <b>一轮产出 '+(n+1)+' 个 token</b>，大模型只前向了 1 次（普通解码要 '+(n+1)+' 次）。第三个字猜错就地纠正——所以无损。';
+      },900);
+    },800);
+  });
+  /* ---------- 量化 ---------- */
+  var Q={fp16:{size:'140 GB',t:'42 ms',q:'无损基准',mult:1},int8:{size:'70 GB',t:'21 ms',q:'轻微损失（需校准+回归）',mult:0.5},int4:{size:'35 GB',t:'11 ms',q:'明显压缩，长尾 case 需重点测试',mult:0.25}};
+  document.querySelectorAll('.qopt').forEach(function(b){
+    b.addEventListener('click',function(){
+      document.querySelectorAll('.qopt').forEach(function(x){x.classList.remove('on');});
+      b.classList.add('on');
+      var q=Q[b.dataset.q];
+      document.getElementById('qs').textContent=q.size;
+      document.getElementById('qt').textContent=q.t+'（估算口径：140GB÷3.35TB/s×'+q.mult+'）';
+      document.getElementById('qq').textContent=q.q;
+    });
+  });
+  document.querySelectorAll('.quiz').forEach(function(q){
+    q.addEventListener('click',function(e){
+      var b=e.target.closest('button.opt');
+      if(!b||q.dataset.done==='1')return;
+      var ok=b.dataset.ok==='1';
+      q.querySelectorAll('.opt').forEach(function(x){x.disabled=true;if(x.dataset.ok==='1')x.classList.add('right');});
+      if(!ok)b.classList.add('wrong');
+      var v=q.querySelector('.verdict');
+      v.textContent=ok?'✓ 答对了':'✗ 正确答案已标绿';
+      v.className='verdict '+(ok?'ok':'bad');
+      q.dataset.done='1';
+    });
+  });
+})();
+</script>
+</body>
+</html>

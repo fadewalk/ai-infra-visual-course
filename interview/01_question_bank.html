@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>面试自测题库 · AI Infra / AI SRE —— 28 问 + 系统设计 3 题</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 20px}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+  .pill{font:inherit;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--fg);border-radius:999px;padding:5px 14px;font-size:13px}
+  .pill.on{background:var(--blue);border-color:var(--blue);color:#fff}
+  .progress{font-size:13px;color:var(--muted);margin-left:auto}
+  .progress b{color:var(--green)}
+  .cat-h{font-size:16px;margin:24px 0 8px;padding-left:10px;border-left:4px solid var(--cc,var(--blue));display:flex;justify-content:space-between;align-items:baseline}
+  .cat-h small{color:var(--muted);font-weight:400;font-size:12px}
+  details{background:var(--card);border:1px solid var(--border);border-radius:10px;margin:8px 0;overflow:hidden}
+  details[open]{border-color:var(--cc,var(--blue))}
+  summary{cursor:pointer;padding:11px 14px;font-size:14px;display:flex;justify-content:space-between;gap:10px;align-items:center;list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:hover{background:var(--chip)}
+  .qt{display:flex;gap:10px;align-items:center}
+  .dif{font-size:10px;border-radius:5px;padding:0 7px;white-space:nowrap}
+  .d1{background:color-mix(in srgb,var(--green) 18%,transparent);color:var(--green)}
+  .d2{background:color-mix(in srgb,var(--orange) 20%,transparent);color:var(--orange)}
+  .d3{background:color-mix(in srgb,var(--red) 16%,transparent);color:var(--red)}
+  .done-flag{font-size:12px;color:var(--green)}
+  .body{padding:0 16px 12px;font-size:13.5px}
+  .body ul{margin:6px 0;padding-left:20px}
+  .body .ans-label{color:var(--muted);font-size:12px}
+  .body .ref{margin-top:8px;font-size:12px;border-top:1px dashed var(--border);padding-top:8px}
+  .mark{margin-top:8px}
+  .mark button{font:inherit;font-size:12px;cursor:pointer;border:1px solid var(--border);background:var(--chip);color:var(--fg);border-radius:6px;padding:3px 12px}
+  .mark button.done{border-color:var(--green);color:var(--green);background:color-mix(in srgb,var(--green) 10%,transparent)}
+  .sysbox{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin:10px 0}
+  .sysbox h3{margin:0 0 6px;font-size:15px}
+  .sysbox .cond{font-size:12px;color:var(--muted);margin-bottom:8px}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+  .note{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 面试准备 · 全站课程的实战检验</div>
+  <h1>AI Infra / AI SRE 面试自测题库</h1>
+  <p class="subtitle">28 道高频问答 + 3 道系统设计，按主题分类。每题给出<b>答题要点</b>与对应课程链接——先自己口述，再展开对照。点「已掌握」追踪进度（本次浏览内有效）。</p>
+
+  <div class="toolbar">
+    <button class="pill on" data-c="all">全部</button>
+    <button class="pill" data-c="hw">硬件</button>
+    <button class="pill" data-c="train">训练</button>
+    <button class="pill" data-c="infer">推理</button>
+    <button class="pill" data-c="ops">K8s 与运维</button>
+    <button class="pill" data-c="cost">成本</button>
+    <button class="pill" data-c="sys">系统设计</button>
+    <span class="progress">已掌握 <b id="doneN">0</b> / 31</span>
+  </div>
+
+  <div id="bank"></div>
+
+  <div class="foot">
+    <p class="note">用法建议：面试前 48 小时过一遍；每题先说 60 秒版本，再对照要点查漏。答不上的题直接点链接回课程复习。趋势类话题（Agent 负载、线性注意力等）见 <a href="02_trends_2026.html">2026 趋势速览</a>。</p>
+    <div class="nav"><a href="../09_inference_system/10_spec_quant.html">← 上一页：投机解码与量化</a><a href="02_trends_2026.html">2026 趋势速览 →</a></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var B='https://github.com/ForceInjection/AI-fundamentals/blob/main/';
+  var S='../';
+  var QS=[
+    {c:'hw',cat:'硬件与体系结构',cc:'var(--blue)',q:[
+      {t:'CPU 和 GPU 的架构差异是什么？为什么 AI 计算偏爱 GPU？',d:2,a:['核少而强 vs 核多而简（SIMT）','AI 计算的本质是大规模矩阵乘法——互相独立、高度重复，正好匹配上万小核心','补充加分：Warp 是 32 线程的执行单位，分支发散是性能杀手'],ref:'第 1 课 · '+S+'01_hardware_architecture/01_gpu_vs_cpu.html'},
+      {t:'GPU-Util 显示 97%，能说明算力用满了吗？',d:2,a:['不能。GPU-Util 只表示"采样周期内有 kernel 在执行"','可能 132 个 SM 只有几个在干活（kernel 太碎/batch 太小）','判断真忙假忙：DCGM 的 SM Active / DRAM Active，或 Nsight 采样'],ref:'排障模拟器事故 3 · '+S+'03_ai_cluster_ops/02_gpu_troubleshoot_sim.html'},
+      {t:'画出（说出）AI 服务器的访存延迟金字塔，并说明每一层对系统设计的影响。',d:3,a:['寄存器→共享内存/L1→L2→HBM→（PCIe）主机内存→（NVLink）邻卡→（IB）跨节点','关键换算：H100 HBM 3.35TB/s ≈ 读 14GB 权重 4.2ms——Decode 每步的物理下限','推论：分块计算住片上、量化住带宽、拓扑调度住互连'],ref:'第 5 课 · '+S+'01_hardware_architecture/02_latency_pyramid.html'},
+      {t:'NVLink、PCIe、IB 各自的定位与典型带宽量级？TP 为什么不跨机？',d:2,a:['PCIe Gen5 x16 ≈ 64GB/s（CPU↔GPU 通用公路）；NVLink 5 ≈ 900GB/s 单向（机内卡间）；IB 400Gbps/卡（跨机）','TP 每层都要 AllReduce，通信密度极高，只有 NVLink 域扛得住；跨机用 PP（点对点、量小）','加分：nvidia-smi topo -m 看拓扑亲疏'],ref:'NVLink 加餐 · '+S+'01_hardware_architecture/05_nvlink.html'},
+      {t:'RDMA 为什么比 TCP 快？IB 网络出问题时的典型表现？',d:2,a:['内核旁路+网卡直写对端内存：μs 级延迟、CPU 零参与','典型表现是"莫名变慢"而非报错：丢包重传/降速链路/SM 故障都会静默吃吞吐','排查：ibstat/ib_write_bw/perfquery 错误计数'],ref:'IB/RDMA 加餐 · '+S+'03_ai_cluster_ops/03_ib_rdma.html'}
+    ]},
+    {c:'train',cat:'训练与分布式',cc:'var(--orange)',q:[
+      {t:'讲一遍训练循环的五个步骤。训练 7B 模型为什么单张 80GB 卡放不下？',d:1,a:['取 batch→前向→算 loss→反向→优化器更新','混合精度+Adam 口径：约 16 字节/参数（fp16 权重2+梯度2+fp32 主权重4+Adam 状态8）→ 7B≈112GB，还没算激活','出路：ZeRO 分摊 / TP/PP 切分 / LoRA / 梯度检查点'],ref:'第 2 课 · '+S+'05_model_training_and_fine_tuning/01_training_loop.html + 显存计算器'},
+      {t:'DP / TP / PP / EP 分别切什么？各自的通信模式和适用场景？',d:2,a:['DP 切数据（模型完整复制，AllReduce 梯度）；TP 层内切权重（每层 AllReduce，NVLink 域内）；PP 层间切段（相邻点对点，跨机友好）；EP MoE 专家分布（All-to-All）','70B/8卡 不能纯 DP（放不下）→ 单机 TP、跨机 PP 是经典组合'],ref:'第 6 课 · '+S+'09_inference_system/02_parallelism.html'},
+      {t:'AllReduce 环形算法的通信量是多少？为什么说它可扩展？',d:3,a:['总通信量 2(N-1)/N × 数据量——8 卡约 1.75×，64 卡约 1.97×，几乎与卡数无关','每卡只和邻居通信，带宽被所有卡分摊','评估 NCCL 性能看 busbw（总线带宽）而不是 algbw，与硬件上限直接对比'],ref:'NCCL 加餐 · '+S+'03_ai_cluster_ops/04_nccl_intro.html'},
+      {t:'训练作业的 SRE 保障要点：checkpoint、故障恢复、监控看什么？',d:2,a:['checkpoint 频率与恢复演练是核心 KPI（崩了续训靠它）','监控不只 loss：吞吐/MFU、通信占比、坏卡检测（XID/ECC）','Gang Scheduling 保证 8 卡作业要么全上要么全等，避免部分调度空转烧钱'],ref:'Gang 演示 · '+S+'04_cloud_native_ai_platform/02_scheduling_demo.html + 70B 复盘导读'},
+      {t:'SFT 微调中什么是 loss mask？灾难性遗忘怎么防？',d:2,a:['loss 只对 answer 部分计（教"怎么回答"不教"怎么提问"）','遗忘对策：混入通用数据、用 LoRA（不动原权重）、控制 epoch（1-3）','加分：数据质量>数量（LIMA 共识）'],ref:'SFT 小白版 · '+S+'05_model_training_and_fine_tuning/05_sft_primer.html'},
+      {t:'RLHF / DPO / GRPO 的区别？为什么 GRPO 省 Critic？',d:3,a:['RLHF-PPO：奖励模型+在线 RL，4 模型在场、最难调','DPO：跳过 RM 直接用偏好对，监督式稳定训练，2 模型','GRPO：去掉 Critic，同一题采样一组回答用组内相对得分当基线——推理任务主力（DeepSeek）'],ref:'第 11 课 · '+S+'05_model_training_and_fine_tuning/04_alignment.html'}
+    ]},
+    {c:'infer',cat:'推理系统',cc:'var(--purple)',q:[
+      {t:'Prefill 和 Decode 的本质区别？分别决定什么指标？',d:1,a:['Prefill 并行算整段 prompt：compute-bound，决定 TTFT','Decode 每步 1 token 且重读全部权重：memory-bound，决定 TPOT/吞吐','数字感：7B FP16 权重 14GB ÷ 3.35TB/s ≈ 4.2ms/token，单请求上限约 240 tok/s'],ref:'第 3 课 · '+S+'09_inference_system/01_inference_pipeline.html'},
+      {t:'KV Cache 是什么？为什么它决定并发上限？',d:1,a:['缓存历史 token 的 K/V 中间结果，避免每步重算——拿显存换计算','占用随上下文线性涨：并发 ≈ (总显存−权重−预留)÷(每 token KV×会话长度)','PagedAttention=OS 分页思想治碎片，浪费从 60-80% 降到近零'],ref:'KV 计算器 · '+S+'09_inference_system/03_kv_capacity_calc.html'},
+      {t:'静态批处理浪费在哪？Continuous Batching 怎么解决？',d:2,a:['三重浪费：短等长、padding 空转、整批完成才换批','CB 每步都是调度机会：做完即走、到了即上——吞吐 2.5-4×','配合 PagedAttention 是乘法关系：容量×周转'],ref:'Batching 加餐 · '+S+'09_inference_system/04_batching_attention.html'},
+      {t:'PD 分离解决什么问题？代价是什么？什么时候不划算？',d:2,a:['算力密集(P)与带宽密集(D)互相干扰：长 prompt 阻塞 Decode、资源错配、扩容耦合','代价：KV 跨池搬运（RDMA/共享存储 vs 重算的临界点）','小流量短 prompt 场景不划算——搬运开销压过收益'],ref:'PD 分离加餐 · '+S+'09_inference_system/09_pd_disaggregation.html'},
+      {t:'投机解码为什么无损？什么场景收益高/低？',d:2,a:['小模型起草+大模型一次前向逐位验证纠错——输出分布不变','收益取决于接受率：代码/格式化输出高，开放创作低','变体：MTP（多头预测）、块扩散（一次生成一块再验证）'],ref:'投机解码加餐 · '+S+'09_inference_system/10_spec_quant.html'},
+      {t:'INT8/INT4 量化压的是什么？线上最大的坑？',d:2,a:['压权重（省显存带宽→Decode 提速）和 KV（省显存），校准算法 AWQ/GPTQ 找缩放因子','坑：长尾精度劣化——基准分不掉但个别 case 崩，必须业务回归测试兜底'],ref:'同上 · 投机解码与量化加餐'},
+      {t:'Prefix Caching / RadixAttention 的价值场景？',d:2,a:['相同前缀（系统提示词、文档、多轮历史）的 KV 只算一次，后续命中直接复用','Agent 多轮/RAG 共享文档场景收益巨大——等效吞吐+30% 起（负载相关）','SGLang 用 Radix Tree 自动管理；跨实例复用是 KV 分布式系统的主战场'],ref:'SGLang 一张图 · '+S+'09_inference_system/07_sglang_overview.html + KV 系统一页通'}
+    ]},
+    {c:'ops',cat:'K8s 与运维',cc:'var(--green)',q:[
+      {t:'一个 Pod 申请 nvidia.com/gpu: 1，从提交到用上卡经过哪些组件？',d:2,a:['Device Plugin 上报扩展资源→调度器过滤打分（数量+拓扑）→kubelet 向 Device Plugin 要设备 ID→Container Toolkit 注入驱动库与 /dev/nvidia*','调度器只知道数量，具体哪张卡是 kubelet 决定的'],ref:'第 4 课 · '+S+'04_cloud_native_ai_platform/01_k8s_gpu.html'},
+      {t:'GPU 共享四种方式（整卡/时间片/MPS/MIG）的隔离性对比？',d:2,a:['整卡：无共享；时间片：轮流用、显存互挤；MPS：空间共享、隔离弱；MIG：硬件级切分、隔离最强但粒度粗','HAMi 用用户态拦截补显存配额（cgroup 缺位）'],ref:'第 4 课 + HAMi/Kueue 加餐 · '+S+'04_cloud_native_ai_platform/03_hami_kueue.html'},
+      {t:'Gang Scheduling 为什么对训练作业是必须的？',d:1,a:['分布式训练全员到齐才能开跑；逐 Pod 调度会出现"2 卡落位空转+2 卡 Pending"白烧钱','Volcano/Kueue 在队列层保证整组资源够才放行'],ref:'Gang 演示 · '+S+'04_cloud_native_ai_platform/02_scheduling_demo.html'},
+      {t:'生产上 GPU 掉卡（XID 79）的处置流程？',d:3,a:['dmesg 确认 Xid 79（掉总线）→确认无进程→nvidia-smi --gpu-reset 复位→cordon 节点','复发即硬件信号：摘节点报修，ECC 不可修复错误同理','预防：DCGM 巡检 Remapped Rows/Uncorrectable ECC 自动摘卡'],ref:'排障模拟器事故 2 · '+S+'03_ai_cluster_ops/02_gpu_troubleshoot_sim.html'},
+      {t:'GPU 集群的监控栈怎么搭？哪些指标是真信号？',d:2,a:['DCGM-Exporter + Prometheus + Grafana 标准栈','真信号：SM Active（真算力）、DRAM Active（带宽）、ECC/Remapped Rows（硬件健康）、功耗温度（降频预警）','GPU-Util 是噪音不是信号'],ref:'运维速查 · '+S+'03_ai_cluster_ops/01_gpu_ops.html'},
+      {t:'推理服务 OOM（CUDA out of memory）排查思路？',d:2,a:['先分清：权重装不下（换量化/TP）vs KV 挤爆（并发×会话长度超容量——KV 计算器口径）vs 残留进程占卡（fuser 找真凶）','常见误判：显存占用高≠泄漏，权重+KV 本来就常驻'],ref:'第 3 课 + KV 计算器 + 排障模拟器事故 1'}
+    ]},
+    {c:'cost',cat:'成本与容量',cc:'var(--red)',q:[
+      {t:'$/M token 的成本公式？三个杠杆各对应什么优化？',d:2,a:['成本=月租÷(吞吐×利用率)','量化/批处理→提吞吐；错峰+前缀缓存→提利用率；PD 分离按需配比→降月租','把"SM 低/浪费"翻译成"每月多烧 $X"是推动立项的语言'],ref:'$/token 速算 · '+S+'09_inference_system/05_cost_calc.html'},
+      {t:'业务方说"要支持 1 万并发用户"，你怎么做容量规划？',d:3,a:['先问清：并发是"同时在打字"还是"同时会话"？会话长度分布？','会话口径：并发=同时活跃会话数，受 KV 显存硬约束（KV 计算器）；吞吐口径：token/s 需求÷单机吞吐=机器数','留 20-30% 余量，TTFT P99 单独验证'],ref:'KV 计算器 + 第 3 课'},
+      {t:'为什么说"一切 AI Infra 优化的终点是降低每 token 成本"？',d:2,a:['四年 token 价格降约百倍=架构(MLA/MoE)×硬件(FP4/HBM)×引擎(批处理/投机解码)×系统(PD分离/缓存)四层杠杆相乘','SRE 的每个决策最终都落在这个公式上'],ref:'Token Factory 叙事 · '+B+'99_misc/token_factory_talk/talk-illustrated.md'}
+    ]}
+  ];
+  var SYS=[
+    {t:'系统设计 ①：为 2000 人内部团队部署代码助手（类 Copilot）',cond:'约束：代码库私有化、峰值 500 并发、P90 TTFT < 1.5s、预算有限。',a:['负载画像：Agent 式多轮+长系统提示词→前缀缓存命中率是第一杠杆','架构：网关→(前缀感知路由)→vLLM/SGLang 池（小参数量+FP8+投机解码，代码任务接受率高）→KV 分层','容量：KV 计算器按"会话×代码上下文长度"推显存→定并发与卡数','SRE：按 TTFT/TPOT 分池扩容、灰度模型版本、代码基准回归'],ref:'综合：第 3/6 课 + PD 分离 + 投机解码 + KV 计算器'},
+    {t:'系统设计 ②：训练集群的 8×H100 作业频繁失败，怎么治理？',cond:'现象：平均每天 2-3 次失败重跑，每次损失数小时。',a:['先建账：失败分类（硬件 XID/网络 IB/存储 IO/代码 OOM）→帕累托','硬件：DCGM 自动巡检+坏卡自动 cordon；checkpoint 频率对齐 MTBF','调度：Gang+队列优先级保护大作业；弹性队列填谷','演练：定期故障注入验证恢复流程'],ref:'综合：排障模拟器 + Gang 演示 + 70B 复盘'},
+    {t:'系统设计 ③：把 API 成本降 50%（不换模型）',cond:'现状：月账单 $80K，TTFT/质量不能劣化超过 10%。',a:['第一步永远是拆账：输入 token×单价 + 输出 token×单价 + 缓存命中的折扣结构','杠杆排序：前缀缓存（系统提示词+多轮共享）> 批处理利用率 > 量化降档 > 投机解码 > 错峰','每上一招灰度验证质量回归，量化必须业务 case 兜底'],ref:'综合：$/token 速算 + 投机解码加餐 + 工程概念页'}
+  ];
+  var bank=document.getElementById('bank');
+  var done={},doneN=document.getElementById('doneN');
+  function countDone(){var n=0;for(var k in done)if(done[k])n++;doneN.textContent=n;}
+  function esc(s){return s;}
+  function render(filter){
+    bank.innerHTML='';
+    var idx=0;
+    QS.forEach(function(cat){
+      if(filter!=='all'&&filter!==cat.c)return;
+      var h=document.createElement('div');h.className='cat-h';h.style.setProperty('--cc',cat.cc);
+      h.innerHTML=cat.cat+' <small>'+cat.q.length+' 题</small>';
+      bank.appendChild(h);
+      cat.q.forEach(function(q){
+        idx++;
+        renderQ(idx,q,cat.cc);
+      });
+    });
+    if(filter==='all'||filter==='sys'){
+      var h2=document.createElement('div');h2.className='cat-h';h2.style.setProperty('--cc','var(--red)');
+      h2.innerHTML='系统设计 <small>3 题 · 高级岗必考</small>';
+      bank.appendChild(h2);
+      SYS.forEach(function(q){idx++;renderQ(idx,q,'var(--red)');});
+    }
+    countDone();
+  }
+  function renderQ(i,q,cc){
+    var d=document.createElement('details');d.style.setProperty('--cc',cc);
+    var dif=q.d===1?'<span class="dif d1">基础</span>':(q.d===2?'<span class="dif d2">进阶</span>':'<span class="dif d3">高频深挖</span>');
+    var items=q.a.map(function(x){return '<li>'+x+'</li>';}).join('');
+    d.innerHTML='<summary><span class="qt"><span style="color:var(--muted);font-size:12px">'+String(i).padStart(2,'0')+'</span>'+dif+'<span>'+q.t+'</span></span><span class="done-flag" id="f'+i+'">'+(done[i]?'✓':'')+'</span></summary>'
+      +'<div class="body"><div class="ans-label">答题要点（先自己口述再对照）：</div><ul>'+items+'</ul>'
+      +'<div class="ref">📚 复习：'+q.ref+'</div>'
+      +'<div class="mark"><button id="m'+i+'" class="'+(done[i]?'done':'')+'" type="button">'+(done[i]?'已掌握 ✓':'标记为已掌握')+'</button></div></div>';
+    bank.appendChild(d);
+    setTimeout(function(){
+      document.getElementById('m'+i).addEventListener('click',function(e){
+        e.preventDefault();
+        done[i]=!done[i];
+        this.className=done[i]?'done':'';
+        this.textContent=done[i]?'已掌握 ✓':'标记为已掌握';
+        document.getElementById('f'+i).textContent=done[i]?'✓':'';
+        countDone();
+      });
+    },0);
+  }
+  document.querySelectorAll('.pill').forEach(function(p){
+    p.addEventListener('click',function(){
+      document.querySelectorAll('.pill').forEach(function(x){x.classList.remove('on');});
+      p.classList.add('on');
+      render(p.dataset.c);
+    });
+  });
+  render('all');
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>加餐 · PD 分离小白版 —— Prefill 与 Decode 为什么分家</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--purple);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  .ctl{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+  button{font:inherit;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--fg);border-radius:8px;padding:6px 14px}
+  button:hover{border-color:var(--purple)}
+  button.seg-on{background:var(--purple);border-color:var(--purple);color:#fff}
+  button.primary{background:var(--purple);border-color:var(--purple);color:#fff}
+  .topo{display:grid;gap:14px;grid-template-columns:1fr}
+  @media(min-width:780px){.topo{grid-template-columns:repeat(2,1fr)}}
+  .nodebox{border:1px solid var(--border);border-radius:10px;padding:12px;background:var(--chip);min-height:120px}
+  .nodebox h4{margin:0 0 6px;font-size:13px}
+  .mixed{border:2px solid var(--blue)}
+  .pnode{border:2px solid var(--green)}
+  .dnode{border:2px solid var(--orange)}
+  .loadbar{height:18px;border-radius:6px;background:var(--card);border:1px solid var(--border);overflow:hidden;margin:6px 0;display:flex}
+  .loadbar i{display:block;height:100%;transition:width .4s}
+  .lb-p{background:var(--green)} .lb-d{background:var(--orange)} .lb-idle{background:var(--chip)}
+  .lrow{font-size:11px;color:var(--muted);display:flex;justify-content:space-between}
+  .kvmove{margin:8px 0;font-size:12px;color:var(--purple);text-align:center}
+  .say{margin-top:12px;padding:10px 14px;border-radius:8px;background:var(--chip);font-size:14px;min-height:24px}
+  .grid{display:grid;gap:12px;grid-template-columns:1fr}
+  @media(min-width:700px){.grid.c2{grid-template-columns:repeat(2,1fr)}.grid.c3{grid-template-columns:repeat(3,1fr)}}
+  .kcard{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+  .kcard h4{margin:0 0 6px;font-size:14px;color:var(--purple)}
+  .kcard .def{font-size:13px;margin:0 0 8px}
+  .kcard .ana{font-size:12px;color:var(--muted);border-top:1px dashed var(--border);padding-top:6px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{color:var(--muted);font-weight:500;font-size:12px}
+  .quiz{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin:10px 0}
+  .quiz p{margin:0 0 10px;font-size:14px}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:8px 12px}
+  .opt.right{border-color:var(--green);color:var(--green)}
+  .opt.wrong{border-color:var(--red);color:var(--red)}
+  .verdict{font-size:13px;margin-left:8px}
+  .verdict.ok{color:var(--green)} .verdict.bad{color:var(--red)}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .foot ul{margin:6px 0;padding-left:18px}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+  .note{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 加餐 · 推理架构热点 · 承接第 3 课 · 面试高频</div>
+  <h1>PD 分离小白版</h1>
+  <p class="subtitle">第 3 课讲过 Prefill 吃算力、Decode 吃带宽——这两种"脾气完全不同"的负载挤在同一张卡上会互相拖累。PD 分离就是让它们<b>各开各的机器</b>，代价是要搬运 KV Cache。</p>
+
+  <h2>一、动手：耦合 vs 分离，看负载波形</h2>
+  <div class="stage">
+    <div class="ctl">
+      <button id="m-mix" class="seg-on" type="button">耦合部署（P/D 同卡）</button>
+      <button id="m-pd" type="button">PD 分离（专机专用）</button>
+      <button id="play" class="primary" type="button">播放一段流量</button>
+    </div>
+    <div class="topo">
+      <div>
+        <div class="nodebox mixed"><h4>GPU0（耦合）—— 又做 P 又做 D</h4>
+          <div class="loadbar" id="mixbar"></div>
+          <div class="lrow"><span>🟩 Prefill</span><span>🟧 Decode</span><span>⬜ 空转</span></div>
+        </div>
+      </div>
+      <div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div class="nodebox pnode"><h4>Pool P（专做 Prefill）</h4>
+            <div class="loadbar" id="pbar"></div>
+            <div class="lrow"><span>🟩 Prefill</span><span>⬜ 空转</span></div>
+          </div>
+          <div class="nodebox dnode"><h4>Pool D（专做 Decode）</h4>
+            <div class="loadbar" id="dbar"></div>
+            <div class="lrow"><span>🟧 Decode</span><span>⬜ 空转</span></div>
+          </div>
+        </div>
+        <div class="kvmove" id="kvm">KV Cache 需要从 P 池搬到 D 池（跨机 RDMA / 共享存储）</div>
+      </div>
+    </div>
+    <div class="say" id="say">点「播放一段流量」：观察耦合模式下长 prompt 的 Prefill 如何阻塞别人的 Decode（TTFT 和 TPOT 互相伤害）。</div>
+  </div>
+
+  <h2>二、为什么值得分：两种负载的物理矛盾</h2>
+  <div class="grid c2">
+    <div class="kcard"><h4>Prefill 池 —— 吃算力</h4><p class="def">大矩阵并行计算，GPU 利用率高、批次越大越赚。专机可以配<b>高算力卡、大批次策略</b>，专注压 TTFT。</p><p class="ana">🧠 类比：批发打包车间——来一批货一次处理完。</p></div>
+    <div class="kcard"><h4>Decode 池 —— 吃带宽</h4><p class="def">每步只算 1 个 token，瓶颈在读权重的显存带宽。专机可以配<b>高带宽卡、小批次多并发</b>，专注稳 TPOT。</p><p class="ana">🧠 类比：零售发货台——单件高频，讲究周转。</p></div>
+  </div>
+  <div class="stage" style="margin-top:12px">
+    <b style="font-size:14px">耦合的三个痛（面试展开点）：</b>
+    <ol style="font-size:13px;margin:8px 0 0;padding-left:20px">
+      <li><b>互相阻塞</b>：一个 32K 长 prompt 的 Prefill 能把同批 Decode 卡住几百毫秒——TPOT 尖刺；</li>
+      <li><b>资源错配</b>：P 和 D 最优的批次大小/并行度/卡型都不同，一套配置两头不讨好；</li>
+      <li><b>扩容耦合</b>：TTFT 高和 TPOT 高得分开治，耦合模式下扩容=两个都扩，浪费。</li>
+    </ol>
+  </div>
+
+  <h2>三、代价：KV Cache 怎么搬家（面试必问）</h2>
+  <div class="stage">
+    <table>
+      <thead><tr><th>方案</th><th>怎么搬</th><th>权衡</th></tr></thead>
+      <tbody>
+        <tr><td>重算</td><td>D 池拿到 prompt 重新 Prefill 一遍</td><td>不搬数据，但白烧一次算力——只对短 prompt 划算</td></tr>
+        <tr><td>跨机传输</td><td>P 池算完把 KV 通过 RDMA（第 5 课）/ NVLink 直传 D 池</td><td>主流方案；核心是<b>传输时间 &lt; 重算时间</b> 才值得分</td></tr>
+        <tr><td>共享 KV 存储</td><td>KV 写到分层存储（LMCache/Mooncake 一页通），D 池按需拉</td><td>配合前缀复用最划算；多一层运维对象</td></tr>
+      </tbody>
+    </table>
+    <p class="note">一句话答面试："PD 分离的本质是把<b>算力密集与带宽密集</b>两种负载拆到各自最优的池子，核心成本是 KV 的跨池搬运——传输与重算的临界点由 prompt 长度、网络带宽和模型规模共同决定（DeepSeek 生产系统、Mooncake、llm-d 都是这个路线）。"</p>
+  </div>
+
+  <h2>四、小测验</h2>
+  <div class="quiz"><p>Q1 · PD 分离解决的核心矛盾是？</p>
+    <button class="opt" data-ok="1" type="button">Prefill 算力密集与 Decode 带宽密集互相干扰，资源错配</button>
+    <button class="opt" type="button">模型权重太大放不下</button>
+    <button class="opt" type="button">KV Cache 会损坏</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q2 · PD 分离后，一个请求的 KV Cache 最典型去向？</p>
+    <button class="opt" type="button">留在 P 池直到会话结束</button>
+    <button class="opt" data-ok="1" type="button">Prefill 完成后经 RDMA/共享存储转交 D 池继续解码</button>
+    <button class="opt" type="button">全部丢弃重算</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q3 · 什么情况下 PD 分离可能不划算？</p>
+    <button class="opt" type="button">prompt 都很长时</button>
+    <button class="opt" data-ok="1" type="button">流量小且 prompt 短——KV 搬运开销与运维复杂度压过收益</button>
+    <button class="opt" type="button">任何时候都绝对划算</button>
+    <span class="verdict"></span>
+  </div>
+
+  <div class="foot">
+    <b>延伸阅读</b>
+    <ul>
+      <li>上游：<a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/09_inference_system/kv_cache/02_systems/mooncake/mooncake_architecture.md">Mooncake 架构（以 KV 为中心的 PD 分离标杆）</a> · <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/09_inference_system/deployment/deepseek_v3_h20_vllm_deep_dive.md">DeepSeek-V3 生产部署（PD 分离+EPLB）</a></li>
+      <li>本站关联：<a href="01_inference_pipeline.html">第 3 课</a>（两阶段本质）· <a href="08_kv_systems.html">KV 系统一页通</a> · <a href="04_batching_attention.html">Chunked Prefill 的另一条路</a></li>
+    </ul>
+    <div class="nav"><a href="08_kv_systems.html">← 上一页：KV 系统一页通</a><a href="10_spec_quant.html">下一页：投机解码与量化 →</a></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var mix=document.getElementById('mixbar'),pb=document.getElementById('pbar'),db=document.getElementById('dbar');
+  var say=document.getElementById('say'),mode='mix',timer=null;
+  function setBars(mp,md,pp,dd){
+    mix.innerHTML='<i class="lb-p" style="width:'+mp+'%"></i><i class="lb-d" style="width:'+md+'%"></i><i class="lb-idle" style="width:'+(100-mp-md)+'%"></i>';
+    pb.innerHTML='<i class="lb-p" style="width:'+pp+'%"></i><i class="lb-idle" style="width:'+(100-pp)+'%"></i>';
+    db.innerHTML='<i class="lb-d" style="width:'+dd+'%"></i><i class="lb-idle" style="width:'+(100-dd)+'%"></i>';
+  }
+  function reset(){
+    setBars(0,0,0,0);
+    document.getElementById('kvm').style.opacity = mode==='pd'?'1':'.25';
+  }
+  document.getElementById('m-mix').addEventListener('click',function(){
+    mode='mix';this.classList.add('seg-on');document.getElementById('m-pd').classList.remove('seg-on');reset();
+    say.textContent='耦合模式：P 和 D 抢同一张卡。点「播放一段流量」。';
+  });
+  document.getElementById('m-pd').addEventListener('click',function(){
+    mode='pd';this.classList.add('seg-on');document.getElementById('m-mix').classList.remove('seg-on');reset();
+    say.textContent='PD 分离：P 池/D 池专机专用，KV 需搬家（下方紫字）。点「播放一段流量」。';
+  });
+  document.getElementById('play').addEventListener('click',function(){
+    if(timer){clearInterval(timer);timer=null;this.textContent='播放一段流量';reset();return;}
+    this.textContent='停止';
+    var t=0;
+    timer=setInterval(function(){
+      t++;
+      var longPromptWave=(t%6<2); // 模拟长 prompt 到达
+      if(mode==='mix'){
+        if(longPromptWave){
+          setBars(78,4,0,0);
+          say.innerHTML='💥 耦合：一个长 prompt 的 Prefill 独占卡（🟩 78%），<b>所有会话的 Decode 被阻塞</b>——用户看到的是打字机突然卡住（TPOT 尖刺）。';
+        }else{
+          setBars(22,48,0,0);
+          say.textContent='耦合：正常时段 P/D 混跑（22%+48%），两种负载共享一套批次与并行配置，互相将就。';
+        }
+      }else{
+        if(longPromptWave){
+          setBars(0,0,88,62);
+          say.innerHTML='✅ 分离：长 prompt 全部丢给 P 池（88% 忙），<b>D 池 Decode 照常跑（62%）不受干扰</b>——代价是 P 算完的 KV 正在搬家去 D 池。';
+        }else{
+          setBars(0,0,30,70);
+          say.textContent='分离：平时 P 池 30%、D 池 70%，各自按最优批次/卡型配置，独立扩容（TTFT 高扩 P，TPOT 高扩 D）。';
+        }
+      }
+      if(t>=18){clearInterval(timer);timer=null;document.getElementById('play').textContent='播放一段流量';}
+    },900);
+  });
+  reset();
+  document.querySelectorAll('.quiz').forEach(function(q){
+    q.addEventListener('click',function(e){
+      var b=e.target.closest('button.opt');
+      if(!b||q.dataset.done==='1')return;
+      var ok=b.dataset.ok==='1';
+      q.querySelectorAll('.opt').forEach(function(x){x.disabled=true;if(x.dataset.ok==='1')x.classList.add('right');});
+      if(!ok)b.classList.add('wrong');
+      var v=q.querySelector('.verdict');
+      v.textContent=ok?'✓ 答对了':'✗ 正确答案已标绿';
+      v.className='verdict '+(ok?'ok':'bad');
+      q.dataset.done='1';
+    });
+  });
+})();
+</script>
+</body>
+</html>

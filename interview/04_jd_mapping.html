@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>招聘 JD 对照表 · 真实岗位要求 vs 你的课程</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 20px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--blue);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{color:var(--muted);font-weight:500;font-size:12px}
+  .st{font-size:12px;white-space:nowrap;border-radius:999px;padding:1px 10px;display:inline-block}
+  .ok{color:var(--green);border:1px solid var(--green)}
+  .part{color:var(--orange);border:1px solid var(--orange)}
+  .gap{color:var(--red);border:1px solid var(--red)}
+  .src{font-size:12px;color:var(--muted)}
+  .src a{margin-right:10px}
+  .gapbox{background:var(--chip);border-left:4px solid var(--red);border-radius:8px;padding:10px 14px;margin:10px 0;font-size:13.5px}
+  .gapbox b{color:var(--red)}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+  .note{font-size:12px;color:var(--muted)}
+  @media(max-width:720px){
+    .wrap{padding:14px 12px 56px}
+    h1{font-size:22px}
+    h2{font-size:17px}
+    .stage{overflow-x:auto}
+    table{font-size:12px}
+    th,td{padding:6px 8px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 面试准备 · 市场校准篇</div>
+  <h1>招聘 JD 对照表：市场要什么 vs 你学了什么</h1>
+  <p class="subtitle">数据来源：2026 年在招的真实岗位（腾讯 AI Infra SRE-大模型推理、腾讯推理优化、阿里 AI Infra 计算/训练基础架构、滴滴训练存储/模型服务化、字节推理框架、B 站推理优化、算能、NVIDIA TRT-LLM）。逐条对照本站课程——<b>绿=已覆盖，橙=部分覆盖，红=缺口与补法</b>。</p>
+
+  <h2>一、推理侧岗位（AI Infra SRE / 推理优化 / 服务化部署）</h2>
+  <div class="stage" style="padding:0;overflow:auto">
+    <table>
+      <thead><tr><th>JD 原文关键词</th><th>出现岗位</th><th>本站对应</th><th>状态</th></tr></thead>
+      <tbody>
+        <tr><td>熟悉 vLLM / SGLang</td><td>腾讯、滴滴、B站、算能、NVIDIA</td><td><a href="../09_inference_system/06_vllm_overview.html">vLLM 一张图</a> · <a href="../09_inference_system/07_sglang_overview.html">SGLang 一张图</a></td><td><span class="st ok">✅ 覆盖</span></td></tr>
+        <tr><td>熟悉 TensorRT-LLM</td><td>腾讯、滴滴、NVIDIA</td><td><a href="../09_inference_system/11_engine_choice.html">引擎三选一（本页新增）</a></td><td><span class="st ok">✅ 已补</span></td></tr>
+        <tr><td>PagedAttention / Continuous Batching / KV Cache 原理</td><td>几乎全部</td><td><a href="../09_inference_system/04_batching_attention.html">Batching 加餐</a> · <a href="../09_inference_system/01_inference_pipeline.html">第 3 课</a> · <a href="../09_inference_system/03_kv_capacity_calc.html">KV 计算器</a></td><td><span class="st ok">✅ 覆盖</span></td></tr>
+        <tr><td>量化 GPTQ / AWQ / FP8</td><td>腾讯、B站、NVIDIA</td><td><a href="../09_inference_system/10_spec_quant.html">量化小白版（含算法名与坑）</a></td><td><span class="st ok">✅ 覆盖</span></td></tr>
+        <tr><td>TTFT / 吞吐量 / 显存占用优化</td><td>B站、滴滴</td><td><a href="../interview/03_metrics.html">指标体系</a> · <a href="../09_inference_system/09_pd_disaggregation.html">PD 分离</a> · <a href="../09_inference_system/05_cost_calc.html">成本速算</a></td><td><span class="st ok">✅ 覆盖</span></td></tr>
+        <tr><td>自定义算子 / PyTorch 扩展机制</td><td>算能、NVIDIA、字节</td><td>上游 <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/02_gpu_programming/README.md">02 章 CUDA 编程</a>（SRE 向读原文，开发向需动手）</td><td><span class="st part">🟠 概念有，开发需练</span></td></tr>
+        <tr><td>多模态模型部署（加分项）</td><td>腾讯、字节</td><td>无专页——面试按"视觉编码器+LLM，瓶颈在图像 token 化"一句话带过即可</td><td><span class="st part">🟠 一句话策略</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>二、训练侧与平台侧岗位（AI Infra 计算/训练架构/存储）</h2>
+  <div class="stage" style="padding:0;overflow:auto">
+    <table>
+      <thead><tr><th>JD 原文关键词</th><th>出现岗位</th><th>本站对应</th><th>状态</th></tr></thead>
+      <tbody>
+        <tr><td>NCCL 原理深刻理解 / 通信机制</td><td>阿里（训练架构）</td><td><a href="../03_ai_cluster_ops/04_nccl_intro.html">NCCL 加餐（busbw 对照法）</a></td><td><span class="st ok">✅ 覆盖</span></td></tr>
+        <tr><td>千卡/万卡集群调度经验</td><td>阿里、腾讯</td><td><a href="../04_cloud_native_ai_platform/02_scheduling_demo.html">Gang 演示</a> + <a href="../01_hardware_architecture/05_nvlink.html">NVLink 域</a>（"万卡"=拓扑感知+故障率账）</td><td><span class="st ok">✅ 覆盖（经验需岗位积累）</span></td></tr>
+        <tr><td>分布式训练（DP/TP/PP/EP）</td><td>普遍</td><td><a href="../09_inference_system/02_parallelism.html">第 6 课</a> · <a href="../05_model_training_and_fine_tuning/01_training_loop.html">第 2 课</a></td><td><span class="st ok">✅ 覆盖</span></td></tr>
+        <tr><td>训练/推理存储 IO 性能</td><td>滴滴（训练存储）</td><td><a href="../04_cloud_native_ai_platform/05_storage.html">存储三篇一页通</a></td><td><span class="st ok">✅ 覆盖</span></td></tr>
+        <tr><td>K8s 生态 / 容器化</td><td>阿里云容器方向</td><td><a href="../04_cloud_native_ai_platform/01_k8s_gpu.html">第 4 课</a> · <a href="../04_cloud_native_ai_platform/03_hami_kueue.html">HAMi/Kueue</a></td><td><span class="st ok">✅ 覆盖</span></td></tr>
+        <tr><td>PyTorch / 框架源码级</td><td>字节、百度</td><td>第 2/13 课概念齐；源码级需 <a href="https://github.com/datawhalechina/happy-llm">happy-llm 动手</a></td><td><span class="st part">🟠 概念有，需动手</span></td></tr>
+        <tr><td>C++ / Python / 算法与并发</td><td>普遍（硬门槛）</td><td>非本站职责——刷题与语言功底按传统路径准备</td><td><span class="st part">🟠 课前置</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>三、运维 SRE 向（GPU 集群运维 / 监控 / 故障）</h2>
+  <div class="stage" style="padding:0;overflow:auto">
+    <table>
+      <thead><tr><th>JD 原文关键词</th><th>本站对应</th><th>状态</th></tr></thead>
+      <tbody>
+        <tr><td>Prometheus + Grafana + DCGM-Exporter 监控体系</td><td><a href="../03_ai_cluster_ops/01_gpu_ops.html">运维速查</a> · <a href="../interview/03_metrics.html">指标四层账本</a></td><td><span class="st ok">✅ 覆盖</span></td></tr>
+        <tr><td>GPU 故障诊断（XID / ECC / NVLink）</td><td><a href="../03_ai_cluster_ops/02_gpu_troubleshoot_sim.html">排障模拟器（三起事故实操）</a></td><td><span class="st ok">✅ 覆盖</span></td></tr>
+        <tr><td>驱动 / CUDA 版本维护</td><td>第 4 课"版本对齐"专题 + 运维速查</td><td><span class="st ok">✅ 覆盖</span></td></tr>
+        <tr><td><b>Slurm 作业调度</b>（HPC 集群常见）</td><td>本站无专页 → 用下面补丁知识 + 一句话定位应付初面</td><td><span class="st gap">🔴 缺口（下方补）</span></td></tr>
+        <tr><td>昇腾/国产算力经验（加分）</td><td><a href="../02_npu_programming/01_overview.html">NPU 生态对照</a> · <a href="02_trends_2026.html">趋势⑥</a></td><td><span class="st ok">✅ 覆盖</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>四、缺口速补：Slurm 一页通（面试够用版）</h2>
+  <div class="stage">
+    <div class="gapbox"><b>Slurm 是什么</b>：HPC 世界的作业调度器（比 K8s 年长 20 年）——大量训练集群（高校/研究所/部分云厂商裸金属）用它而非 K8s。核心心智：<b>K8s 管常驻服务，Slurm 管有始有终的批作业</b>——但 AI 时代两者正在融合（Slurm+K8s 混布、或 K8s 阵营用 Volcano/Kueue 补齐 Gang 语义）。</div>
+    <table>
+      <thead><tr><th>K8s 概念（你熟的）</th><th>Slurm 对应</th><th>一句话</th></tr></thead>
+      <tbody>
+        <tr><td>Job / Deployment</td><td>sbatch 提交的作业</td><td>sbatch train.sh 提交，squeue 看队列</td></tr>
+        <tr><td>Gang Scheduling（Volcano/Kueue）</td><td>原生默认行为</td><td>Slurm 生于 HPC：作业要 N 个节点，凑不齐就整体排队——天生 Gang</td></tr>
+        <tr><td>ResourceQuota / requests</td><td>--gres=gpu:8 等资源声明</td><td>GPUs are just "generic resources"，按节点分配</td></tr>
+        <tr><td>kubectl describe</td><td>scontrol show job</td><td>查作业细节；scancel 取消</td></tr>
+        <tr><td>节点池/标签</td><td>Partition 分区</td><td>--partition=a100 把作业投到特定硬件池</td></tr>
+        <tr><td>优先级/抢占</td><td>PriorityType / QOS</td><td>多租户配额与优先级，和 Kueue 的 ClusterQueue 思想同源</td></tr>
+      </tbody>
+    </table>
+    <p class="note" style="margin-top:10px">面试一句话："Slurm 和 K8s 解决同一件事的两个面——批作业调度 vs 常驻服务编排；我的 K8s 经验里 Gang/配额/拓扑这一套，映射到 Slurm 就是它原生的作业模型 + gres + partition。" 深入：<a href="https://developer.nvidia.com/blog/job-statistics-nvidia-data-center-gpu-manager-slurm">NVIDIA DCGM×Slurm 作业级统计</a> · <a href="https://slurm.schedmd.com/quickstart.html">Slurm 官方 Quick Start</a></p>
+  </div>
+
+  <h2>五、给你的投递策略（基于 JD 分布）</h2>
+  <div class="stage">
+    <ul style="font-size:13.5px;margin:0;padding-left:20px">
+      <li><b>SRE 向入口</b>（腾讯 AI Infra SRE-推理）：主打"监控四层账本 + 排障模拟器的三起事故 + K8s 迁移经验"——你的差异化是<b>运维功底 × 推理原理</b>，别去拼 C++ 算子。</li>
+      <li><b>平台向</b>（阿里云容器/计算方向）：主打 K8s 深度（HAMi/Kueue/Gang）+ GPU 池化——本站第 4 章加餐全是弹药。</li>
+      <li><b>推理优化向</b>（要求硕士+框架二次开发）：门槛在 CUDA/算子——补上游 02 章 + happy-llm 动手后再投。</li>
+      <li>简历关键词自查：vLLM/SGLang、KV Cache、PagedAttention、Continuous Batching、PD 分离、量化 FP8/GPTQ、NCCL/busbw、DCGM/XID、Gang/Kueue/HAMi、$/token——<b>每一个都应该能讲 3 分钟</b>（题库对应条目已覆盖）。</li>
+    </ul>
+  </div>
+
+  <div class="foot">
+    <p class="src">JD 来源（2026-10 检索）：<a href="https://careers.tencent.com/jobdesc.html?postId=2113089272218300416">腾讯 AI Infra SRE</a> · <a href="https://careers.tencent.com/jobdesc.html?postId=2095496373041545216">腾讯推理优化</a> · <a href="https://campus-talent.alibaba.com/campus/position/199904060014">阿里 AI Infra 计算</a> · <a href="https://talent-holding.alibaba.com/off-campus/position-detail?positionId=1038409">阿里训练架构</a> · <a href="https://talent.didiglobal.com/social/p/57383">滴滴训练存储</a> · <a href="https://talent.didiglobal.com/social/p/59514">滴滴模型服务化</a> · <a href="https://jobs.bytedance.com/experienced/position/7343213427458050341/detail">字节推理框架</a> · <a href="https://jobs.bilibili.com/social/positions/28366">B 站推理优化</a> · <a href="https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/AI-Computing-Software-Development-Engineer--TensorRT-LLM_JR2022327">NVIDIA TRT-LLM</a></p>
+    <div class="nav"><a href="03_metrics.html">← 生产指标体系</a><a href="../09_inference_system/11_engine_choice.html">加餐：引擎三选一 →</a></div>
+  </div>
+</div>
+</body>
+</html>

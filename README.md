@@ -30,6 +30,8 @@
 | 导读 | **外部优质教程地图** —— Datawhale/ZOMI/微软课程的价值判断与接入时机 | [10_ai_related_course/02_external_courses.html](10_ai_related_course/02_external_courses.html) |
 | 面试 | **面试自测题库** —— 28 问 + 3 道系统设计，答题要点与课程互链 | [interview/01_question_bank.html](interview/01_question_bank.html) |
 | 面试 | **2026 趋势速览** —— Agent 负载/线性注意力/CSA/HCA/HBF/昇腾，每条配"面试怎么聊" | [interview/02_trends_2026.html](interview/02_trends_2026.html) |
+| 面试 | **招聘 JD 对照表** —— 2026 真实岗位要求 vs 课程逐条映射 + Slurm 速补 + 投递策略 | [interview/04_jd_mapping.html](interview/04_jd_mapping.html) |
+| 加餐 | **推理引擎三选一** —— vLLM/SGLang/TensorRT-LLM 场景化推荐（JD 高频） | [09_inference_system/11_engine_choice.html](09_inference_system/11_engine_choice.html) |
 | 面试 | **生产指标体系** —— 四层健康账本（$/token→SLO→MFU→SM Active），含 P99 陷阱与质量漂移 | [interview/03_metrics.html](interview/03_metrics.html) |
 | 加餐 | **PD 分离小白版** · **投机解码与量化小白版**（面试高频） | [09_inference_system/09_pd_disaggregation.html](09_inference_system/09_pd_disaggregation.html) · [09_inference_system/10_spec_quant.html](09_inference_system/10_spec_quant.html) |
 | 参考 | **术语图鉴** —— 60+ 个黑话的一句话解释 + SRE 类比，可搜索、带思维导图 | [glossary.html](glossary.html) |

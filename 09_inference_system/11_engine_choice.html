@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>加餐 · 推理引擎三选一 —— vLLM / SGLang / TensorRT-LLM</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--purple);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  .ctl{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  button{font:inherit;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--fg);border-radius:8px;padding:6px 14px}
+  button:hover{border-color:var(--purple)}
+  button.seg-on{background:var(--purple);border-color:var(--purple);color:#fff}
+  .engcard{border:1px solid var(--border);border-radius:12px;padding:14px 16px;background:var(--chip)}
+  .engcard h3{margin:0 0 4px;font-size:16px}
+  .engcard .pos{font-size:12px;color:var(--purple);margin-bottom:8px}
+  .engcard ul{font-size:13px;margin:6px 0;padding-left:18px}
+  .pick{margin-top:10px;padding:10px 14px;border-radius:8px;background:var(--card);border:1px dashed var(--border);font-size:13.5px;min-height:24px}
+  .pick b{color:var(--green)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{color:var(--muted);font-weight:500;font-size:12px}
+  .quiz{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin:10px 0}
+  .quiz p{margin:0 0 10px;font-size:14px}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:8px 12px}
+  .opt.right{border-color:var(--green);color:var(--green)}
+  .opt.wrong{border-color:var(--red);color:var(--red)}
+  .verdict{font-size:13px;margin-left:8px}
+  .verdict.ok{color:var(--green)} .verdict.bad{color:var(--red)}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .foot ul{margin:6px 0;padding-left:18px}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+  .note{font-size:12px;color:var(--muted)}
+  @media(max-width:720px){
+    .wrap{padding:14px 12px 56px}
+    h1{font-size:22px}
+    h2{font-size:17px}
+    .stage{overflow-x:auto}
+    table{font-size:12px}
+    th,td{padding:6px 8px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 加餐 · 引擎选型 · 承接 vLLM/SGLang 导读 · JD 高频</div>
+  <h1>推理引擎三选一</h1>
+  <p class="subtitle">JD 常写"熟悉 vLLM / SGLang / TensorRT-LLM 至少其一"。三者不是三选一的宗教问题，而是<b>开源生态 vs 厂商深度优化</b>的两条路线——先点场景看答案，再看对照表。</p>
+
+  <h2>一、点你的场景，看推荐</h2>
+  <div class="stage">
+    <div class="ctl">
+      <button class="seg-on" data-s="a" type="button">创业/内部平台，要快速上线多型号</button>
+      <button data-s="b" type="button">Agent/多轮应用为主，前缀复用是命脉</button>
+      <button data-s="c" type="button">NVIDIA 单一硬件，榨极致延迟</button>
+      <button data-s="d" type="button">非 NVIDIA（昇腾/AMD）集群</button>
+    </div>
+    <div class="engcard" id="card"></div>
+    <div class="pick" id="pick">点上面任意场景。</div>
+  </div>
+
+  <h2>二、三引擎对照表</h2>
+  <div class="stage" style="padding:0;overflow:auto">
+    <table>
+      <thead><tr><th>维度</th><th>vLLM</th><th>SGLang</th><th>TensorRT-LLM</th></tr></thead>
+      <tbody>
+        <tr><td>出身</td><td>开源社区事实标准（PagedAttention 起家）</td><td>开源，LMSYS 系（RadixAttention 起家）</td><td>NVIDIA 官方，闭源深度优化</td></tr>
+        <tr><td>杀手锏</td><td>生态最广、模型 Day-0 支持、周边最多（LMCache/llm-d）</td><td>前缀缓存激进出色（Radix Tree）、调度激进、吞吐常领先</td><td>与 CUDA/驱动协同优化，延迟与单卡利用率天花板</td></tr>
+        <tr><td>短板</td><td>功能迭代快 → 稳定性要自己锁定版本</td><td>社区小于 vLLM；部分场景过于激进（驱逐策略）</td><td>闭源、版本绑定 NVIDIA 栈、新模型支持滞后</td></tr>
+        <tr><td>量化/算子</td><td>社区量化方案齐全</td><td>同源社区方案 + 自研内核</td><td>原生 FP8/FP4 + 官方调优算子（NVIDIA JD 的"二次开发"多指这里）</td></tr>
+        <tr><td>典型用户</td><td>大多数云厂商与创业公司</td><td>Agent 重度、高并发多轮业务</td><td>追求极致 P99 的 NVIDIA 重度用户（金融/大厂推理专线）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>三、共同的地基（面试展开点）</h2>
+  <div class="stage">
+    <p style="font-size:13.5px;margin:0 0 8px">三个引擎上层设计各异，但<b>都建在你已学过的同一套机制上</b>——这正是"熟悉其一，理解其余"的底气：</p>
+    <ul style="font-size:13.5px;margin:0;padding-left:20px">
+      <li>Continuous Batching + PagedAttention 式显存管理（<a href="04_batching_attention.html">加餐</a>）</li>
+      <li>Prefill/Decode 两阶段与量化 KV（<a href="01_inference_pipeline.html">第 3 课</a> + <a href="10_spec_quant.html">量化加餐</a>）</li>
+      <li>投机解码 / CUDA Graph（Decode 去 kernel 启动开销）</li>
+      <li>并行策略 TP/PP/EP（<a href="02_parallelism.html">第 6 课</a>）与 PD 分离（<a href="09_pd_disaggregation.html">加餐</a>）</li>
+    </ul>
+    <p class="note" style="margin-top:8px">面试话术："我深入的是 vLLM 一套（说清楚 Scheduler+KV Manager 分层），SGLang 了解其 RadixAttention 与调度取舍，TRT-LLM 理解它和 CUDA 栈协同的定位——<b>引擎会换，这层机制不会</b>。"</p>
+  </div>
+
+  <h2>四、小测验</h2>
+  <div class="quiz"><p>Q1 · TensorRT-LLM 相对两个开源引擎的核心优势是？</p>
+    <button class="opt" data-ok="1" type="button">与 NVIDIA 硬件/驱动栈深度协同，延迟与利用率的工程天花板</button>
+    <button class="opt" type="button">支持的模型最多</button>
+    <button class="opt" type="button">可以在任何 GPU 上跑</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q2 · Agent 多轮对话业务最看重 SGLang 的哪项能力？</p>
+    <button class="opt" type="button">闭源优化</button>
+    <button class="opt" data-ok="1" type="button">RadixAttention 前缀自动复用——多轮共享前缀命中率高</button>
+    <button class="opt" type="button">不支持量化</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q3 · "熟悉其一即可"的底层原因？</p>
+    <button class="opt" type="button">三个引擎是同一家公司出品</button>
+    <button class="opt" data-ok="1" type="button">上层设计不同，但都建在 KV Cache/批处理/并行/PD 分离这同一套机制上</button>
+    <button class="opt" type="button">API 完全相同</button>
+    <span class="verdict"></span>
+  </div>
+
+  <div class="foot">
+    <b>延伸阅读</b>
+    <ul>
+      <li>本站：<a href="06_vllm_overview.html">vLLM 一张图</a> · <a href="07_sglang_overview.html">SGLang 一张图</a> · <a href="../interview/04_jd_mapping.html">JD 对照表（本页的出处）</a></li>
+      <li>上游：<a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/09_inference_system/README.md#92-核心框架与平台">推理引擎章</a> · <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/09_inference_system/deployment/b300-deployment-and-kv-cache.md">B300 部署最佳实践（引擎配置判据）</a></li>
+    </ul>
+    <div class="nav"><a href="10_spec_quant.html">← 投机解码与量化</a><a href="../interview/04_jd_mapping.html">招聘 JD 对照表 →</a></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var E={
+    a:{n:'vLLM',pos:'默认首选：生态与迭代速度',ul:['模型 Day-0 支持最广，新架构不用等','周边生态（LMCache/llm-d/Router）即插即用','锁版本+灰度上线即可稳定']},
+    b:{n:'SGLang',pos:'前缀复用是命脉的场景',ul:['RadixAttention 自动前缀复用，多轮命中率高','调度激进，吞吐基准常领先','HiCache 三级缓存贴合 Agent 长会话']},
+    c:{n:'TensorRT-LLM',pos:'NVIDIA 栈的极致路线',ul:['与 CUDA/驱动协同，单卡利用率与 P99 天花板','原生 FP8/FP4 官方量化','代价：闭源、绑定 NVIDIA、新模型滞后']},
+    d:{n:'vLLM 系生态（vLLM-Ascend / vROCm）',pos:'非 NVIDIA 硬件的现实选择',ul:['昇腾走 vLLM-Ascend/MindIE（趋势⑥）','AMD 走 vLLM ROCm 后端','TRT-LLM 在此出局——厂商绑定']}
+  };
+  var card=document.getElementById('card'),pick=document.getElementById('pick');
+  var PICK={
+    a:'推荐 <b>vLLM</b>：生态最广、模型支持最快——通用平台的不二起点；SGLang 备选。',
+    b:'推荐 <b>SGLang</b>：多轮+长前缀场景 RadixAttention 直接等效省钱；vLLM 开 prefix caching 也能战。',
+    c:'推荐 <b>TensorRT-LLM</b>：单一 NVIDIA 硬件追极致 P99 就上它；开源两者够 90% 场景。',
+    d:'非 NVIDIA 集群 TRT-LLM 出局：<b>vLLM 系（vLLM-Ascend 等）</b>是现实答案——这正是开源生态的价值时刻。'
+  };
+  document.querySelectorAll('[data-s]').forEach(function(b){
+    b.addEventListener('click',function(){
+      document.querySelectorAll('[data-s]').forEach(function(x){x.classList.remove('seg-on');});
+      b.classList.add('seg-on');
+      var e=E[b.dataset.s];
+      card.innerHTML='<h3>'+e.n+'</h3><div class="pos">'+e.pos+'</div><ul>'+e.ul.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul>';
+      pick.innerHTML='👉 '+PICK[b.dataset.s];
+    });
+  });
+  document.querySelector('[data-s]').click();
+  document.querySelectorAll('.quiz').forEach(function(q){
+    q.addEventListener('click',function(e){
+      var b=e.target.closest('button.opt');
+      if(!b||q.dataset.done==='1')return;
+      var ok=b.dataset.ok==='1';
+      q.querySelectorAll('.opt').forEach(function(x){x.disabled=true;if(x.dataset.ok==='1')x.classList.add('right');});
+      if(!ok)b.classList.add('wrong');
+      var v=q.querySelector('.verdict');
+      v.textContent=ok?'✓ 答对了':'✗ 正确答案已标绿';
+      v.className='verdict '+(ok?'ok':'bad');
+      q.dataset.done='1';
+    });
+  });
+})();
+</script>
+</body>
+</html>

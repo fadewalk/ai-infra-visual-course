@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>加餐 · Agent 深水区一页通 —— 12-Factor / 记忆 / 多智能体 / 上下文工程</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--purple);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  .factor{display:grid;gap:8px;grid-template-columns:1fr}
+  @media(min-width:760px){.factor.c2{grid-template-columns:repeat(2,1fr)}}
+  .fcard{background:var(--chip);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:13px}
+  .fcard b{color:var(--purple)}
+  .fcard .a{color:var(--muted);font-size:12px;border-top:1px dashed var(--border);margin-top:6px;padding-top:6px;display:block}
+  .ck{display:flex;gap:8px;align-items:flex-start;font-size:13px;padding:7px 0;border-bottom:1px dashed var(--border)}
+  .ck:last-child{border-bottom:none}
+  .ck input{margin-top:4px}
+  .verdictbox{margin-top:10px;font-size:14px;font-weight:500;min-height:22px}
+  .verdictbox.ok{color:var(--green)} .verdictbox.warn{color:var(--orange)}
+  .grid{display:grid;gap:12px;grid-template-columns:1fr}
+  @media(min-width:700px){.grid.c2{grid-template-columns:repeat(2,1fr)}.grid.c3{grid-template-columns:repeat(3,1fr)}}
+  .kcard{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+  .kcard h4{margin:0 0 6px;font-size:14px;color:var(--purple)}
+  .kcard .def{font-size:13px;margin:0 0 8px}
+  .kcard .ana{font-size:12px;color:var(--muted);border-top:1px dashed var(--border);padding-top:6px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{color:var(--muted);font-weight:500;font-size:12px}
+  .quiz{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin:10px 0}
+  .quiz p{margin:0 0 10px;font-size:14px}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:8px 12px}
+  .opt.right{border-color:var(--green);color:var(--green)}
+  .opt.wrong{border-color:var(--red);color:var(--red)}
+  .verdict{font-size:13px;margin-left:8px}
+  .verdict.ok{color:var(--green)} .verdict.bad{color:var(--red)}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .foot ul{margin:6px 0;padding-left:18px}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+  .note{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 加餐 · Agent 深入 · 承接第 9 课</div>
+  <h1>Agent 深水区一页通</h1>
+  <p class="subtitle">第 9 课讲了 Agent 的骨架（LLM+工具+循环）。这一页把四块深水区压成速览：<b>12-Factor 工程原则、记忆系统、多智能体编排、上下文工程</b>——每块带上游深读入口。</p>
+
+  <h2>一、12-Factor Agents：把 Agent 当分布式系统建</h2>
+  <div class="stage">
+    <p style="font-size:13px;margin-top:0">开源圈的共识：Agent 工程的问题，八成是<b>分布式系统的老问题换了皮肤</b>。12 条原则里，对 SRE 最亲切的五条：</p>
+    <div class="factor c2">
+      <div class="fcard"><b> owns 控制流</b>：别把循环完全交给框架黑盒，自己 owns while 循环<span class="a">🧠 类比：用框架可以，控制平面要在自己手里</span></div>
+      <div class="fcard"><b>状态外置</b>：会话状态存外部（可恢复），别塞在进程内存<span class="a">🧠 类比：无状态服务 + 外置存储</span></div>
+      <div class="fcard"><b>工具就是接口</b>：工具定义=API 契约，写清楚输入输出与副作用<span class="a">🧠 类比：OpenAPI 规范</span></div>
+      <div class="fcard"><b>可恢复性</b>：任意一步崩溃后能从断点重放<span class="a">🧠 类比：checkpoint / 幂等重试</span></div>
+      <div class="fcard"><b>接触原始上下文</b>：别让框架过度包装历史，可观测可调试<span class="a">🧠 类比：要看得见原始日志，不要只看仪表盘</span></div>
+    </div>
+    <p class="note">完整 12 条见上游 <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/08_agentic_system/concepts/12-factor-agents-intro.md">12-Factor Agents 介绍</a>。</p>
+  </div>
+
+  <h2>二、记忆系统：内存 vs 外存的老问题</h2>
+  <div class="stage">
+    <table>
+      <thead><tr><th>层级</th><th>载体</th><th>特点</th><th>代表</th></tr></thead>
+      <tbody>
+        <tr><td>短期记忆</td><td>上下文窗口</td><td>快、贵、会话结束即失</td><td>对话历史本身</td></tr>
+        <tr><td>长期记忆</td><td>向量库 / 图数据库</td><td>持久、可检索、要管理生命周期</td><td>Mem0、MemoryOS 分层设计</td></tr>
+        <tr><td>经验记忆</td><td>轨迹库</td><td>存"过去怎么解决的"，RAG 回来复用</td><td>Agent 经验复用类系统</td></tr>
+      </tbody>
+    </table>
+    <p class="note">🧠 一句话：就是计算机存储层级（寄存器/内存/磁盘）的 Agent 版。上游有 <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/08_agentic_system/memory/README.md">记忆系统架构总览</a> 与 MemoryOS/Mem0 逐个拆解。</p>
+  </div>
+
+  <h2>三、多智能体：什么时候值得"多开"</h2>
+  <div class="stage">
+    <div class="ctl" style="margin-bottom:6px"><b style="font-size:14px">自测：你的任务需要多智能体吗？</b>（勾选符合项）</div>
+    <div id="ck1" class="ck"><input type="checkbox"><span>任务能自然拆成<b>视角不同</b>的子角色（如：实现者 vs 评审者）</span></div>
+    <div id="ck2" class="ck"><input type="checkbox"><span>子任务间<b>上下文需要隔离</b>（一方的大量中间产物会污染另一方）</span></div>
+    <div id="ck3" class="ck"><input type="checkbox"><span>需要<b>并行</b>处理（多路检索/多方案同时试）</span></div>
+    <div id="ck4" class="ck"><input type="checkbox"><span>有明确的<b>裁决者</b>设计（谁汇总、谁拍板）</span></div>
+    <div class="verdictbox" id="mverdict"></div>
+    <p class="note">经验法则：只是为了"显得智能"而多开，通常不如一个长上下文单 Agent + 好工具。上游有 <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/08_agentic_system/multi_agent/docs/part1_multi_agent_ai_fundamentals.md">多智能体理论</a> 与 <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/08_agentic_system/multi_agent/docs/part2_enterprise_multi_agent_system_implementation.md">LangGraph 企业级实战</a>。</p>
+  </div>
+
+  <h2>四、上下文工程：窗口是贵资源</h2>
+  <div class="stage">
+    <div class="grid c2">
+      <div class="kcard"><h4>四大策略</h4><p class="def"><b>写</b>（重要结论落盘到外部）、<b>选</b>（只检索相关片段进窗口）、<b>压</b>（历史摘要压缩）、<b>隔离</b>（子任务各开独立上下文）。</p><p class="ana">🧠 类比：缓存的写策略 + 淘汰策略 + 分区。</p></div>
+      <div class="kcard"><h4>与推理系统的合流</h4><p class="def">上下文工程的每一个决策，最终都反映为 KV Cache 的命中率和显存账（第 3 课）——Agent 负载正在重塑推理系统设计。</p><p class="ana">🧠 应用层的一个"要不要压缩历史"，就是 Infra 层的一笔 token 账。</p></div>
+    </div>
+  </div>
+
+  <h2>五、小测验</h2>
+  <div class="quiz"><p>Q1 · 12-Factor Agents 的核心立场是？</p>
+    <button class="opt" type="button">必须用某个特定框架</button>
+    <button class="opt" data-ok="1" type="button">用分布式系统的成熟原则建 Agent：控制流自持、状态外置、可恢复</button>
+    <button class="opt" type="button">Agent 不需要工程化</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q2 · Agent 的"长期记忆"通常存放在？</p>
+    <button class="opt" type="button">上下文窗口里永不过期</button>
+    <button class="opt" data-ok="1" type="button">外部存储（向量库等），用时检索回来</button>
+    <button class="opt" type="button">GPU 显存</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q3 · 下列哪种情况最不适合上多智能体？</p>
+    <button class="opt" type="button">代码生成与安全评审需要隔离视角</button>
+    <button class="opt" type="button">多路文档检索可并行</button>
+    <button class="opt" data-ok="1" type="button">单一明确任务，只是希望"看起来更智能"</button>
+    <span class="verdict"></span>
+  </div>
+
+  <div class="foot">
+    <b>延伸阅读（上游硬核版）</b>
+    <ul>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/08_agentic_system/context/context-engineering-principles.md">上下文工程原理</a> · <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/08_agentic_system/memory/README.md">记忆系统总览</a></li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/08_agentic_system/agent_infra/docs/ai-agent-infra-stack.md">Agent Infra 技术栈</a> · <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/08_agentic_system/agent_design/docs/all-agentic-architectures-deep-dive.md">17 种 Agent 架构深读</a></li>
+    </ul>
+    <div class="nav"><a href="01_agent_basics.html">← 第 9 课：Agent 是怎么回事</a><a href="../06_llm_theory_and_fundamentals/03_engineering_concepts.html">加餐：LLM 工程概念补全 →</a></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var boxes=[1,2,3,4].map(function(i){return document.querySelector('#ck'+i+' input');});
+  function judge(){
+    var n=boxes.filter(function(b){return b.checked;}).length;
+    var v=document.getElementById('mverdict');
+    if(n>=3){v.className='verdictbox ok';v.textContent='✅ 勾了 '+n+' 项：你的任务具备多智能体的合理性——记得先设计好"裁决者"与消息协议。';}
+    else if(n>=1){v.className='verdictbox warn';v.textContent='⚠️ 勾了 '+n+' 项：先试"单 Agent + 强工具"，确实受限再升级多智能体。';}
+    else{v.className='verdictbox';v.style.color='var(--muted)';v.textContent='勾选符合项后给建议。';}
+  }
+  boxes.forEach(function(b){b.addEventListener('change',judge);});
+  document.querySelectorAll('.quiz').forEach(function(q){
+    q.addEventListener('click',function(e){
+      var b=e.target.closest('button.opt');
+      if(!b||q.dataset.done==='1')return;
+      var ok=b.dataset.ok==='1';
+      q.querySelectorAll('.opt').forEach(function(x){x.disabled=true;if(x.dataset.ok==='1')x.classList.add('right');});
+      if(!ok)b.classList.add('wrong');
+      var v=q.querySelector('.verdict');
+      v.textContent=ok?'✓ 答对了':'✗ 正确答案已标绿';
+      v.className='verdict '+(ok?'ok':'bad');
+      q.dataset.done='1';
+    });
+  });
+})();
+</script>
+</body>
+</html>

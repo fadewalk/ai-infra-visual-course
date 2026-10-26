@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>加餐 · SFT 微调小白版 —— 数据长什么样、坑在哪里</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--green);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  .code{font-family:ui-monospace,Menlo,monospace;font-size:12px;background:var(--chip);border:1px solid var(--border);border-radius:8px;padding:10px 12px;overflow:auto;white-space:pre;margin:8px 0}
+  .mask{display:grid;gap:4px;margin:10px 0}
+  .mask .tk{display:inline-block;font-size:12px;padding:3px 8px;border-radius:5px;margin:2px}
+  .tk.p{background:var(--chip);color:var(--muted)}
+  .tk.a{background:color-mix(in srgb,var(--green) 22%, var(--card));color:var(--fg);border:1px solid var(--green)}
+  .legend{font-size:12px;color:var(--muted)}
+  .legend i{display:inline-block;width:11px;height:11px;border-radius:3px;vertical-align:-1px;margin-right:4px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{color:var(--muted);font-weight:500;font-size:12px}
+  .grid{display:grid;gap:12px;grid-template-columns:1fr}
+  @media(min-width:700px){.grid.c2{grid-template-columns:repeat(2,1fr)}.grid.c3{grid-template-columns:repeat(3,1fr)}}
+  .kcard{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+  .kcard h4{margin:0 0 6px;font-size:14px;color:var(--green)}
+  .kcard .def{font-size:13px;margin:0 0 8px}
+  .kcard .ana{font-size:12px;color:var(--muted);border-top:1px dashed var(--border);padding-top:6px}
+  .quiz{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin:10px 0}
+  .quiz p{margin:0 0 10px;font-size:14px}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:8px 12px}
+  .opt.right{border-color:var(--green);color:var(--green)}
+  .opt.wrong{border-color:var(--red);color:var(--red)}
+  .verdict{font-size:13px;margin-left:8px}
+  .verdict.ok{color:var(--green)} .verdict.bad{color:var(--red)}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .foot ul{margin:6px 0;padding-left:18px}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+  .note{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 加餐 · 微调实战 · 承接第 2 课训练循环</div>
+  <h1>SFT 微调小白版</h1>
+  <p class="subtitle">第 2 课讲了训练循环的原理，这一课讲它落到"微调"上时的实际问题：数据长什么样、只算哪部分的 loss、有哪些经典坑。</p>
+
+  <h2>一、SFT 的训练数据长什么样</h2>
+  <div class="stage">
+    <div class="code">{
+  "instruction": "你是运维值班助手。给出磁盘使用率 92% 时的处置步骤。",
+  "input": "",
+  "output": "1) 先确认是数据盘还是系统盘；2) 定位大文件（du -sh /*）…
+      3) 评估是否可清理或扩容；4) 变更前通知业务方。"
+}</div>
+    <p class="note">主流格式就是「指令 + （可选输入） + 期望输出」的三元组。训练时框架会用模型的 <b>chat template</b> 把它拼成对话（<code>&lt;|im_start|&gt;user … &lt;|im_end|&gt;</code> 之类的特殊标记），再喂给第 2 课讲过的训练循环。</p>
+  </div>
+
+  <h2>二、关键细节：loss 只算"回答"部分</h2>
+  <div class="stage">
+    <div class="mask">
+      <span class="tk p">[user] 磁盘 92% 怎么处置？</span><span class="tk p">[assistant]</span><span class="tk a">1) 先确认数据盘…</span><span class="tk a">2) 定位大文件…</span><span class="tk a">3) 评估扩容…</span>
+    </div>
+    <div class="legend"><i style="background:var(--chip);border:1px solid var(--border)"></i> Prompt 部分：参与前向、<b>不计 loss</b>　<i style="background:color-mix(in srgb,var(--green) 22%, var(--card));border:1px solid var(--green)"></i> Answer 部分：计算 loss、驱动更新</div>
+    <p class="note" style="margin-top:8px">这叫 <b>loss mask（指令屏蔽）</b>：我们教的是"怎么回答"，不是"怎么提问"。忘了 mask 的框架会把 prompt 也当学习目标——浪费容量还学偏。另外两个实务数字：微调学习率通常比预训练<b>小一到两个数量级</b>；epoch 一般 1~3 轮就够（多了必过拟合）。</p>
+  </div>
+
+  <h2>三、三个经典坑</h2>
+  <div class="grid c3">
+    <div class="kcard"><h4>灾难性遗忘</h4><p class="def">全参微调小数据集，模型学会新任务的同时把原有通用能力"覆盖"掉了。</p><p class="ana">🧠 类比：改配置只回归测试了新功能，老功能全挂。对策：混入通用数据 / 用 LoRA。</p></div>
+    <div class="kcard"><h4>学腔调不学内容</h4><p class="def">数据质量差时，模型学会的是"回答的风格"（如总以"根据相关规定"开头），而不是知识。</p><p class="ana">🧠 类比：监控大盘全绿但故障照出——指标学了个形。</p></div>
+    <div class="kcard"><h4>数据质量 &gt; 数量</h4><p class="def">业界反复验证：几千条高质量、多样化的数据，胜过几十万条低质重复（LIMA 论文观点，业界共识化）。</p><p class="ana">🧠 类比：精校的 runbook 胜过一堆潦草笔记。</p></div>
+  </div>
+
+  <h2>四、微调 / RAG / 提示词：到底用哪个</h2>
+  <div class="stage" style="padding:0;overflow:auto">
+    <table>
+      <thead><tr><th>手段</th><th>改的是什么</th><th>适用</th><th>不适用</th></tr></thead>
+      <tbody>
+        <tr><td>提示词工程</td><td>只改输入</td><td>快速验证、通用能力够用的场景</td><td>需要稳定输出格式/领域风格时乏力</td></tr>
+        <tr><td>RAG（第 8 课）</td><td>补知识（外挂资料）</td><td>知识常更新、需溯源</td><td>教不会"风格与流程"</td></tr>
+        <tr><td>SFT / LoRA</td><td>改权重（能力与风格）</td><td>稳定输出格式、领域话术、任务行为</td><td>塞时效性知识（会过时）</td></tr>
+      </tbody>
+    </table>
+    <p class="note">组合拳才是常态：RAG 管知识 + 轻量 LoRA 管格式与风格。显存够不够用 <a href="02_memory_calc.html">训练显存对比计算器</a> 先算一遍。</p>
+  </div>
+
+  <h2>五、小测验</h2>
+  <div class="quiz"><p>Q1 · SFT 训练时，prompt 部分参与 loss 计算吗？</p>
+    <button class="opt" type="button">参与，全部都要学</button>
+    <button class="opt" data-ok="1" type="button">不参与——loss mask 只对 answer 部分计损失</button>
+    <button class="opt" type="button">随机决定</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q2 · 全参微调后模型"忘了怎么写代码"，最可能的原因与对策？</p>
+    <button class="opt" type="button">学习率太小——调大即可</button>
+    <button class="opt" data-ok="1" type="button">灾难性遗忘——数据里混入通用数据，或改用 LoRA</button>
+    <button class="opt" type="button">GPU 太热</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q3 · 公司产品手册（每月更新）要让机器人答得准，首选？</p>
+    <button class="opt" type="button">每月重新微调一次</button>
+    <button class="opt" data-ok="1" type="button">RAG——知识外置，更新文档即生效；微调管不了的时效知识它管</button>
+    <button class="opt" type="button">把手册全文硬塞系统提示词</button>
+    <span class="verdict"></span>
+  </div>
+
+  <div class="foot">
+    <b>延伸阅读</b>
+    <ul>
+      <li>上游：<a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/05_model_training_and_fine_tuning/sft_example/README.md">SFT 微调实战与指南</a>（含 Qwen2 微调 Notebook）· <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/05_model_training_and_fine_tuning/sft_example/一文入门垂域模型SFT微调.md">一文入门垂域模型 SFT</a></li>
+      <li>动手手册：<a href="https://github.com/datawhalechina/self-llm">self-llm 各模型微调步骤</a> · <a href="https://github.com/datawhalechina/happy-llm">happy-llm 第 6 章训练实践</a></li>
+    </ul>
+    <div class="nav"><a href="../06_llm_theory_and_fundamentals/03_engineering_concepts.html">← 上一页：LLM 工程概念补全</a><a href="../index.html">回课程目录</a></div>
+  </div>
+</div>
+</body>
+</html>

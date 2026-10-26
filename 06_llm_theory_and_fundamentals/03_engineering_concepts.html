@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>加餐 · LLM 工程概念补全 —— Scaling Laws / CoT / 幻觉 / 评估 / 文件格式</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--red);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  .ctl{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+  button{font:inherit;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--fg);border-radius:8px;padding:6px 14px}
+  button:hover{border-color:var(--red)}
+  button.seg-on{background:var(--red);border-color:var(--red);color:#fff}
+  .duo{display:grid;gap:16px;grid-template-columns:1fr}
+  @media(min-width:820px){.duo{grid-template-columns:1fr 1fr}}
+  .cmp{border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:13px;background:var(--chip)}
+  .cmp h4{margin:0 0 6px;font-size:13px}
+  .cmp .q{color:var(--muted);font-size:12px;margin-bottom:4px}
+  .cmp .out{font-size:12px}
+  .cmp .out b{color:var(--green)}
+  .cmp .out.bad{color:var(--red)}
+  .knobs{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+  .knob{border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:12px;text-align:center;background:var(--chip);flex:1;min-width:130px}
+  .knob b{display:block;font-size:13px;color:var(--blue)}
+  .statrow{display:flex;gap:22px;flex-wrap:wrap;margin-top:8px;font-size:13px;color:var(--muted)}
+  .statrow b{color:var(--blue)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{color:var(--muted);font-weight:500;font-size:12px}
+  .grid{display:grid;gap:12px;grid-template-columns:1fr}
+  @media(min-width:700px){.grid.c2{grid-template-columns:repeat(2,1fr)}.grid.c3{grid-template-columns:repeat(3,1fr)}}
+  .kcard{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+  .kcard h4{margin:0 0 6px;font-size:14px;color:var(--red)}
+  .kcard .def{font-size:13px;margin:0 0 8px}
+  .kcard .ana{font-size:12px;color:var(--muted);border-top:1px dashed var(--border);padding-top:6px}
+  .quiz{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin:10px 0}
+  .quiz p{margin:0 0 10px;font-size:14px}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:8px 12px}
+  .opt.right{border-color:var(--green);color:var(--green)}
+  .opt.wrong{border-color:var(--red);color:var(--red)}
+  .verdict{font-size:13px;margin-left:8px}
+  .verdict.ok{color:var(--green)} .verdict.bad{color:var(--red)}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .foot ul{margin:6px 0;padding-left:18px}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+  .note{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 加餐 · 06 章工程概念补全 · 承接第 7 课</div>
+  <h1>LLM 工程概念补全</h1>
+  <p class="subtitle">第 7 课留下的五个"知道名字但没展开"的概念，一次补齐：Scaling Laws、思维链、幻觉、评估、模型文件格式。每个都带运维视角。</p>
+
+  <h2>一、Scaling Laws：大力真的能出奇迹吗</h2>
+  <div class="stage">
+    <p style="font-size:13px;margin-top:0">缩放定律回答一个问题：<b>钱怎么花最值？</b>三个旋钮——参数量、数据量、算力——按什么比例加，损失（loss）就按幂律稳定下降。</p>
+    <div class="duo">
+      <div>
+        <div class="ctl">
+          <button id="k-chin" class="seg-on" type="button">Chinchilla 最优（训练性价比）</button>
+          <button id="k-over" type="button">推理优先（过训练）</button>
+        </div>
+        <div class="knobs">
+          <div class="knob"><b id="k1">70B 参数</b>参数量</div>
+          <div class="knob"><b id="k2">1.4T token</b>数据量</div>
+          <div class="knob"><b id="k3">≈ 20 token/参数</b>数据配比</div>
+        </div>
+        <div class="statrow"><span>结论：<b id="kcon">同等算力下训练出"最懂知识"的模型</b></span></div>
+      </div>
+      <div>
+        <div class="kcard"><h4>为什么运维要懂它</h4><p class="def">2023 年后主流开源模型普遍<b>故意偏离 Chinchilla</b>：用远多于"最优"的数据把小模型喂到超水平——因为<b>训练一次性花钱，推理天天花钱</b>。7B 干翻早期 175B，就是这条定律的工程化胜利。</p><p class="ana">🧠 类比：一次性研发投入换十年低运营成本。</p></div>
+      </div>
+    </div>
+  </div>
+
+  <h2>二、思维链（CoT）：让模型"把草稿写出来"</h2>
+  <div class="stage">
+    <div class="duo">
+      <div class="cmp">
+        <h4>直接问</h4>
+        <div class="q">Q：食堂原有 23 个苹果，用 20 个做午餐又买 6 个，再买 3 袋每袋 5 个，现在几个？</div>
+        <div class="out bad">A：27 个 ✗（跳步心算出错）</div>
+      </div>
+      <div class="cmp">
+        <h4>思维链（一步步写）</h4>
+        <div class="q">同一个问题 + "让我们一步步思考"</div>
+        <div class="out">23−20=3 → 3+6=9 → 9+3×5=24<br><b>A：24 个 ✓</b></div>
+      </div>
+    </div>
+    <p class="note" style="margin-top:10px">原理直觉：<b>生成的每个 token 都是一次计算</b>——把中间步骤写出来，等于给了模型额外的"草稿纸算力"。这就是为什么推理模型（o1/R1 系）靠"想得更久"变强：推理时 Scaling（对应上游 Test-Time Scaling 文）。<b>运维注意</b>：思维链会显著拉长输出 token → TPOT 总耗时与成本上升，容量规划要按新口径。</p>
+  </div>
+
+  <h2>三、幻觉：三层成因，三类缓解</h2>
+  <div class="stage">
+    <table>
+      <thead><tr><th>成因层</th><th>机制</th><th>缓解手段</th></tr></thead>
+      <tbody>
+        <tr><td>数据层</td><td>训练语料本身有错、互相矛盾</td><td>数据清洗（上游 70B 复盘的数据章）</td></tr>
+        <tr><td>知识层</td><td>训练截止后的事、私有知识根本没见过</td><td>RAG（第 8 课）——把"开卷"资料塞进上下文</td></tr>
+        <tr><td>解码层</td><td>概率采样天然可能"接得顺但不对"</td><td>约束解码、引用校验、降低温度（第 7 课）</td></tr>
+      </tbody>
+    </table>
+    <p class="note">核心认知（第 7 课）：模型是概率接龙器，<b>流畅 ≠ 正确</b>。幻觉无法根除，只能用工程手段压到业务可接受。</p>
+  </div>
+
+  <h2>四、评估：怎么知道模型变好还是变坏</h2>
+  <div class="stage" style="padding:0;overflow:auto">
+    <table>
+      <thead><tr><th>评估方式</th><th>是什么</th><th>坑</th></tr></thead>
+      <tbody>
+        <tr><td>静态 Benchmark</td><td>MMLU（知识）/ GSM8K（数学）/ HumanEval（代码）等固定题库</td><td><b>数据污染</b>：题库泄露进训练集，分数虚高</td></tr>
+        <tr><td>竞技场对战</td><td>匿名两两对比、人类投票排名（Chatbot Arena 思路）</td><td>偏"讨喜"回答，不代表任务能力</td></tr>
+        <tr><td>LLM-as-Judge</td><td>用一个强模型给回答打分</td><td>裁判自身的偏见与成本</td></tr>
+        <tr><td>业务自有集</td><td>自己场景的题目集（最可信）</td><td>要持续维护、防泄露</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>五、模型文件格式：下载时该拿哪个</h2>
+  <div class="stage" style="padding:0;overflow:auto">
+    <table>
+      <thead><tr><th>格式</th><th>是什么</th><th>运维视角</th></tr></thead>
+      <tbody>
+        <tr><td><b>Safetensors</b></td><td>HuggingFace 默认，安全反序列化（不执行代码）</td><td>训练/推理通用首选；无 pickle 注入风险</td></tr>
+        <tr><td><b>GGUF</b></td><td>llama.cpp 系单文件格式，内含量化</td><td>端侧/Mac 本地跑（Ollama 底层）用它</td></tr>
+        <tr><td>PyTorch .bin/.pth</td><td>老式 pickle 序列化</td><td>⚠️ 反序列化可执行任意代码——来源不明别乱 load</td></tr>
+        <tr><td>ONNX</td><td>跨框架中间表示</td><td>端侧部署/转 TensorRT 的中转站</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>六、小测验</h2>
+  <div class="quiz"><p>Q1 · Chinchilla 定律说"最优数据配比约 20 token/参数"，但现代开源模型普遍喂得更多，为什么？</p>
+    <button class="opt" type="button">数据便宜没处放</button>
+    <button class="opt" data-ok="1" type="button">推理优先：把小模型过度训练到超水平，换来终身更低的推理成本</button>
+    <button class="opt" type="button">定律已经失效</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q2 · 思维链为什么能提升推理准确率？</p>
+    <button class="opt" data-ok="1" type="button">生成中间步骤本身就是额外的计算过程（草稿纸）</button>
+    <button class="opt" type="button">它改变了模型权重</button>
+    <button class="opt" type="button">它让温度自动降低</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q3 · 从安全角度，优先选哪种模型文件格式？</p>
+    <button class="opt" data-ok="1" type="button">Safetensors——反序列化不执行代码，无 pickle 注入风险</button>
+    <button class="opt" type="button">任意 .bin 文件</button>
+    <button class="opt" type="button">.exe 打包版</button>
+    <span class="verdict"></span>
+  </div>
+
+  <div class="foot">
+    <b>延伸阅读（上游硬核版）</b>
+    <ul>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/06_llm_theory_and_fundamentals/llm_basic_concepts/scaling_laws/scaling_laws.md">Scaling Laws</a> · <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/06_llm_theory_and_fundamentals/llm_basic_concepts/scaling_laws/test_time_scaling.md">推理时间 Scaling</a></li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/06_llm_theory_and_fundamentals/llm_basic_concepts/cot/chain_of_thought_cot_intro.md">思维链 CoT</a> · <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/06_llm_theory_and_fundamentals/llm_basic_concepts/hallucination/llm_hallucination_and_mitigation.md">幻觉与应对</a></li>
+      <li><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/06_llm_theory_and_fundamentals/llm_basic_concepts/evaluation/llm_evaluation.md">LLM 评估体系</a> · <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/06_llm_theory_and_fundamentals/llm_basic_concepts/file_formats/llm_file_formats_complete_guide.md">模型文件格式完整指南</a></li>
+    </ul>
+    <div class="nav"><a href="../08_agentic_system/02_deep_dive.html">← 上一页：Agent 深水区一页通</a><a href="../05_model_training_and_fine_tuning/05_sft_primer.html">加餐：SFT 微调小白版 →</a></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var K={
+    chin:{p:'70B 参数',d:'1.4T token',r:'≈ 20 token/参数',c:'同等算力下训练出"最懂知识"的模型'},
+    over:{p:'7B~32B 参数',d:'10T+ token',r:'数百 token/参数（严重"过训练"）',c:'单模型能力超配：小参数量达到大模型的水平，换取终身低推理成本'}
+  };
+  document.getElementById('k-chin').addEventListener('click',function(){
+    this.classList.add('seg-on');document.getElementById('k-over').classList.remove('seg-on');
+    var k=K.chin;
+    document.getElementById('k1').textContent=k.p;
+    document.getElementById('k2').textContent=k.d;
+    document.getElementById('k3').textContent=k.r;
+    document.getElementById('kcon').textContent=k.c;
+  });
+  document.getElementById('k-over').addEventListener('click',function(){
+    this.classList.add('seg-on');document.getElementById('k-chin').classList.remove('seg-on');
+    var k=K.over;
+    document.getElementById('k1').textContent=k.p;
+    document.getElementById('k2').textContent=k.d;
+    document.getElementById('k3').textContent=k.r;
+    document.getElementById('kcon').textContent=k.c;
+  });
+  document.querySelectorAll('.quiz').forEach(function(q){
+    q.addEventListener('click',function(e){
+      var b=e.target.closest('button.opt');
+      if(!b||q.dataset.done==='1')return;
+      var ok=b.dataset.ok==='1';
+      q.querySelectorAll('.opt').forEach(function(x){x.disabled=true;if(x.dataset.ok==='1')x.classList.add('right');});
+      if(!ok)b.classList.add('wrong');
+      var v=q.querySelector('.verdict');
+      v.textContent=ok?'✓ 答对了':'✗ 正确答案已标绿';
+      v.className='verdict '+(ok?'ok':'bad');
+      q.dataset.done='1';
+    });
+  });
+})();
+</script>
+</body>
+</html>

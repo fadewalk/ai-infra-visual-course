@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>加餐 · GraphRAG 小白版 —— 当检索遇上知识图谱</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
+    --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1020px;margin:0 auto;padding:20px 16px 72px}
+  a{color:var(--blue)}
+  .crumbs{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .crumbs a{color:var(--muted)}
+  h1{font-size:26px;margin:6px 0 4px}
+  .subtitle{color:var(--muted);margin:0 0 24px}
+  h2{font-size:19px;margin:36px 0 12px;border-left:4px solid var(--green);padding-left:10px}
+  .stage{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:12px 0}
+  .ctl{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+  button{font:inherit;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--fg);border-radius:8px;padding:6px 14px}
+  button:hover{border-color:var(--green)}
+  button.primary{background:var(--green);border-color:var(--green);color:#fff}
+  .duo{display:grid;gap:16px;grid-template-columns:1fr}
+  @media(min-width:820px){.duo{grid-template-columns:6fr 5fr}}
+  svg text{fill:var(--fg);font-size:11px}
+  .say{margin-top:12px;padding:10px 14px;border-radius:8px;background:var(--chip);font-size:14px;min-height:24px}
+  .whybox{background:var(--card);border:1px solid var(--border);border-left:4px solid var(--red);border-radius:10px;padding:12px 16px;font-size:14px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{color:var(--muted);font-weight:500;font-size:12px}
+  .grid{display:grid;gap:12px;grid-template-columns:1fr}
+  @media(min-width:700px){.grid.c2{grid-template-columns:repeat(2,1fr)}.grid.c3{grid-template-columns:repeat(3,1fr)}}
+  .kcard{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+  .kcard h4{margin:0 0 6px;font-size:14px;color:var(--green)}
+  .kcard .def{font-size:13px;margin:0 0 8px}
+  .kcard .ana{font-size:12px;color:var(--muted);border-top:1px dashed var(--border);padding-top:6px}
+  .quiz{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin:10px 0}
+  .quiz p{margin:0 0 10px;font-size:14px}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:8px 12px}
+  .opt.right{border-color:var(--green);color:var(--green)}
+  .opt.wrong{border-color:var(--red);color:var(--red)}
+  .verdict{font-size:13px;margin-left:8px}
+  .verdict.ok{color:var(--green)} .verdict.bad{color:var(--red)}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+  .foot ul{margin:6px 0;padding-left:18px}
+  .nav{display:flex;justify-content:space-between;margin-top:24px}
+  .note{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="crumbs"><a href="../index.html">← 返回课程目录</a> · 加餐 · RAG 深入 · 承接第 8 课</div>
+  <h1>GraphRAG 小白版</h1>
+  <p class="subtitle">第 8 课的 RAG 靠"语义相似度"找资料——但有一类问题它天生答不了。GraphRAG 把文档变成<b>知识图谱</b>来补这个洞。</p>
+
+  <h2>一、Naive RAG 的死穴：全局性问题</h2>
+  <div class="whybox">
+    问 RAG："这 100 份事故报告里，<b>最常见的三类根因是什么？</b>"——它会懵。因为答案<b>不藏在任何一段里</b>：散落在 100 份文档各处，需要先"读懂全部、归纳总结"才能回答。语义检索只能找到"长得像问题"的段落，做不了跨文档的归纳。GraphRAG 的思路：<b>先离线把文档加工成实体关系图谱</b>，查询时沿图回答局部问题、用图摘要回答全局问题。
+  </div>
+
+  <h2>二、动手：看一张知识图谱怎么建出来</h2>
+  <div class="stage">
+    <div class="ctl">
+      <button id="s1" class="primary" type="button">① 实体与关系抽取</button>
+      <button id="s2" type="button">② 建图</button>
+      <button id="s3" type="button">③ 社区划分与摘要</button>
+    </div>
+    <div class="duo">
+      <svg id="kg" viewBox="0 0 480 280" width="100%" role="img" aria-label="知识图谱构建"></svg>
+      <div class="say" id="ksay">6 份事故文档，点按钮逐步加工。绿圈 = 实体，连线 = 关系。</div>
+    </div>
+  </div>
+
+  <h2>三、Naive RAG vs GraphRAG 对照</h2>
+  <div class="stage" style="padding:0;overflow:auto">
+    <table>
+      <thead><tr><th>维度</th><th>Naive RAG（第 8 课）</th><th>GraphRAG</th></tr></thead>
+      <tbody>
+        <tr><td>检索单位</td><td>文本块（chunk）</td><td>实体、关系、社区摘要</td></tr>
+        <tr><td>擅长问题</td><td>"年假怎么申请"这类<b>答案在某一段里</b>的问题</td><td>"主要根因有哪些""A 和 B 什么关系"这类<b>全局/多跳</b>问题</td></tr>
+        <tr><td>离线成本</td><td>切块 + 向量化（便宜）</td><td>LLM 抽实体建图 + 社区摘要（贵，文档更新要重建）</td></tr>
+        <tr><td>运维提示</td><td>chunk 粒度与 embedding 质量是关键</td><td>图谱新鲜度是新的运维对象：文档更新触发增量重建</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>四、关键词卡</h2>
+  <div class="grid c2">
+    <div class="kcard"><h4>实体关系抽取</h4><p class="def">用 LLM 从文本里抽出"谁—什么关系—谁"三元组（如 磁盘故障 —导致→ XID 79）。</p><p class="ana">🧠 类比：从告警文本里提取"服务—依赖—服务"拓扑。</p></div>
+    <div class="kcard"><h4>社区检测与摘要</h4><p class="def">把图里抱团的节点分成社区（Leiden 算法），再让 LLM 给每个社区写摘要——全局问题的答案就藏在摘要里。</p><p class="ana">🧠 类比：服务自动分域 + 每域生成 README。</p></div>
+    <div class="kcard"><h4>局部查询 vs 全局查询</h4><p class="def">局部：沿图找实体邻域作上下文；全局：把社区摘要喂给模型做归纳。</p><p class="ana">🧠 类比：精确查拓扑 vs 看架构总览。</p></div>
+    <div class="kcard"><h4>KAG / 上游实践</h4><p class="def">蚂蚁的 KAG 是同类框架（知识增强生成）；上游有 GraphRAG 学习指南与 Neo4j/Cypher 实战。</p><p class="ana">🧠 想动手：Neo4j + 一批文档就能复现最小闭环。</p></div>
+  </div>
+
+  <h2>五、小测验</h2>
+  <div class="quiz"><p>Q1 · 哪类问题最需要 GraphRAG 而不是 Naive RAG？</p>
+    <button class="opt" type="button">"退款流程第 3 步是什么"</button>
+    <button class="opt" data-ok="1" type="button">"这批文档里反复出现的核心主题有哪些"</button>
+    <button class="opt" type="button">"把这段话翻译成英文"</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q2 · GraphRAG 回答"全局性问题"靠的是？</p>
+    <button class="opt" type="button">更大的向量库</button>
+    <button class="opt" data-ok="1" type="button">离线建图 + 社区摘要——归纳发生在建图阶段</button>
+    <button class="opt" type="button">提高温度采样</button>
+    <span class="verdict"></span>
+  </div>
+  <div class="quiz"><p>Q3 · GraphRAG 相比 Naive RAG 的主要代价？</p>
+    <button class="opt" data-ok="1" type="button">建图要消耗大量 LLM 调用，文档更新需要重建图谱</button>
+    <button class="opt" type="button">不支持中文</button>
+    <button class="opt" type="button">不能用 GPU</button>
+    <span class="verdict"></span>
+  </div>
+
+  <div class="foot">
+    <b>延伸阅读</b>
+    <ul>
+      <li>上游：<a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/07_rag_and_tools/graph_rag/graph_rag_learning_guide.md">GraphRAG 学习指南</a> · <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/07_rag_and_tools/graph_rag/kag_introduction.md">KAG 框架介绍</a></li>
+      <li>动手配套：<a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/07_rag_and_tools/knowledge_graph/neo4j_handson_guide.md">Neo4j 实战</a> · <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/07_rag_and_tools/knowledge_graph/neo4j_cypher_tutorial.md">Cypher 教程</a></li>
+    </ul>
+    <div class="nav"><a href="01_rag_basics.html">← 第 8 课：RAG 是怎么回事</a><a href="../08_agentic_system/02_deep_dive.html">加餐：Agent 深水区一页通 →</a></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var svg=document.getElementById('kg'),NS='http://www.w3.org/2000/svg';
+  var say=document.getElementById('ksay');
+  var NODES=[
+    {x:120,y:70,l:'磁盘故障',c:'var(--green)'},
+    {x:300,y:60,l:'XID 79',c:'var(--green)'},
+    {x:390,y:130,l:'GPU 硬件',c:'var(--blue)'},
+    {x:240,y:150,l:'训练作业',c:'var(--purple)'},
+    {x:110,y:190,l:'调度器',c:'var(--blue)'},
+    {x:300,y:230,l:'网络抖动',c:'var(--blue)'}
+  ];
+  var EDGES=[[0,1,'导致'],[1,2,'属于'],[0,3,'阻塞'],[3,4,'重试于'],[3,5,'受影响'],[0,4,'上报']];
+  function clear(){svg.innerHTML='';}
+  function box(x,y,l,c){
+    var g=document.createElementNS(NS,'g');
+    var r=document.createElementNS(NS,'ellipse');
+    r.setAttribute('cx',x);r.setAttribute('cy',y);r.setAttribute('rx',52);r.setAttribute('ry',18);
+    r.setAttribute('fill',c);r.setAttribute('fill-opacity','.15');r.setAttribute('stroke',c);r.setAttribute('stroke-width','1.5');
+    g.appendChild(r);
+    var t=document.createElementNS(NS,'text');
+    t.setAttribute('x',x);t.setAttribute('y',y+4);t.setAttribute('text-anchor','middle');
+    t.textContent=l;
+    g.appendChild(t);
+    svg.appendChild(g);
+  }
+  function edge(a,b,l,show){
+    var n1=NODES[a],n2=NODES[b];
+    var l2=document.createElementNS(NS,'line');
+    l2.setAttribute('x1',n1.x);l2.setAttribute('y1',n1.y);l2.setAttribute('x2',n2.x);l2.setAttribute('y2',n2.y);
+    l2.setAttribute('stroke',show?'var(--green)':'var(--border)');
+    l2.setAttribute('stroke-width',show?'2':'1');l2.setAttribute('stroke-opacity',show?'.9':'.5');
+    svg.appendChild(l2);
+    if(show){
+      var t=document.createElementNS(NS,'text');
+      t.setAttribute('x',(n1.x+n2.x)/2);t.setAttribute('y',(n1.y+n2.y)/2-4);
+      t.setAttribute('text-anchor','middle');t.setAttribute('font-size','10');
+      t.setAttribute('fill','var(--green)');
+      t.textContent=l;
+      svg.appendChild(t);
+    }
+  }
+  function step1(){
+    clear();
+    say.innerHTML='① 用 LLM 读 6 份文档，抽出三元组：比如"磁盘故障 —导致→ XID 79"。原始文本块退居幕后，<b>实体和关系成为一等公民</b>。';
+    NODES.forEach(function(n){box(n.x,n.y,'·','var(--muted)');});
+  }
+  function step2(){
+    clear();
+    EDGES.forEach(function(e){edge(e[0],e[1],e[2],true);});
+    NODES.forEach(function(n){box(n.x,n.y,n.l,n.c);});
+    say.innerHTML='② 建图完成：实体为点、关系为边。现在"A 和 B 什么关系"这类多跳问题可以沿图回答了——Naive RAG 做不到。';
+  }
+  function step3(){
+    clear();
+    EDGES.forEach(function(e){edge(e[0],e[1],e[2],false);});
+    NODES.forEach(function(n){box(n.x,n.y,n.l,n.c);});
+    var c1=document.createElementNS(NS,'ellipse');
+    c1.setAttribute('cx',250);c1.setAttribute('cy',110);c1.setAttribute('rx',190);c1.setAttribute('ry',110);
+    c1.setAttribute('fill','none');c1.setAttribute('stroke','var(--purple)');c1.setAttribute('stroke-dasharray','6 4');
+    svg.appendChild(c1);
+    var t=document.createElementNS(NS,'text');
+    t.setAttribute('x',250);t.setAttribute('y',22);t.setAttribute('text-anchor','middle');
+    t.setAttribute('fill','var(--purple)');t.setAttribute('font-size','11');
+    t.textContent='社区 1（基础设施域）：摘要 = "硬件故障是训练阻塞主因…"';
+    svg.appendChild(t);
+    say.innerHTML='③ 社区检测（如 Leiden）把抱团节点分组，LLM 给每组写<b>摘要</b>。"最常见根因"这类全局问题→ 用社区摘要归纳回答。';
+  }
+  document.getElementById('s1').addEventListener('click',step1);
+  document.getElementById('s2').addEventListener('click',step2);
+  document.getElementById('s3').addEventListener('click',step3);
+  step2();
+  document.querySelectorAll('.quiz').forEach(function(q){
+    q.addEventListener('click',function(e){
+      var b=e.target.closest('button.opt');
+      if(!b||q.dataset.done==='1')return;
+      var ok=b.dataset.ok==='1';
+      q.querySelectorAll('.opt').forEach(function(x){x.disabled=true;if(x.dataset.ok==='1')x.classList.add('right');});
+      if(!ok)b.classList.add('wrong');
+      var v=q.querySelector('.verdict');
+      v.textContent=ok?'✓ 答对了':'✗ 正确答案已标绿';
+      v.className='verdict '+(ok?'ok':'bad');
+      q.dataset.done='1';
+    });
+  });
+})();
+</script>
+</body>
+</html>

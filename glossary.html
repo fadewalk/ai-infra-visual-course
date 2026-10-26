@@ -143,6 +143,10 @@
     {n:'无监督学习',e:'Unsupervised Learning',c:'train',d:'没有标签，自己发现数据结构（聚类/降维）。',a:'没人教，自己归纳分类。',l:'ml_basics/01_ml_map.html|第 12 课'},
     {n:'过拟合 / 欠拟合',e:'Overfitting / Underfitting',c:'train',d:'训练好测试差=背题；训练测试都差=能力不足。深度学习调参的第一矛盾。',a:'背题库 vs 没学会。',l:'ml_basics/02_neural_network.html|第 13 课'},
     {n:'马尔可夫决策过程',e:'MDP',c:'train',d:'强化学习的数学框架：状态、动作、奖励、转移概率。',a:'"下一步只取决于现在"的决策模型。',l:'ml_basics/03_rl_basics.html|第 14 课'},
+    {n:'思维链 CoT',e:'Chain-of-Thought',c:'infer',d:'让模型把中间推理步骤写出来再给答案——生成的每一步都是额外计算。',a:'把草稿纸发给考生。',l:'06_llm_theory_and_fundamentals/03_engineering_concepts.html|工程概念补全'},
+    {n:'Scaling Laws 缩放定律',c:'train',e:'Scaling Laws',d:'参数/数据/算力按幂律换取损失下降；Chinchilla 给出最优配比，现代模型故意"过训练"换低推理成本。',a:'一次性研发投入换终身低运营成本。',l:'06_llm_theory_and_fundamentals/03_engineering_concepts.html|工程概念补全'},
+    {n:'GraphRAG',e:'Graph RAG',c:'infer',d:'把文档抽成实体关系图谱+社区摘要，专治"全局归纳型"问题。',a:'Naive RAG 查段落，它查拓扑。',l:'07_rag_and_tools/02_graphrag.html|GraphRAG 小白版'},
+    {n:'Safetensors / GGUF',c:'infer',e:'模型文件格式',d:'前者是 HuggingFace 安全默认（不执行代码），后者是 llama.cpp 端侧单文件格式。',a:'下载模型先看后缀选工具链。',l:'06_llm_theory_and_fundamentals/03_engineering_concepts.html|工程概念补全'},
     /* ---------- 推理 ---------- */
     {n:'Prefill 预填充',e:'Prefill',c:'infer',d:'一次性并行读完整 prompt：compute-bound，决定 TTFT。',a:'cat 整个大文件。',l:'09_inference_system/01_inference_pipeline.html|第 3 课'},
     {n:'Decode 解码',e:'Decode',c:'infer',d:'一个 token 一个 token 往外吐：每步重读全部权重，memory-bound。',a:'tail -f 逐行追日志，房租照付。',l:'09_inference_system/01_inference_pipeline.html|第 3 课'},

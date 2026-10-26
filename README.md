@@ -36,6 +36,10 @@
 
 第 0 阶段刷完十四课（约 3.5 小时，含机器学习基础模块）→ 玩排障模拟器、逛术语图鉴 → 按站点首页的**六阶段路径**进入上游硬核文档 → 自测四问（站点首页）：为什么 7B 训练单卡放不下 / decode 慢在带宽不在算力 / `nvidia.com/gpu` 从 Pod 到卡经过谁 / GPU-Util 90% 为什么不代表忙。
 
+## 更新日志
+
+更新历史见 [changelog.html](changelog.html)（由 `tools/gen_changelog.py` 从 git 提交历史生成，更新课程后运行该脚本重新生成）。
+
 ## 部署
 
 GitHub Actions 自动部署到 Pages（`.github/workflows/pages.yml`），推送到 `main` 即发布。所有课程页为单文件 HTML，无外部依赖，本地双击也能打开。

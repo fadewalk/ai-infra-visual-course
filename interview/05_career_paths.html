@@ -126,6 +126,21 @@
     </div>
   </div>
 
+  <div class="linecard" style="border-left:4px solid var(--red)">
+    <h3>额外雇主池 · 量化机构（薪资天花板赛道）<span class="fit you">⭐ 与线 1/3/5 高度重合</span></h3>
+    <div class="jobs">机构：XTX Markets（25,000+ GPU）· Jane Street（数万卡 + CoreWeave/Crusoe 云合作，媒体报道口径）· HRT · Jump Trading · Citadel Securities（TPU 路线）——GPU 规模超过许多国家级实验室，算力投入与大模型公司同级</div>
+    <div class="body">
+      行业分析（量化猎头视角）把 AI 算力岗归为四类，<b>与我们五线的映射</b>：
+      <ul>
+        <li><b>ML Research Engineer</b>（训练流水线/DDP·FSDP·DeepSpeed/实验复现）≈ <a href="../05_model_training_and_fine_tuning/06_framework_map.html">线 3</a></li>
+        <li><b>GPU/HPC 性能工程师</b>（CUDA/Kernel/Profiler）≈ <a href="../02_gpu_programming/01_cuda_primer.html">线 5</a></li>
+        <li><b>计算平台/基础设施工程师</b>（K8s/Slurm/Ray · RDMA/NVLink/NCCL · 存储/调度/成本）≈ <b><a href="04_jd_mapping.html">线 1+4——你的主线，量化机构同样大量招且不要求金融背景</a></b></li>
+        <li>ML Researcher / Quant ML（统计验证/样本外/数据泄漏）≈ 量化特有，转岗优先级低</li>
+      </ul>
+      <b>值得吸收的两个透镜</b>：① <b>项目证明要可量化</b>——"训练耗时缩短 X%/GPU 利用率提高/显存下降/复现能力改善"，比罗列工具有说服力（简历与面试通用）；② 迁移判断——"金融知识可以补，系统判断力更难速成"：SRE 的分布式/性能/数据流水线经验正是硬通货。另外量化平台岗常要求 <b>Ray</b>（我们未覆盖：一句话定位——分布式 Python 计算框架，地位可类比"Slurm 管批作业、K8s 管容器、Ray 管 Python 分布式应用"，用到再学）。
+    </div>
+  </div>
+
   <h2>二、能力线 × 岗位矩阵（速查）</h2>
   <div class="stage" style="padding:0;overflow:auto">
     <table>
@@ -146,12 +161,13 @@
         <tr><td>算能 算子研发</td><td>线 5</td><td>🔴 需 CUDA 投入</td></tr>
         <tr><td>NVIDIA TRT-LLM</td><td>线 5</td><td>🔴 硕士+CUDA 算子</td></tr>
         <tr><td>港中大 SRIBD 算子（昇腾）</td><td>线 5</td><td>🔴 Ascend C 投入</td></tr>
+        <tr><td>量化机构（XTX/JS/HRT/Citadel）平台与性能岗</td><td>线 1/4（+3/5）</td><td>🟢 SRE 经验直接迁移，金融知识可后补</td></tr>
       </tbody>
     </table>
   </div>
 
   <div class="foot">
-    <p class="note">给你的最终建议：主线 = <b>线 1（SRE）直接投</b>，同时按线 2 补一次 vLLM 实操（self-llm 跟做，约一周）作为第二落点——这两条线覆盖了 14 岗中的 6 个且都无硬学历/编程门槛。矩阵每季度随 JD 复查一次（方法：<a href="04_jd_mapping.html">JD 对照表</a>的检索流程）。</p>
+    <p class="note">给你的最终建议：主线 = <b>线 1（SRE）直接投</b>，同时按线 2 补一次 vLLM 实操（self-llm 跟做，约一周）作为第二落点——这两条线覆盖了 14 岗中的 6 个且都无硬学历/编程门槛。矩阵每季度随 JD 复查一次（方法：<a href="04_jd_mapping.html">JD 对照表</a>的检索流程）。量化机构板块来源：<a href="https://mp.weixin.qq.com/s/fpBV4Q_-cqnpojnezHlcpQ">《Jane Street、XTX Markets 算力布局曝光：四类量化技术岗》</a>（Finelite 金融阶，2026-10，猎头视角行业分析；算力数字为媒体报道口径）。</p>
     <div class="nav"><a href="../05_model_training_and_fine_tuning/06_framework_map.html">← 训练框架地图</a><a href="../index.html">回课程目录</a></div>
   </div>
 </div>

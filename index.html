@@ -17,15 +17,22 @@
   .wrap{max-width:1080px;margin:0 auto;padding:0 16px 80px}
   a{color:var(--blue);text-decoration:none}
   a:hover{text-decoration:underline}
-  .hero{padding:44px 0 20px;border-bottom:1px solid var(--border)}
-  .hero h1{font-size:32px;margin:0 0 8px}
+  .hero{padding:34px 0 22px;border-bottom:1px solid var(--border)}
+  .hero h1{font-size:30px;margin:0 0 8px}
   .hero p{color:var(--muted);margin:0 0 14px;max-width:760px}
   .badges{display:flex;gap:8px;flex-wrap:wrap}
   .badge{font-size:12px;border:1px solid var(--border);border-radius:999px;padding:2px 12px;color:var(--muted);background:var(--card)}
   .badge.b{border-color:var(--blue);color:var(--blue)}
-  .badge.g{border-color:var(--green);color:var(--green)}
-  h2{font-size:20px;margin:40px 0 14px;padding-top:18px;border-top:1px solid var(--border)}
+  h2{font-size:20px;margin:38px 0 14px;padding-top:18px;border-top:1px solid var(--border);scroll-margin-top:60px}
   h2:first-of-type{border-top:none;padding-top:0}
+  .note{font-size:13px;color:var(--muted);background:var(--chip);border-radius:10px;padding:10px 14px;margin:10px 0}
+  .ctl{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px;align-items:center}
+  .ctl button{font:inherit;font-size:13px;padding:6px 14px;border-radius:999px;border:1px solid var(--border);background:var(--card);color:var(--muted);cursor:pointer}
+  .ctl button:hover{border-color:var(--blue);color:var(--blue)}
+  .ctl button.on{background:var(--blue);border-color:var(--blue);color:#fff}
+  .ctl .cnt{font-size:12px;color:var(--muted);margin-left:auto}
+
+  /* 快速开始 */
   .lessons{display:grid;gap:12px;grid-template-columns:1fr}
   @media(min-width:700px){.lessons.c2{grid-template-columns:repeat(2,1fr)}.lessons.c3{grid-template-columns:repeat(3,1fr)}}
   .lcard{display:block;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;color:var(--fg)}
@@ -33,35 +40,80 @@
   .lcard .no{font-size:11px;color:var(--blue);letter-spacing:.5px}
   .lcard h3{margin:4px 0 6px;font-size:15px}
   .lcard p{margin:0;font-size:12px;color:var(--muted)}
-  table{width:100%;border-collapse:collapse;font-size:13px;background:transparent}
-  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
-  th{color:var(--muted);font-weight:500;font-size:12px;white-space:nowrap}
-  .tbl{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:6px 14px;margin:10px 0;overflow:auto}
+
+  /* 继续学习 */
+  #resume{display:none;background:linear-gradient(135deg,var(--card),var(--chip));border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:8px;align-items:center;gap:14px;flex-wrap:wrap}
+  #resume.show{display:flex}
+  #resume .big{font-size:16px;font-weight:700}
+  #resume .sub{font-size:12.5px;color:var(--muted)}
+  #resume .go{margin-left:auto;display:inline-block;background:var(--blue);color:#fff;border-radius:10px;padding:9px 18px;font-weight:600;font-size:14px}
+  #resume .go:hover{text-decoration:none;filter:brightness(1.08)}
+  .pbar{height:8px;border-radius:999px;background:var(--chip);overflow:hidden;flex:1 1 200px;min-width:140px}
+  .pbar i{display:block;height:100%;background:linear-gradient(90deg,var(--blue),var(--green));border-radius:999px}
+
+  /* 学习路线（阶段折叠） */
+  #roadmap details{background:var(--card);border:1px solid var(--border);border-radius:12px;margin:8px 0}
+  #roadmap details[open]{border-color:var(--blue)}
+  #roadmap summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:12px;padding:13px 16px}
+  #roadmap summary::-webkit-details-marker{display:none}
+  #roadmap summary:hover{background:var(--chip);border-radius:12px}
+  #roadmap .sn{flex:none;display:inline-flex;width:30px;height:30px;border-radius:9px;background:var(--chip);color:var(--muted);align-items:center;justify-content:center;font-weight:700;font-size:13px}
+  #roadmap details[open] .sn{background:var(--blue);color:#fff}
+  #roadmap .st1{flex:1;min-width:0}
+  #roadmap .st1 b{font-size:15px;display:block}
+  #roadmap .st1 span{font-size:12px;color:var(--muted)}
+  #roadmap .sc{flex:none;font-size:12px;color:var(--muted);white-space:nowrap}
+  #roadmap .sc.full{color:var(--green)}
+  #roadmap .st2{padding:2px 16px 14px 58px;display:grid;gap:6px;grid-template-columns:1fr}
+  @media(min-width:700px){#roadmap .st2{grid-template-columns:repeat(2,1fr)}}
+  #roadmap .it{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:7px 10px;color:var(--fg);font-size:13px;text-decoration:none}
+  #roadmap .it:hover{border-color:var(--blue);text-decoration:none}
+  #roadmap .it .ck{flex:none;width:16px;height:16px;border:1.5px solid var(--border);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;color:#fff}
+  #roadmap .it.isd .ck{background:var(--green);border-color:var(--green)}
+  #roadmap .it .no{flex:none;font-size:11px;color:var(--muted)}
+  #roadmap .it .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+  /* 课程目录（章节手风琴 + 表格） */
+  #catalog details{background:var(--card);border:1px solid var(--border);border-radius:12px;margin:8px 0;overflow:hidden}
+  #catalog details[open]{border-color:var(--blue)}
+  #catalog summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:13px 16px}
+  #catalog summary::-webkit-details-marker{display:none}
+  #catalog summary:hover{background:var(--chip)}
+  #catalog .cn{flex:none;display:inline-flex;min-width:34px;height:26px;border-radius:8px;background:var(--chip);color:var(--muted);align-items:center;justify-content:center;font-weight:700;font-size:12px;padding:0 6px}
+  #catalog details[open] .cn{background:var(--blue);color:#fff}
+  #catalog .cnm{flex:1;font-weight:600;font-size:14.5px}
+  #catalog .cc{flex:none;font-size:12px;color:var(--muted)}
+  #catalog table{width:100%;border-collapse:collapse;font-size:13px;margin:0 8px 10px;width:calc(100% - 16px)}
+  #catalog th,#catalog td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  #catalog th{color:var(--muted);font-weight:500;font-size:12px;white-space:nowrap}
+  #catalog tr:last-child td{border-bottom:none}
   .st{font-size:12px;white-space:nowrap;border-radius:999px;padding:1px 10px;display:inline-block}
   .done{color:var(--green);border:1px solid var(--green)}
-  .p1{color:var(--orange);border:1px solid var(--orange)}
-  .p2{color:var(--purple);border:1px solid var(--purple)}
-  .p3{color:var(--muted);border:1px solid var(--border)}
-  .ch{scroll-margin-top:12px}
-  .ch h3{font-size:16px;margin:22px 0 4px}
-  .ch .src{font-size:12px;color:var(--muted);margin-bottom:8px}
-  .path td:first-child{white-space:nowrap;font-weight:500}
+  .read{color:var(--muted);border:1px solid var(--border)}
+  tr.hide,details.hide{display:none}
+
+  /* 面试五件套 */
+  .intgrid{display:grid;gap:12px;grid-template-columns:1fr}
+  @media(min-width:700px){.intgrid{grid-template-columns:repeat(2,1fr)}}
   .gh{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 16px}
   .gh b{font-size:14px}
   .gh p{margin:4px 0 0;font-size:12px;color:var(--muted)}
   footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)}
-  .note{font-size:13px;color:var(--muted);background:var(--chip);border-radius:10px;padding:10px 14px;margin:10px 0}
 
   /* ---- 移动端适配 ---- */
   @media(max-width:720px){
     .wrap{padding:14px 12px 56px}
     h1{font-size:22px}
     h2{font-size:17px}
-    .stage{overflow-x:auto}
+    .hero{padding-top:20px}
+    #roadmap .st2{padding-left:16px}
+    #roadmap summary{padding:11px 12px}
+    #catalog table{font-size:12px;margin:0 8px 8px;width:calc(100% - 16px)}
+    #catalog th,#catalog td{padding:6px 8px}
+    #catalog .src{display:none}
     .ctl{gap:6px}
-    button{padding:7px 12px}
-    table{font-size:12px}
-    th,td{padding:6px 8px}
+    .ctl button{padding:6px 11px}
+    #resume .go{margin-left:0;width:100%;text-align:center}
   }
 </style>
 </head>
@@ -70,220 +122,165 @@
 
   <div class="hero">
     <h1>AI Infra 可视化学习课程</h1>
-    <p>写给有 <b>Linux / Kubernetes / 云原生</b> 基础、但对 GPU 训练、推理、调度陌生的工程师（SRE、运维、平台工程）。目标：用一天建立直觉，再回硬核文档深入，支撑你转向 AI SRE / AI Infra 岗位。</p>
+    <p>写给有 <b>Linux / Kubernetes / 云原生</b> 基础、但对 GPU 训练、推理、调度陌生的工程师（SRE、运维、平台工程）。目标：用一天建立直觉，再回硬核文档深入，支撑你转向 AI SRE / AI Infra 岗位。目录与 <a href="https://github.com/ForceInjection/AI-fundamentals">AI-fundamentals</a> 1:1 对齐。</p>
     <div class="badges">
       <span class="badge b">GitHub Pages 在线站点</span>
-      <span class="badge g">✅ 全目录覆盖 · 14 课 + 27 加餐/实验室/导读 + 术语图鉴</span>
-      <span class="badge">目录与 <a href="https://github.com/ForceInjection/AI-fundamentals">AI-fundamentals</a> 1:1 对齐</span>
-      <span class="badge">单文件 HTML · 无依赖 · 可离线</span>
+      <span class="badge g">14 课 + 41 加餐 · 面试五件套覆盖 14 岗</span>
+      <span class="badge">单文件 HTML · 无依赖 · 支持深浅色与手机</span>
+      <span class="badge">⌘K 全站搜索</span>
     </div>
   </div>
 
-  <h2>🚀 快速开始（按顺序点开，浏览器直接看）</h2>
-  <div class="lessons c2">
-    <a class="lcard" href="01_hardware_architecture/01_gpu_vs_cpu.html"><span class="no">第 1 课 · 硬件</span><h3>GPU 是什么？</h3><p>CPU/GPU 赛跑动画 · SM / Warp / Tensor Core / HBM · 为何 AI 吃 GPU</p></a>
-    <a class="lcard" href="05_model_training_and_fine_tuning/01_training_loop.html"><span class="no">第 2 课 · 训练</span><h3>训练是怎么回事？</h3><p>训练循环五步动画 · 学习率交互（会发散）· 8 卡 AllReduce · 显存账</p></a>
-    <a class="lcard" href="09_inference_system/01_inference_pipeline.html"><span class="no">第 3 课 · 推理</span><h3>推理是怎么回事？</h3><p>Prefill / Decode 动画 · KV Cache 开关对比 · 并发×显存红线 · TTFT/TPOT</p></a>
-    <a class="lcard" href="04_cloud_native_ai_platform/01_k8s_gpu.html"><span class="no">第 4 课 · 调度</span><h3>K8s 上跑 GPU</h3><p>GPU Pod 六步旅程 · 整卡/时间片/MPS/MIG · SRE 概念映射表 · 故障速查</p></a>
+  <div id="resume">
+    <div style="flex:1 1 260px;min-width:220px">
+      <div class="big" id="r-next">…</div>
+      <div class="sub" id="r-sub"></div>
+    </div>
+    <div class="pbar"><i id="r-bar"></i></div>
+    <div class="sub" id="r-cnt" style="white-space:nowrap"></div>
+    <a class="go" id="r-go" href="#">继续学习 →</a>
+  </div>
+
+  <h2>🚀 快速开始（一天建立直觉）</h2>
+  <div class="lessons c3" id="quick">
+    <a class="lcard" href="01_hardware_architecture/01_gpu_vs_cpu.html"><span class="no">第 1 课 · 硬件</span><h3>GPU 是什么？</h3><p>CPU/GPU 赛跑动画 · SM / Warp / Tensor Core / HBM</p></a>
+    <a class="lcard" href="05_model_training_and_fine_tuning/01_training_loop.html"><span class="no">第 2 课 · 训练</span><h3>训练是怎么回事？</h3><p>训练循环五步动画 · 学习率交互（会发散）· 8 卡 AllReduce</p></a>
+    <a class="lcard" href="09_inference_system/01_inference_pipeline.html"><span class="no">第 3 课 · 推理</span><h3>推理是怎么回事？</h3><p>Prefill / Decode 动画 · KV Cache 开关对比 · TTFT/TPOT</p></a>
+    <a class="lcard" href="04_cloud_native_ai_platform/01_k8s_gpu.html"><span class="no">第 4 课 · 调度</span><h3>K8s 上跑 GPU</h3><p>GPU Pod 六步旅程 · 整卡/时间片/MPS/MIG · SRE 概念映射</p></a>
     <a class="lcard" href="01_hardware_architecture/02_latency_pyramid.html"><span class="no">第 5 课 · 进阶</span><h3>延迟金字塔</h3><p>七层访存延迟交互 · "算不动 / 搬不动 / 送不到"定位法</p></a>
     <a class="lcard" href="09_inference_system/02_parallelism.html"><span class="no">第 6 课 · 进阶</span><h3>并行策略</h3><p>70B 怎么塞进 8 张卡 · DP/TP/PP/EP 切法动画 · 显存计算器</p></a>
-    <a class="lcard" href="06_llm_theory_and_fundamentals/01_llm_basics.html"><span class="no">第 7 课 · 原理</span><h3>LLM 是怎么回事？</h3><p>文字接龙采样动画 · 温度交互 · Embedding / Attention 图示</p></a>
-    <a class="lcard" href="07_rag_and_tools/01_rag_basics.html"><span class="no">第 8 课 · 应用</span><h3>RAG 是怎么回事？</h3><p>检索增强全流程步进动画 · 知识库命中演示 · 微调 vs RAG 选型</p></a>
-    <a class="lcard" href="08_agentic_system/01_agent_basics.html"><span class="no">第 9 课 · 应用</span><h3>Agent 是怎么回事？</h3><p>运维 Agent 实况推演 · ReAct 循环步进 · MCP / 上下文工程</p></a>
-    <a class="lcard" href="06_llm_theory_and_fundamentals/02_transformer.html"><span class="no">第 10 课 · 进阶</span><h3>Transformer 拆解</h3><p>token 穿层动画 · Q/K/V 角色 · FFN / 残差 / RoPE</p></a>
-    <a class="lcard" href="05_model_training_and_fine_tuning/04_alignment.html"><span class="no">第 11 课 · 训练</span><h3>对齐算法是怎么回事？</h3><p>亲手标注偏好对 · PPO/DPO/GRPO 显存模型数对比 · β 旋钮</p></a>
-    <a class="lcard" href="ml_basics/01_ml_map.html"><span class="no">第 12 课 · 基础补全</span><h3>机器学习全景</h3><p>AI/ML/DL/RL 同心圆关系 · 三种学习范式场景题 · 泛化/数据集三分</p></a>
-    <a class="lcard" href="ml_basics/02_neural_network.html"><span class="no">第 13 课 · 基础补全</span><h3>神经网络与深度学习</h3><p>亲手调出过拟合（真实多项式拟合实验）· CNN/RNN/Transformer 演化史</p></a>
-    <a class="lcard" href="ml_basics/03_rl_basics.html"><span class="no">第 14 课 · 基础补全</span><h3>强化学习入门</h3><p>浏览器里真跑 Q-learning · 探索 vs 利用 · 从 Q-learning 到 GRPO 谱系</p></a>
-    <a class="lcard" href="03_ai_cluster_ops/02_gpu_troubleshoot_sim.html"><span class="no">实操实验室</span><h3>GPU 排障模拟器</h3><p>伪终端亲手修三起"生产事故"：找隐形进程 / 读 XID 日志 / 识破假忙</p></a>
-    <a class="lcard" href="09_inference_system/03_kv_capacity_calc.html"><span class="no">实验室 · 计算器</span><h3>KV Cache 容量计算器</h3><p>模型×会话长度×显存 → 并发上限，公式实时拆解</p></a>
-    <a class="lcard" href="05_model_training_and_fine_tuning/02_memory_calc.html"><span class="no">实验室 · 计算器</span><h3>训练显存对比</h3><p>全参 vs LoRA 显存对照，批量调节，速查表</p></a>
-    <a class="lcard" href="04_cloud_native_ai_platform/02_scheduling_demo.html"><span class="no">实验室 · 演示</span><h3>Gang 调度演示</h3><p>普通 vs 成组调度跑一遍 8 卡集群，看训练作业为什么"要么全上要么全等"</p></a>
-    <a class="lcard" href="glossary.html"><span class="no">随身参考</span><h3>术语图鉴</h3><p>89 个黑话的一句话解释 + SRE 类比 · 可搜索 · 思维导图总览</p></a>
-    <a class="lcard" href="interview/01_question_bank.html"><span class="no">面试准备</span><h3>面试自测题库</h3><p>28 问 + 3 道系统设计 · 答题要点 + 进度追踪 · 链回对应课程</p></a>
-    <a class="lcard" href="interview/02_trends_2026.html"><span class="no">面试准备</span><h3>2026 趋势速览</h3><p>Agent 负载 · 线性注意力 · CSA/HCA · HBF · 昇腾 · 每条配"面试怎么聊"</p></a>
-    <a class="lcard" href="interview/03_metrics.html"><span class="no">面试准备</span><h3>生产指标体系</h3><p>四层健康账本：$/token → TTFT/TPOT SLO → MFU/批次 → SM Active/ECC</p></a>
-    <a class="lcard" href="interview/04_jd_mapping.html"><span class="no">面试准备</span><h3>招聘 JD 对照表</h3><p>2026 真实岗位要求逐条映射课程 · Slurm 速补 · 投递策略</p></a>
-    <a class="lcard" href="interview/05_career_paths.html"><span class="no">路线总图</span><h3>岗位全覆盖学习路线</h3><p>14 岗 × 5 条线（SRE/推理/框架/存储/算子）· 就绪度矩阵 · 投递建议</p></a>
-    <a class="lcard" href="02_gpu_programming/01_cuda_primer.html"><span class="no">加餐 · 算子线</span><h3>CUDA 算子开发入门</h3><p>第一个 Kernel · 线程编号交互 · PyTorch 扩展三行骨架 · 五周路线</p></a>
-    <a class="lcard" href="05_model_training_and_fine_tuning/06_framework_map.html"><span class="no">加餐 · 框架线</span><h3>训练框架地图</h3><p>DDP/FSDP/DeepSpeed/Megatron 选型 · ZeRO 三档显存交互</p></a>
-    <a class="lcard" href="09_inference_system/11_engine_choice.html"><span class="no">加餐 · 选型</span><h3>推理引擎三选一</h3><p>vLLM / SGLang / TensorRT-LLM：点场景看推荐 + 共同地基</p></a>
+    <a class="lcard" href="glossary.html"><span class="no">随身参考</span><h3>术语图鉴</h3><p>89 个黑话一句话解释 + SRE 类比 · 可搜索 · 思维导图</p></a>
+    <a class="lcard" href="03_ai_cluster_ops/02_gpu_troubleshoot_sim.html"><span class="no">实操实验室</span><h3>GPU 排障模拟器</h3><p>伪终端亲手修三起"生产事故"：找隐形进程 / 读 XID / 识破假忙</p></a>
+    <a class="lcard" href="interview/01_question_bank.html"><span class="no">面试准备</span><h3>面试自测题库</h3><p>28 问 + 3 道系统设计 · 进度追踪 · 链回对应课程</p></a>
   </div>
-  <div class="note">🎓 完成七课后：逛<a href="glossary.html">术语图鉴</a>、玩<a href="03_ai_cluster_ops/02_gpu_troubleshoot_sim.html">排障模拟器</a>、读<a href="03_ai_cluster_ops/01_gpu_ops.html">单机运维速查</a>，然后按下面的学习路径进阶。</div>
+  <div class="note">🎓 更多入口：⌘K（或按 <kbd>/</kbd>）全站搜索 · 顶部"学习路线"看完整顺序 · 每页右上角有面包屑可跳上一课/下一课。</div>
 
-  <h2>🧭 六阶段学习路径</h2>
-  <div class="tbl">
-    <table class="path">
-      <thead><tr><th>阶段</th><th>目标</th><th>学什么</th></tr></thead>
-      <tbody>
-        <tr><td>0 · 建立直觉</td><td>3 小时看懂全景</td><td>本站十四课（含基础补全）+ 实验室</td></tr>
-        <tr><td>1 · 硬件</td><td>看懂一块卡和它的总线</td><td>GPU 架构、NVLink、PCIe、GPUDirect（<a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/01_hardware_architecture/README.md">上游 01 章</a>）</td></tr>
-        <tr><td>2 · 单机运维</td><td>nvidia-smi 时代基本功</td><td>利用率误区、DCGM、XID（<a href="03_ai_cluster_ops/01_gpu_ops.html">加餐速查</a> + <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/03_ai_cluster_ops/README.md">上游 03 章</a>）</td></tr>
-        <tr><td>3 · 集群与云原生</td><td>你的主场移植到 GPU</td><td>Device Plugin、HAMi/Kueue、Gang Scheduling、IB、NCCL（<a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/04_cloud_native_ai_platform/README.md">上游 04 章</a>）</td></tr>
-        <tr><td>4 · 训练</td><td>看懂训练作业在干什么</td><td>并行策略、checkpoint、SFT、显存账（<a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/05_model_training_and_fine_tuning/README.md">上游 05 章</a>）</td></tr>
-        <tr><td>5 · 推理</td><td>看懂推理三大矛盾</td><td>Prefill/Decode、KV Cache、vLLM/SGLang（<a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/09_inference_system/README.md">上游 09 章</a>）</td></tr>
-        <tr><td>6 · 成本与容量</td><td>用 CFO 语言说话</td><td>token 成本、$/token、KV 容量规划（<a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/09_inference_system/README.md#96-推理成本与容量规划">上游 9.6</a>）</td></tr>
-        <tr><td>7 · 面试冲刺</td><td>输出检验与趋势</td><td><a href="interview/01_question_bank.html">题库</a> · <a href="interview/02_trends_2026.html">趋势</a> · <a href="interview/03_metrics.html">指标</a> · <a href="interview/04_jd_mapping.html">JD 对照</a> · <a href="interview/05_career_paths.html">五线路线</a> · <a href="03_ai_cluster_ops/02_gpu_troubleshoot_sim.html">排障模拟器</a></td></tr>
-      </tbody>
-    </table>
-  </div>
+  <h2 id="roadmap-h">🧭 学习路线图 <span style="font-size:12.5px;font-weight:400;color:var(--muted)">（点击阶段展开；✓ 进度自动保存在本机浏览器）</span></h2>
+  <div id="roadmap"></div>
   <div class="note">🧪 <b>自测标准</b>：能对同事讲清 —— ① 为什么训练 7B 单卡 80GB 放不下 ② 为什么 decode 慢在带宽不在算力 ③ <code>nvidia.com/gpu</code> 从 Pod 到卡经过了谁 ④ GPU-Util 90% 为什么不代表忙。答不上来就回对应课重看动画。</div>
 
-  <h2>📚 完整课程目录（与上游仓库 1:1 对齐）</h2>
-  <p class="note">本表逐篇覆盖上游 <a href="https://github.com/ForceInjection/AI-fundamentals">ForceInjection/AI-fundamentals</a> 的章节：已完成的小白课直接点开；标 🕐 的先读原文，可视化版本按优先级持续制作中。</p>
-
-  <div class="ch" id="ch00">
-    <h3>00 · 机器学习基础（基础补全模块）</h3>
-    <div class="src">零基础读者建议最先读；有经验者可当复习。Transformer 详解见 <a href="#ch06">06 章（第 10 课）</a>。</div>
-    <div class="tbl"><table>
-      <thead><tr><th>课程</th><th>覆盖概念</th><th>状态</th></tr></thead>
-      <tbody>
-        <tr><td>AI / ML / DL / RL 关系 + 三种学习范式 + 泛化/数据集三分</td><td><a href="ml_basics/01_ml_map.html">第 12 课：机器学习全景</a></td><td><span class="st done">✅</span></td></tr>
-        <tr><td>神经元/激活函数/MLP + <b>过拟合亲手实验</b> + CNN/RNN/Transformer 演化</td><td><a href="ml_basics/02_neural_network.html">第 13 课：神经网络与深度学习</a></td><td><span class="st done">✅</span></td></tr>
-        <tr><td>Agent-Environment 循环 + <b>浏览器真跑 Q-learning</b> + 探索/利用 + RL 算法谱系</td><td><a href="ml_basics/03_rl_basics.html">第 14 课：强化学习入门</a>（衔接<a href="05_model_training_and_fine_tuning/04_alignment.html">第 11 课对齐算法</a>）</td><td><span class="st done">✅</span></td></tr>
-      </tbody>
-    </table></div>
+  <h2 id="catalog-h">📚 完整课程目录（与上游仓库 1:1 对齐）</h2>
+  <p class="note" style="margin-top:0">本目录逐篇覆盖上游 <a href="https://github.com/ForceInjection/AI-fundamentals">ForceInjection/AI-fundamentals</a> 的章节。点章节名展开；右侧"读原文"是该主题的官方深度文档。</p>
+  <div class="ctl" id="filter">
+    <button data-f="*" class="on">全部</button>
+    <button data-f="课">正式课</button>
+    <button data-f="实验">实验室</button>
+    <button data-f="加餐">加餐</button>
+    <button data-f="导读">导读</button>
+    <button data-f="面试">面试</button>
+    <button data-f="ref">读原文</button>
+    <span class="cnt" id="f-cnt"></span>
   </div>
+  <div id="catalog"></div>
 
-  <div class="ch" id="ch01">
-    <h3>01 · 硬件架构与互连</h3>
-    <div class="src"><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/01_hardware_architecture/README.md">上游目录 ↗</a></div>
-    <div class="tbl"><table>
-      <thead><tr><th>原文</th><th>小白版</th><th>状态</th></tr></thead>
-      <tbody>
-        <tr><td><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/01_hardware_architecture/nvidia/understand_gpu_architecture/README.md">深入理解 GPU 架构</a></td><td><a href="01_hardware_architecture/01_gpu_vs_cpu.html">第 1 课</a></td><td><span class="st done">✅</span></td></tr>
-        <tr><td><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/01_hardware_architecture/performance/ai_latency_pyramid.md">AI 基础设施延迟金字塔</a></td><td><a href="01_hardware_architecture/02_latency_pyramid.html">第 5 课</a></td><td><span class="st done">✅</span></td></tr>
-        <tr><td>PCIe 大全 / P2PDMA / CXL 系列</td><td><a href="01_hardware_architecture/03_pcie_cxl.html">加餐 · PCIe 与 CXL（带宽对比 + 数据路径）</a></td><td><span class="st done">✅</span></td></tr>
-        <tr><td>NVLink / NVLink-C2C / GB300 NVL72</td><td><a href="01_hardware_architecture/05_nvlink.html">加餐 · NVLink / NVSwitch（拓扑切换图）</a></td><td><span class="st done">✅</span></td></tr>
-        <tr><td>GPUDirect P2P / RDMA / Storage</td><td><a href="01_hardware_architecture/04_gpudirect.html">加餐 · GPUDirect（数据包赛跑）</a></td><td><span class="st done">✅</span></td></tr>
-        <tr><td>TPU 101 / GPGPU vs NPU / Ascend950</td><td><a href="01_hardware_architecture/06_chips.html">加餐 · TPU / GPGPU / NPU 三路线对比</a></td><td><span class="st done">✅</span></td></tr>
-      </tbody>
-    </table></div>
-  </div>
-
-  <div class="ch" id="ch02">
-    <h3>02 · 底层计算与异构编程（GPU / DPU / NPU）</h3>
-    <div class="src"><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/02_gpu_programming/README.md">GPU 编程 ↗</a> · <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/02_dpu_programming/README.md">DPU ↗</a> · <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/02_npu_programming/README.md">NPU ↗</a></div>
-    <div class="tbl"><table>
-      <thead><tr><th>原文</th><th>小白版</th><th>状态</th></tr></thead>
-      <tbody>
-        <tr><td>GPU 编程入门 / CUDA 核心 / CUDA 流</td><td>第 1 课已建 SIMT 直觉；动手向读原文 + 上游自带交互（<a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/02_gpu_programming/02_cuda/gpu-memory-visual.html">GPU 显存可视化</a>）</td><td><span class="st done">✅ 读原文</span></td></tr>
-        <tr><td>SIMT vs Tile-Based / nvbandwidth 调优</td><td>进阶编程向，运维路线读原文即可（第 1 课已覆盖 SIMT 直觉）</td><td><span class="st done">✅ 读原文</span></td></tr>
-        <tr><td>NPU 14 个子模块（昇腾）</td><td><a href="02_npu_programming/01_overview.html">NPU 与 CUDA 生态对照（一页通）</a></td><td><span class="st done">✅</span></td></tr>
-        <tr><td>DOCA / DPU 编程</td><td>专项方向，读原文即可：<a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/02_dpu_programming/README.md">DOCA 编程入门</a></td><td><span class="st done">✅ 读原文</span></td></tr>
-      </tbody>
-    </table></div>
-  </div>
-
-  <div class="ch" id="ch03">
-    <h3>03 · AI 集群运维与通信</h3>
-    <div class="src"><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/03_ai_cluster_ops/README.md">上游目录 ↗</a></div>
-    <div class="tbl"><table>
-      <thead><tr><th>原文</th><th>小白版</th><th>状态</th></tr></thead>
-      <tbody>
-        <tr><td>GPU 运维系列（nvidia-smi / nvtop / DCGM / 健康检查 / 驱动）</td><td><a href="03_ai_cluster_ops/01_gpu_ops.html">加餐 · 单机运维速查</a></td><td><span class="st done">✅</span></td></tr>
-        <tr><td>健康检查实操（fuser / XID / SM Active）</td><td><a href="03_ai_cluster_ops/02_gpu_troubleshoot_sim.html">GPU 排障模拟器（伪终端）</a></td><td><span class="st done">✅</span></td></tr>
-        <tr><td>IB 网络理论 / 健康检查</td><td><a href="03_ai_cluster_ops/03_ib_rdma.html">加餐 · IB 与 RDMA（TCP vs RDMA 路径）</a></td><td><span class="st done">✅</span></td></tr>
-        <tr><td>NCCL 理论 / 实战</td><td><a href="03_ai_cluster_ops/04_nccl_intro.html">加餐 · NCCL 调优导读（环形温习 + busbw 对照法）</a></td><td><span class="st done">✅</span></td></tr>
-        <tr><td>NCCL 理论 / 实战</td><td><a href="03_ai_cluster_ops/04_nccl_intro.html">加餐 · NCCL 调优导读（环形温习 + busbw 对照法）</a></td><td><span class="st done">✅</span></td></tr>
-        <tr><td>GPU 调度问题总览 / Gang Scheduling</td><td><a href="04_cloud_native_ai_platform/02_scheduling_demo.html">Gang 调度演示</a>（概念+实操演示）</td><td><span class="st done">✅</span></td></tr>
-        <tr><td>中国数据中心模型精读</td><td>市场研究向，读原文即可：<a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/03_ai_cluster_ops/04_datacenter/china-dc-boom-semianalysis.md">SemiAnalysis 模型精读</a></td><td><span class="st done">✅ 读原文</span></td></tr>
-      </tbody>
-    </table></div>
-  </div>
-
-  <div class="ch" id="ch04">
-    <h3>04 · 云原生 AI 平台</h3>
-    <div class="src"><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/04_cloud_native_ai_platform/README.md">上游目录 ↗</a></div>
-    <div class="tbl"><table>
-      <thead><tr><th>原文</th><th>小白版</th><th>状态</th></tr></thead>
-      <tbody>
-        <tr><td>K8s GPU 管理 / Device Plugin / Container Toolkit</td><td><a href="04_cloud_native_ai_platform/01_k8s_gpu.html">第 4 课</a></td><td><span class="st done">✅</span></td></tr>
-        <tr><td>Gang Scheduling / Volcano / Kueue（实操演示）</td><td><a href="04_cloud_native_ai_platform/02_scheduling_demo.html">Gang 调度演示</a></td><td><span class="st done">✅</span></td></tr>
-        <tr><td>Kueue + HAMi / GPU 虚拟化四部曲 / KAI vs HAMi</td><td><a href="04_cloud_native_ai_platform/03_hami_kueue.html">加餐 · HAMi 与 Kueue（配额交互 + 组件对照）</a></td><td><span class="st done">✅</span></td></tr>
-        <tr><td>LWS / llm-d 分布式推理调度</td><td><a href="04_cloud_native_ai_platform/04_lws_llmd.html">LWS 与 llm-d 导读</a></td><td><span class="st done">✅</span></td></tr>
-        <tr><td>JuiceFS / 3FS / ICMS 存储三篇</td><td><a href="04_cloud_native_ai_platform/05_storage.html">AI 存储三篇一页通</a></td><td><span class="st done">✅</span></td></tr>
-      </tbody>
-    </table></div>
-  </div>
-
-  <div class="ch" id="ch05">
-    <h3>05 · 模型训练与微调</h3>
-    <div class="src"><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/05_model_training_and_fine_tuning/README.md">上游目录 ↗</a></div>
-    <div class="tbl"><table>
-      <thead><tr><th>原文</th><th>小白版</th><th>状态</th></tr></thead>
-      <tbody>
-        <tr><td>训练循环 / 梯度下降 / AllReduce / 显存账</td><td><a href="05_model_training_and_fine_tuning/01_training_loop.html">第 2 课</a></td><td><span class="st done">✅</span></td></tr>
-        <tr><td>并行策略 DP/TP/PP/EP</td><td><a href="09_inference_system/02_parallelism.html">第 6 课</a>（+<a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/09_inference_system/parallelism/parallelism_visual.html">上游交互版</a>）</td><td><span class="st done">✅</span></td></tr>
-        <tr><td>SFT 实战 / 垂域微调</td><td><a href="05_model_training_and_fine_tuning/05_sft_primer.html">SFT 微调小白版</a> · <a href="05_model_training_and_fine_tuning/02_memory_calc.html">训练显存对比计算器</a></td><td><span class="st done">✅</span></td></tr>
-        <tr><td>70B 从零训练四部曲 / RL 后训练</td><td><a href="05_model_training_and_fine_tuning/03_70b_lessons.html">70B 复盘导读（含 RL 进阶入口）</a></td><td><span class="st done">✅</span></td></tr>
-        <tr><td>RL 后训练 / 对齐算法（DPO · PPO · GRPO）</td><td><a href="05_model_training_and_fine_tuning/04_alignment.html">第 11 课：对齐算法是怎么回事</a></td><td><span class="st done">✅</span></td></tr>
-      </tbody>
-    </table></div>
-  </div>
-
-  <div class="ch" id="ch06">
-    <h3>06 · LLM 理论与基础</h3>
-    <div class="src"><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/06_llm_theory_and_fundamentals/README.md">上游目录 ↗</a></div>
-    <div class="tbl"><table>
-      <thead><tr><th>原文</th><th>小白版</th><th>状态</th></tr></thead>
-      <tbody>
-        <tr><td>LLM 基础（token / 接龙 / 温度 / 训练三阶段）</td><td><a href="06_llm_theory_and_fundamentals/01_llm_basics.html">第 7 课</a> · <a href="glossary.html">术语图鉴</a></td><td><span class="st done">✅</span></td></tr>
-        <tr><td>Transformer 架构详解</td><td><a href="06_llm_theory_and_fundamentals/02_transformer.html">第 10 课</a>（+上游 <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/06_llm_theory_and_fundamentals/llm_basic_concepts/transformer/transformer_block_visual.html">block 可视化</a>）</td><td><span class="st done">✅</span></td></tr>
-        <tr><td>Tokenizer / Embedding / MoE / 量化</td><td>第 7 课已覆盖核心直觉；MoE/量化上游自带<a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/06_llm_theory_and_fundamentals/llm_basic_concepts/moe/mixture_of_experts_moe_visual_guide.zh-CN.md">可视化指南</a></td><td><span class="st done">✅</span></td></tr>
-        <tr><td>Scaling Laws / CoT / 幻觉 / 评估 / 文件格式</td><td><a href="06_llm_theory_and_fundamentals/03_engineering_concepts.html">加餐 · LLM 工程概念补全（五合一）</a></td><td><span class="st done">✅</span></td></tr>
-      </tbody>
-    </table></div>
-  </div>
-
-  <div class="ch" id="ch09">
-    <h3>09 · 大模型推理</h3>
-    <div class="src"><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/09_inference_system/README.md">上游目录 ↗</a></div>
-    <div class="tbl"><table>
-      <thead><tr><th>原文</th><th>小白版</th><th>状态</th></tr></thead>
-      <tbody>
-        <tr><td>Prefill / Decode / KV Cache 基础</td><td><a href="09_inference_system/01_inference_pipeline.html">第 3 课</a></td><td><span class="st done">✅</span></td></tr>
-        <tr><td>并行策略系列</td><td><a href="09_inference_system/02_parallelism.html">第 6 课</a></td><td><span class="st done">✅</span></td></tr>
-        <tr><td>PagedAttention / Prefix Caching / Continuous Batching</td><td><a href="09_inference_system/04_batching_attention.html">加餐 · Batching 与 PagedAttention（双交互）</a></td><td><span class="st done">✅</span></td></tr>
-        <tr><td>PD 分离（面试高频架构）</td><td><a href="09_inference_system/09_pd_disaggregation.html">加餐 · PD 分离小白版（负载波形交互 + KV 搬家权衡）</a></td><td><span class="st done">✅</span></td></tr>
-        <tr><td>投机解码 / 量化实战（面试必考）</td><td><a href="09_inference_system/10_spec_quant.html">加餐 · 投机解码与量化（双交互）</a></td><td><span class="st done">✅</span></td></tr>
-        <tr><td>KV 容量规划 / 成本分析（$/token）</td><td><a href="09_inference_system/03_kv_capacity_calc.html">KV 容量/并发计算器</a> · <a href="09_inference_system/05_cost_calc.html">$/token 成本速算</a></td><td><span class="st done">✅</span></td></tr>
-        <tr><td>vLLM / SGLang 源码系列（30+ 篇）</td><td><a href="09_inference_system/06_vllm_overview.html">vLLM 一张图看懂</a> · <a href="09_inference_system/07_sglang_overview.html">SGLang 一张图看懂</a>（系列入口导读）</td><td><span class="st done">✅</span></td></tr>
-        <tr><td>LMCache / Mooncake / Tair / DeepInfer</td><td><a href="09_inference_system/08_kv_systems.html">KV 分布式系统一页通（三方案对照）</a></td><td><span class="st done">✅</span></td></tr>
-        <tr><td>参考设计 15 篇 / 部署实践 / DeepSeek 专题</td><td>工程参考文档集，本站各课已覆盖其概念基础，读原文即可（<a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/09_inference_system/reference_design/README.md">入口</a>）</td><td><span class="st done">✅ 读原文</span></td></tr>
-      </tbody>
-    </table></div>
-  </div>
-
-  <div class="ch" id="ch-others">
-    <h3>07 · RAG / 08 · 智能体 / 10 · 课程 / 98 · LLM 编程 / 99 · 杂项</h3>
-    <div class="src"><a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/07_rag_and_tools/README.md">07 ↗</a> · <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/08_agentic_system/README.md">08 ↗</a> · <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/10_ai_related_course/README.md">10 ↗</a> · <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/11_ai_native_everything/README.md">11 ↗</a> · <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/98_llm_programming/README.md">98 ↗</a> · <a href="https://github.com/ForceInjection/AI-fundamentals">Agent Skills / OpenSpec 等模块 ↗</a></div>
-    <div class="note">11 AI Native 章：<a href="11_ai_native_everything/01_overview.html">导读页</a>；20 Agent Skills / 21 OpenSpec 为外部生态内容，读原文即可。</div>
-    <div class="tbl"><table>
-      <thead><tr><th>内容</th><th>小白版</th><th>状态</th></tr></thead>
-      <tbody>
-        <tr><td>RAG 基础 / GraphRAG / 文档解析</td><td><a href="07_rag_and_tools/01_rag_basics.html">第 8 课</a> · <a href="07_rag_and_tools/02_graphrag.html">GraphRAG 小白版</a></td><td><span class="st done">✅</span></td></tr>
-        <tr><td>Agent 理论 / MCP / 上下文工程 / 记忆系统</td><td><a href="08_agentic_system/01_agent_basics.html">第 9 课</a> · <a href="08_agentic_system/02_deep_dive.html">Agent 深水区一页通</a></td><td><span class="st done">✅</span></td></tr>
-        <tr><td>AI Infra 90 分钟讲座 / Token Factory / 外部教程整合</td><td><a href="10_ai_related_course/01_overview.html">课程章导读</a> · <a href="10_ai_related_course/02_external_courses.html">外部优质教程地图</a> · <a href="10_ai_related_course/03_ai_compiler.html">AI 编译器是怎么回事（新课）</a></td><td><span class="st done">✅</span></td></tr>
-        <tr><td>98 LLM 编程 / 99 杂项（含三张上手任务卡）</td><td><a href="98_llm_programming/01_overview.html">LLM 编程章导读</a> · <a href="99_misc/01_overview.html">99 杂项导读（任务卡）</a></td><td><span class="st done">✅</span></td></tr>
-      </tbody>
-    </table></div>
+  <h2 id="interview-h">🎯 面试冲刺五件套（覆盖 14 类在招岗位）</h2>
+  <div class="intgrid">
+    <a class="lcard" href="interview/01_question_bank.html"><span class="no">① 输出检验</span><h3>面试自测题库</h3><p>28 问 + 3 道系统设计 · 答题要点 + 进度追踪（localStorage）· 每题链回对应课程</p></a>
+    <a class="lcard" href="interview/02_trends_2026.html"><span class="no">② 聊趋势</span><h3>2026 趋势速览</h3><p>Agent 负载 · 线性注意力 · CSA/HCA · HBF · 昇腾 · 每条配"面试怎么聊"</p></a>
+    <a class="lcard" href="interview/03_metrics.html"><span class="no">③ 讲指标</span><h3>生产指标体系</h3><p>四层健康账本：$/token → TTFT/TPOT SLO → MFU/批次 → SM Active/ECC</p></a>
+    <a class="lcard" href="interview/04_jd_mapping.html"><span class="no">④ 对岗位</span><h3>招聘 JD 对照表</h3><p>2026 真实岗位要求逐条映射课程 · Slurm 速补 · 投递策略</p></a>
+    <a class="lcard" href="interview/05_career_paths.html"><span class="no">⑤ 定路线</span><h3>岗位全覆盖学习路线</h3><p>14 岗 × 5 条线（SRE/推理/框架/存储/算子）· 就绪度矩阵 · 量化机构雇主池</p></a>
   </div>
 
   <h2>🌐 GitHub 上值得跟的学习仓库</h2>
-  <p class="note">这一节已整理成 <a href="10_ai_related_course/02_external_courses.html">外部教程地图</a>——每个仓库的价值判断、覆盖内容与接入路径的时机建议都在里面，其中 AI 编译器主题已吸收为本站新课。</p>
+  <p class="note">已整理成 <a href="10_ai_related_course/02_external_courses.html">外部教程地图</a>——每个仓库的价值判断、覆盖内容与接入时机都在里面。</p>
   <div class="lessons c2">
-    <div class="gh"><b><a href="https://github.com/datawhalechina">datawhalechina</a>（Datawhale）</b><p>中文开源学习社区，按技能组织教程 + 组队学习。重点：<i>happy-llm</i>（从零理解 LLM）、<i>llm-cookbook</i>、<i>self-llm</i>（各模型部署复现）。</p></div>
-    <div class="gh"><b><a href="https://github.com/microsoft/AI-System">microsoft/AI-System</a></b><p>微软《AI 系统》课程，系统视角讲 AI 栈，课件质量高，与上游 01/03/09 章互补。</p></div>
+    <div class="gh"><b><a href="https://github.com/datawhalechina">datawhalechina</a>（Datawhale）</b><p>中文开源学习社区。重点：<i>happy-llm</i>（从零理解 LLM）、<i>llm-cookbook</i>、<i>self-llm</i>（部署复现）。</p></div>
+    <div class="gh"><b><a href="https://github.com/microsoft/AI-System">microsoft/AI-System</a></b><p>微软《AI 系统》课程，系统视角讲 AI 栈，课件质量高。</p></div>
     <div class="gh"><b><a href="https://github.com/chenzomi12/AISystem">chenzomi12/AISystem</a></b><p>ZOMI 酱 AI 系统全栈（硬件→编译器→推理），配 B 站视频。</p></div>
     <div class="gh"><b><a href="https://github.com/NVIDIA/k8s-device-plugin">NVIDIA/k8s-device-plugin</a> · <a href="https://github.com/Project-HAMi/HAMi">Project-HAMi/HAMi</a></b><p>生产组件源码，配合第 4 课精读。</p></div>
     <div class="gh"><b><a href="https://github.com/codecrafters-io/build-your-own-x">build-your-own-x</a></b><p>"自己动手写 X"合集，做学习项目时选材。</p></div>
-    <div class="gh"><b><a href="https://github.com/Egonex-AI/Understand-Anything">Egonex-AI/Understand-Anything</a></b><p>把代码库变成交互知识图谱的工具（非教程）。装成 Claude Code 插件后对 vLLM 或上游仓库跑 /understand，用图谱导航陌生代码。</p></div>
+    <div class="gh"><b><a href="https://github.com/Egonex-AI/Understand-Anything">Egonex-AI/Understand-Anything</a></b><p>把代码库变成交互知识图谱的工具（非教程），用图谱导航陌生代码。</p></div>
   </div>
 
   <footer>
     课程内容基于 <a href="https://github.com/ForceInjection/AI-fundamentals">ForceInjection/AI-fundamentals</a> 知识库的小白化重述，原文版权归原作者；本站点仅含原创可视化课程与导读。部署：GitHub Actions → Pages（见 <code>.github/workflows/pages.yml</code>） · <a href="changelog.html">更新日志</a>
   </footer>
 </div>
+
+<script src="assets/nav.js"></script>
+<script>
+(function () {
+  var A = window.AIVC;
+  function el(id) { return document.getElementById(id); }
+
+  /* ---- 继续学习 ---- */
+  var next = A.nextUndone(), n = A.doneCount();
+  var r = el('resume');
+  if (next && n > 0 && n < A.TOTAL) {
+    r.classList.add('show');
+    el('r-next').textContent = '下一页：' + next.t;
+    el('r-sub').textContent = (next.stage ? '阶段 ' + next.stage.n + ' · ' + next.stage.name + ' · ' : '') + next.d;
+    el('r-go').href = A.ROOT + next.p;
+  } else if (!next) {
+    r.classList.add('show');
+    el('r-next').textContent = '🎉 路线 55 页全部学完！';
+    el('r-sub').textContent = '去题库做一轮输出检验，然后按五线路线开始投递。';
+    el('r-go').href = A.ROOT + 'interview/01_question_bank.html'; el('r-go').textContent = '去题库 →';
+  }
+  el('r-bar').style.width = Math.round(n / A.TOTAL * 100) + '%';
+  el('r-cnt').textContent = n + ' / ' + A.TOTAL;
+
+  /* ---- 学习路线图（数据驱动） ---- */
+  var rm = el('roadmap');
+  rm.innerHTML = A.STAGES.map(function (s, i) {
+    var dn = s.items.filter(function (x) { return A.isDone(x.p); }).length;
+    var items = s.items.map(function (x, j) {
+      return '<a class="it' + (A.isDone(x.p) ? ' isd' : '') + '" href="' + A.ROOT + x.p + '">' +
+        '<span class="ck">' + (A.isDone(x.p) ? '✓' : '') + '</span>' + A.kind(x.k) +
+        '<span class="no">' + (i + 1) + '.' + (j + 1) + '</span><span class="t">' + A.esc(x.t) + '</span></a>';
+    }).join('');
+    return '<details' + (i === 0 ? ' open' : '') + ' data-s="' + s.n + '"><summary>' +
+      '<span class="sn">' + s.n + '</span><span class="st1"><b>' + A.esc(s.name) + '</b><span>' + A.esc(s.goal) + '</span></span>' +
+      '<span class="sc' + (dn === s.items.length && dn ? ' full' : '') + '" data-scnt="' + s.n + '">' + dn + '/' + s.items.length + '</span></summary>' +
+      '<div class="st2">' + items + '</div></details>';
+  }).join('');
+  document.addEventListener('aivc:progress', function () {
+    rm.querySelectorAll('details').forEach(function (d) {
+      var s = A.STAGES.filter(function (x) { return x.n === d.getAttribute('data-s'); })[0];
+      var dn = s.items.filter(function (x) { return A.isDone(x.p); }).length;
+      var sc = d.querySelector('.sc'); sc.textContent = dn + '/' + s.items.length;
+      sc.className = 'sc' + (dn === s.items.length && dn ? ' full' : '');
+      d.querySelectorAll('.it').forEach(function (it, j) { it.classList.toggle('isd', A.isDone(s.items[j].p)); it.querySelector('.ck').textContent = A.isDone(s.items[j].p) ? '✓' : ''; });
+    });
+    var nn = A.doneCount();
+    el('r-bar').style.width = Math.round(nn / A.TOTAL * 100) + '%'; el('r-cnt').textContent = nn + ' / ' + A.TOTAL;
+  });
+
+  /* ---- 课程目录（数据驱动 + 筛选） ---- */
+  var cat = el('catalog');
+  cat.innerHTML = A.CH.map(function (c, ci) {
+    var rows = c.pages.map(function (x) {
+      if (x.ref) return '<tr data-k="ref"><td>' + A.esc(x.t) + '</td><td>' + A.esc(x.d) + '</td><td><a href="' + x.href + '">读原文 ↗</a></td></tr>';
+      return '<tr data-k="' + x.k + '"><td>' + A.esc(x.t) + '<div style="font-size:12px;color:var(--muted)">' + A.esc(x.d) + '</div></td>' +
+        '<td><a href="' + A.ROOT + x.p + '">打开' + (x.src ? '<div style="font-size:11.5px;color:var(--muted)">对应上游：' + A.esc(x.src) + '</div>' : '') + '</a></td>' +
+        '<td><span class="st done">✅</span></td></tr>';
+    }).join('');
+    return '<details' + (ci === 0 ? ' open' : '') + '><summary><span class="cn">' + A.esc(c.no) + '</span><span class="cnm">' + A.esc(c.name) + '</span><span class="cc">' + c.pages.length + ' 篇</span></summary>' +
+      (c.up ? '<div class="src" style="padding:0 16px;font-size:12px"><a href="' + c.up + '">上游目录 ↗</a></div>' : '') +
+      '<table><thead><tr><th>小白版课程</th><th>入口</th><th>状态</th></tr></thead><tbody>' + rows + '</tbody></table></details>';
+  }).join('');
+
+  /* 筛选 */
+  var F = '*';
+  function applyF() {
+    var shown = 0;
+    document.querySelectorAll('#catalog details').forEach(function (d) {
+      var any = false;
+      d.querySelectorAll('tr[data-k]').forEach(function (tr) {
+        var ok = F === '*' || tr.getAttribute('data-k') === F;
+        tr.classList.toggle('hide', !ok); if (ok) any = true;
+      });
+      d.classList.toggle('hide', !any); if (any) shown++;
+    });
+    el('f-cnt').textContent = '筛选结果：' + shown + ' 个章节';
+  }
+  el('filter').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    el('filter').querySelectorAll('button').forEach(function (x) { x.classList.toggle('on', x === b); });
+    F = b.getAttribute('data-f'); applyF();
+  });
+})();
+</script>
 </body>
 </html>

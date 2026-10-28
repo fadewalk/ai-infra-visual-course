@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>术语图鉴 · 89 个 AI Infra 黑话的小白解释</title>
+<title>术语图鉴 · 90 个 AI Infra 黑话的小白解释</title>
 <style>
   :root{
     --bg:#f6f7f9; --fg:#1a1d23; --muted:#5c6470; --card:#ffffff; --border:#e2e5ea;
     --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
   }
   @media (prefers-color-scheme: dark){
-    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+    :root{ --bg:#1b212b; --fg:#dce2ea; --muted:#9aa5b1; --card:#242c38; --border:#3b4654; --chip:#2b3440; }
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
@@ -118,6 +118,7 @@
     {n:'sm_80 / sm_90 架构代号',e:'Compute Capability',c:'prog',d:'GPU 架构代号的编译目标（A100=sm_80，H100=sm_90）；镜像构建时必须对准，否则跑不起来。',a:'编译时指定目标 CPU 架构。'},
     {n:'Nsight',e:'Nsight Compute / Systems',c:'prog',d:'NVIDIA 官方性能分析工具族：看 Kernel 耗时、瓶颈是算力还是带宽。',a:'GPU 世界的 perf + flamegraph。'},
     /* ---------- 训练 ---------- */
+    {n:'拖尾（Straggler）',e:'Straggler',c:'train',d:'分布式训练里每次都最慢的进程/节点——同步训练等最慢者，整体步速被它锁死。排查：逐卡对比 SM active、看 step 耗时 P99 vs P50。',a:'车队行军：全队速度 = 最慢那辆车。',l:'05_model_training_and_fine_tuning/07_training_debug.html|训练排障'},
     {n:'前向传播',e:'Forward Pass',c:'train',d:'数据层层穿过网络算出预测值。',a:'按现有流程走一遍出结果。',l:'05_model_training_and_fine_tuning/01_training_loop.html|第 2 课'},
     {n:'反向传播',e:'Backward Pass',c:'train',d:'从损失出发反推：每个参数对误差该"背多少锅"（梯度）。',a:'复盘追责到每个环节。',l:'05_model_training_and_fine_tuning/01_training_loop.html|第 2 课'},
     {n:'梯度',e:'Gradient',c:'train',d:'损失对参数的导数：该往哪调、调多少。',a:'下山时脚下的坡度方向。',l:'05_model_training_and_fine_tuning/01_training_loop.html|第 2 课'},

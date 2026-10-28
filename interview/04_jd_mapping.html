@@ -10,7 +10,7 @@
     --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
   }
   @media (prefers-color-scheme: dark){
-    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+    :root{ --bg:#1b212b; --fg:#dce2ea; --muted:#9aa5b1; --card:#242c38; --border:#3b4654; --chip:#2b3440; }
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
@@ -80,6 +80,7 @@
         <tr><td>训练/推理存储 IO 性能</td><td>滴滴（训练存储）</td><td><a href="../04_cloud_native_ai_platform/05_storage.html">存储三篇一页通</a></td><td><span class="st ok">✅ 覆盖</span></td></tr>
         <tr><td>K8s 生态 / 容器化</td><td>阿里云容器方向</td><td><a href="../04_cloud_native_ai_platform/01_k8s_gpu.html">第 4 课</a> · <a href="../04_cloud_native_ai_platform/03_hami_kueue.html">HAMi/Kueue</a></td><td><span class="st ok">✅ 覆盖</span></td></tr>
         <tr><td>PyTorch / 框架源码级</td><td>字节、百度</td><td><a href="../05_model_training_and_fine_tuning/06_framework_map.html">训练框架地图（本站新页：DDP/FSDP/DeepSpeed/Megatron + ZeRO 交互）</a>；源码级 happy-llm 动手</td><td><span class="st ok">✅ 框架地图已建</span></td></tr>
+        <tr><td>训练失败定位：收敛 / 拖尾(straggler) / 通信开销 / OOM，"讲清排查过程"</td><td>外资 HFT 自营 MLE·训练系统向（港/悉尼，猎头帖）</td><td><a href="../05_model_training_and_fine_tuning/06_framework_map.html">框架地图</a> + <a href="../05_model_training_and_fine_tuning/07_training_debug.html">训练作业排障（新页）</a></td><td><span class="st ok">✅ 覆盖（经验需动手积累）</span></td></tr>
         <tr><td>C++ / Python / 算法与并发</td><td>普遍（硬门槛）</td><td>非本站职责——刷题与语言功底按传统路径准备</td><td><span class="st part">🟠 课前置</span></td></tr>
       </tbody>
     </table>
@@ -95,6 +96,7 @@
         <tr><td>驱动 / CUDA 版本维护</td><td>第 4 课"版本对齐"专题 + 运维速查</td><td><span class="st ok">✅ 覆盖</span></td></tr>
         <tr><td><b>Slurm 作业调度</b>（HPC 集群常见）</td><td>本站无专页 → 用下面补丁知识 + 一句话定位应付初面</td><td><span class="st gap">🔴 缺口（下方补）</span></td></tr>
         <tr><td>昇腾/国产算力经验（加分）</td><td><a href="../02_npu_programming/01_overview.html">NPU 生态对照</a> · <a href="02_trends_2026.html">趋势⑥</a></td><td><span class="st ok">✅ 覆盖</span></td></tr>
+        <tr><td>量化机构 Infra / SRE / DevOps（在招明确写"互联网大厂、量化同业经验"）</td><td><a href="05_career_paths.html">路线页 · 量化板块</a> + 本站第 3/4 章运维全链</td><td><span class="st ok">✅ 线 1 直接对口</span></td></tr>
       </tbody>
     </table>
   </div>
@@ -122,12 +124,13 @@
       <li><b>SRE 向入口</b>（腾讯 AI Infra SRE-推理）：主打"监控四层账本 + 排障模拟器的三起事故 + K8s 迁移经验"——你的差异化是<b>运维功底 × 推理原理</b>，别去拼 C++ 算子。</li>
       <li><b>平台向</b>（阿里云容器/计算方向）：主打 K8s 深度（HAMi/Kueue/Gang）+ GPU 池化——本站第 4 章加餐全是弹药。</li>
       <li><b>推理优化向</b>（要求硕士+框架二次开发）：门槛在 CUDA/算子——补上游 02 章 + happy-llm 动手后再投。</li>
+      <li><b>量化机构双通道</b>（2026-10 猎头实证 JD）：MLE 训练系统向"工程导向、不做建模"，栈=DDP/FSDP/DeepSpeed/Megatron+NCCL，流程含<b>两轮 Coding</b>——线 3 补 happy-llm 实操即可投；Infra/SRE/DevOps 通道明确接受互联网大厂经验——线 1 直接投（金融知识可后补）。详见 <a href="05_career_paths.html">路线页量化板块</a>。</li>
       <li>简历关键词自查：vLLM/SGLang、KV Cache、PagedAttention、Continuous Batching、PD 分离、量化 FP8/GPTQ、NCCL/busbw、DCGM/XID、Gang/Kueue/HAMi、$/token——<b>每一个都应该能讲 3 分钟</b>（题库对应条目已覆盖）。</li>
     </ul>
   </div>
 
   <div class="foot">
-    <p class="src">JD 来源（2026-10 检索）：<a href="https://careers.tencent.com/jobdesc.html?postId=2113089272218300416">腾讯 AI Infra SRE</a> · <a href="https://careers.tencent.com/jobdesc.html?postId=2095496373041545216">腾讯推理优化</a> · <a href="https://campus-talent.alibaba.com/campus/position/199904060014">阿里 AI Infra 计算</a> · <a href="https://talent-holding.alibaba.com/off-campus/position-detail?positionId=1038409">阿里训练架构</a> · <a href="https://talent.didiglobal.com/social/p/57383">滴滴训练存储</a> · <a href="https://talent.didiglobal.com/social/p/59514">滴滴模型服务化</a> · <a href="https://jobs.bytedance.com/experienced/position/7343213427458050341/detail">字节推理框架</a> · <a href="https://jobs.bilibili.com/social/positions/28366">B 站推理优化</a> · <a href="https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/AI-Computing-Software-Development-Engineer--TensorRT-LLM_JR2022327">NVIDIA TRT-LLM</a> · 量化机构（XTX/Jane Street 等）作为额外雇主池已并入 <a href="05_career_paths.html">路线页</a>。</p>
+    <p class="src">JD 来源（2026-10 检索）：<a href="https://careers.tencent.com/jobdesc.html?postId=2113089272218300416">腾讯 AI Infra SRE</a> · <a href="https://careers.tencent.com/jobdesc.html?postId=2095496373041545216">腾讯推理优化</a> · <a href="https://campus-talent.alibaba.com/campus/position/199904060014">阿里 AI Infra 计算</a> · <a href="https://talent-holding.alibaba.com/off-campus/position-detail?positionId=1038409">阿里训练架构</a> · <a href="https://talent.didiglobal.com/social/p/57383">滴滴训练存储</a> · <a href="https://talent.didiglobal.com/social/p/59514">滴滴模型服务化</a> · <a href="https://jobs.bytedance.com/experienced/position/7343213427458050341/detail">字节推理框架</a> · <a href="https://jobs.bilibili.com/social/positions/28366">B 站推理优化</a> · <a href="https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/AI-Computing-Software-Development-Engineer--TensorRT-LLM_JR2022327">NVIDIA TRT-LLM</a> · 量化机构（XTX/Jane Street 等）作为额外雇主池已并入 <a href="05_career_paths.html">路线页</a>；HFT MLE 训练系统向 JD 见 <a href="https://mp.weixin.qq.com/s/bAyKwQYIaWI-tDUVtL_fDQ">猎头帖（2026-10-27）</a>。</p>
     <div class="nav"><a href="03_metrics.html">← 生产指标体系</a><a href="05_career_paths.html">岗位全覆盖路线 →</a></div>
   </div>
 </div>

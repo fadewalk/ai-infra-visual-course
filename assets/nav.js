@@ -51,6 +51,7 @@
       P('05_model_training_and_fine_tuning/03_70b_lessons.html', '导读 · 70B 从零训练复盘', '导读', '大规模训练的四份作业答案（含 RL 进阶入口）', '70B 从零训练四部曲'),
       P('05_model_training_and_fine_tuning/04_alignment.html', '第 11 课 · 对齐算法是怎么回事', '课', '亲手标注偏好对 · PPO/DPO/GRPO 显存模型数对比 · β 旋钮', 'RL 后训练 / 对齐算法'),
       P('05_model_training_and_fine_tuning/06_framework_map.html', '加餐 · 训练框架地图', '加餐', 'DDP / FSDP / DeepSpeed / Megatron 选型 · ZeRO 三档显存交互', '训练框架'),
+      P('05_model_training_and_fine_tuning/07_training_debug.html', '加餐 · 训练作业排障', '加餐', '收敛 / 拖尾 / 通信 / OOM 四类事故的嫌疑链排查（交互决策树）', 'JD 加分项：定位并解决训练问题'),
       R('并行策略 DP / TP / PP / EP → 本站第 6 课', ROOT + '09_inference_system/02_parallelism.html', '训练与推理共用的切分思路，放在推理章讲')
     ]},
     { no: '06', name: 'LLM 理论与基础', up: UP + '06_llm_theory_and_fundamentals/README.md', pages: [
@@ -123,7 +124,8 @@
       '04_cloud_native_ai_platform/04_lws_llmd.html', '04_cloud_native_ai_platform/05_storage.html' ] },
     { n: '4', name: '训练', goal: '看懂训练作业在干什么、显存花在哪', pages: [
       '05_model_training_and_fine_tuning/02_memory_calc.html', '05_model_training_and_fine_tuning/05_sft_primer.html',
-      '05_model_training_and_fine_tuning/03_70b_lessons.html', '05_model_training_and_fine_tuning/06_framework_map.html' ] },
+      '05_model_training_and_fine_tuning/03_70b_lessons.html', '05_model_training_and_fine_tuning/06_framework_map.html',
+      '05_model_training_and_fine_tuning/07_training_debug.html' ] },
     { n: '5', name: '推理', goal: '看懂推理三大矛盾与两大引擎', pages: [
       '09_inference_system/04_batching_attention.html', '09_inference_system/09_pd_disaggregation.html',
       '09_inference_system/10_spec_quant.html', '09_inference_system/06_vllm_overview.html',
@@ -145,8 +147,30 @@
   var ORDER = [];
   STAGES.forEach(function (s, i) { s.idx = i; s.items = s.pages.map(function (p) { var x = BY[p]; if (x) { x.stage = s; ORDER.push(x); } return x; }).filter(Boolean); });
   var TOTAL = ORDER.length;
-  var EXTRA = [ { p: 'glossary.html', t: '术语图鉴', k: '参考', d: '89 个 AI Infra 黑话的一句话解释 + SRE 类比 · 可搜索 · 思维导图' },
+  var EXTRA = [ { p: 'glossary.html', t: '术语图鉴', k: '参考', d: '90 个 AI Infra 黑话的一句话解释 + SRE 类比 · 可搜索 · 思维导图' },
                 { p: 'changelog.html', t: '更新日志', k: '参考', d: '基于 git log 的课程更新时间线' } ];
+
+  /* ---------- 主题（auto / dark / light；暗色为柔和的深灰蓝，不是纯黑） ---------- */
+  var THEME_KEY = 'aivc_theme';
+  function themeMode() { try { return localStorage.getItem(THEME_KEY) || 'auto'; } catch (e) { return 'auto'; } }
+  function sysDark() { return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches); }
+  function applyTheme() {
+    var m = themeMode();
+    var t = m === 'auto' ? (sysDark() ? 'dark' : 'light') : m;
+    document.documentElement.setAttribute('data-aivc-theme', t);
+    document.documentElement.style.colorScheme = t;
+    var b = document.getElementById('aivc-tbtn');
+    if (b) {
+      b.textContent = m === 'auto' ? '◐' : (m === 'dark' ? '🌙' : '☀️');
+      b.title = '主题：' + (m === 'auto' ? '跟随系统（点击切到暗色）' : (m === 'dark' ? '暗色（点击切到亮色）' : '亮色（点击恢复跟随系统）'));
+    }
+  }
+  function cycleTheme() {
+    var order = ['auto', 'dark', 'light'], m = themeMode();
+    var next = order[(order.indexOf(m) + 1) % order.length];
+    try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+    applyTheme();
+  }
 
   /* ---------- 学习进度（localStorage） ---------- */
   var KEY = 'aivc_done', done = {};
@@ -236,6 +260,10 @@ body.aivc-has-side{padding-left:var(--aivc-side)}\
 #aivc-toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:var(--fg,#1a1d23);color:var(--bg,#fff);padding:10px 16px;border-radius:10px;font:13px system-ui,sans-serif;z-index:9600;opacity:0;transition:.25s;pointer-events:none;max-width:90vw}\
 #aivc-toast.show{opacity:1;transform:translateX(-50%)}\
 #aivc-toast a{color:inherit;text-decoration:underline}\
+html[data-aivc-theme="dark"]{--bg:#1b212b;--fg:#dce2ea;--muted:#9aa5b1;--card:#242c38;--border:#3b4654;--chip:#2b3440}\
+html[data-aivc-theme="light"]{--bg:#f6f7f9;--fg:#1a1d23;--muted:#5c6470;--card:#ffffff;--border:#e2e5ea;--chip:#eef1f5}\
+#aivc-tbtn{border:1px solid var(--border,#e2e5ea);background:var(--bg,#f6f7f9);border-radius:8px;padding:5px 10px;font-size:14px;line-height:1;cursor:pointer;color:inherit}\
+#aivc-tbtn:hover{border-color:var(--blue,#2563eb)}\
 @media(max-width:1079px){\
  body.aivc-has-side{padding-left:0}\
  #aivc-burger{display:inline-block}\
@@ -266,11 +294,13 @@ body.aivc-has-side{padding-left:var(--aivc-side)}\
       '<button id="aivc-burger" aria-label="打开课程菜单">☰</button>' +
       '<a class="aivc-brand" href="' + ROOT + '" title="回到首页"><span class="lg">⚡</span><span class="tx">AI Infra 可视化课程</span></a>' +
       '<nav class="aivc-links">' + links + '</nav><span class="aivc-sp"></span>' +
+      '<button id="aivc-tbtn" aria-label="切换主题"></button>' +
       '<button id="aivc-sbtn" aria-label="搜索课程">🔍 <span class="hidem">搜索</span> <kbd>⌘K</kbd></button>' +
       '<a class="aivc-prog" href="' + ROOT + '#roadmap" title="已学 ' + n + ' / ' + TOTAL + ' 页（点击看路线）"><span class="bar"><i style="width:' + pct + '%"></i></span><span class="hidem">' + n + '/' + TOTAL + '</span></a>');
     document.body.insertBefore(top, document.body.firstChild);
     top.querySelector('#aivc-sbtn').addEventListener('click', openSearch);
     top.querySelector('#aivc-burger').addEventListener('click', function () { document.body.classList.toggle('aivc-open'); });
+    top.querySelector('#aivc-tbtn').addEventListener('click', cycleTheme);
   }
 
   function renderCrumb() {
@@ -367,7 +397,11 @@ body.aivc-has-side{padding-left:var(--aivc-side)}\
 
   /* ---------- 启动 ---------- */
   var st = h('style', { id: 'aivc-style' }); st.textContent = CSS; document.head.appendChild(st);
-  renderTop(); renderCrumb(); renderSide();
+  var fav = h('link', { rel: 'icon', href: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%232563eb'/%3E%3Cpath d='M13 3 6 13h5l-1 8 7-10h-5z' fill='%23fff'/%3E%3C/svg%3E" });
+  document.head.appendChild(fav);
+  applyTheme();
+  try { window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () { if (themeMode() === 'auto') applyTheme(); }); } catch (e) {}
+  renderTop(); renderCrumb(); renderSide(); applyTheme();
 
   window.AIVC = { ROOT: ROOT, CH: CH, STAGES: STAGES, ORDER: ORDER, ALL: ALL, EXTRA: EXTRA, TOTAL: TOTAL, BY: BY, CUR: CUR,
     isDone: isDone, setDone: function (p, v) { setDone(p, v); refreshProgress(); }, doneCount: doneCount, nextUndone: nextUndone, kind: kind, esc: esc, openSearch: openSearch, toast: toast };

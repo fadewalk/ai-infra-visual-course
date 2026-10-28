@@ -10,7 +10,7 @@
     --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
   }
   @media (prefers-color-scheme: dark){
-    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+    :root{ --bg:#1b212b; --fg:#dce2ea; --muted:#9aa5b1; --card:#242c38; --border:#3b4654; --chip:#2b3440; }
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
@@ -115,7 +115,7 @@ y = my_op(x)                    # Python 侧直接调用你的 CUDA Kernel</div>
     <div class="path">
       <div class="pstep"><b>第 1 周 · 概念落地</b>本页 + 上游<a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/02_gpu_programming/02_cuda/01_gpu_programming_introduction.md">GPU 编程入门</a>/<a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/02_gpu_programming/02_cuda/02_cuda_cores.md">核心概念</a>；无 GPU 可用 Google Colab / 云 GPU 按时租</div>
       <div class="pstep"><b>第 2-3 周 · 手写经典</b>向量加→规约→转置→共享内存版矩阵乘（对照 <a href="https://github.com/NVIDIA/cuda-samples">NVIDIA 官方 Samples</a> 验证）</div>
-      <div class="pstep"><b>第 4 周 · 进高性能</b>FlashAttention 思想（上游 <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/02_gpu_programming/README.md">02 章 TileLang</a> 或 <a href="https://github.com/xlite-dev/CUDA-Learn-Notes">CUDA-Learn-Notes 200+ 内核</a>，后者是算子岗面试的题库级仓库）</div>
+      <div class="pstep"><b>第 4 周 · 进高性能</b>FlashAttention 思想（上游 <a href="https://github.com/ForceInjection/AI-fundamentals/blob/main/02_gpu_programming/README.md">02 章 TileLang</a> 或 <a href="https://github.com/xlite-dev/CUDA-Learn-Notes">CUDA-Learn-Notes 200+ 内核</a>，后者是算子岗面试的题库级仓库）；JD 常把 <b>Triton</b> 与 CUDA 并列（用 Python 写 Kernel、门槛更低，见 <a href="../10_ai_related_course/03_ai_compiler.html">AI 编译器页</a>）</div>
       <div class="pstep"><b>第 5 周+ · 框架接入</b>PyTorch 扩展 + 给 vLLM 提一个小 PR（文档/小 fix 也算）——简历上"开源贡献"那一栏就有了</div>
       <div class="pstep"><b>昇腾支线（SRIBD 岗）</b>同一套思想换成 Ascend C：<a href="../02_npu_programming/01_overview.html">NPU 生态对照页</a> + 上游 02_npu 章 06 自定义算子</div>
     </div>

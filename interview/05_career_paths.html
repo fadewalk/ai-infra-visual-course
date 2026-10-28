@@ -10,7 +10,7 @@
     --blue:#2563eb; --green:#059669; --orange:#d97706; --red:#dc2626; --purple:#7c3aed; --chip:#eef1f5;
   }
   @media (prefers-color-scheme: dark){
-    :root{ --bg:#0f1216; --fg:#e8eaee; --muted:#9aa3af; --card:#181c23; --border:#2a303a; --chip:#1f242c; }
+    :root{ --bg:#1b212b; --fg:#dce2ea; --muted:#9aa5b1; --card:#242c38; --border:#3b4654; --chip:#2b3440; }
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
@@ -137,7 +137,7 @@
         <li><b>计算平台/基础设施工程师</b>（K8s/Slurm/Ray · RDMA/NVLink/NCCL · 存储/调度/成本）≈ <b><a href="04_jd_mapping.html">线 1+4——你的主线，量化机构同样大量招且不要求金融背景</a></b></li>
         <li>ML Researcher / Quant ML（统计验证/样本外/数据泄漏）≈ 量化特有，转岗优先级低</li>
       </ul>
-      <b>值得吸收的两个透镜</b>：① <b>项目证明要可量化</b>——"训练耗时缩短 X%/GPU 利用率提高/显存下降/复现能力改善"，比罗列工具有说服力（简历与面试通用）；② 迁移判断——"金融知识可以补，系统判断力更难速成"：SRE 的分布式/性能/数据流水线经验正是硬通货。另外量化平台岗常要求 <b>Ray</b>（我们未覆盖：一句话定位——分布式 Python 计算框架，地位可类比"Slurm 管批作业、K8s 管容器、Ray 管 Python 分布式应用"，用到再学）。
+      <b>值得吸收的两个透镜</b>：① <b>项目证明要可量化</b>——"训练耗时缩短 X%/GPU 利用率提高/显存下降/复现能力改善"，比罗列工具有说服力（简历与面试通用）；② 迁移判断——"金融知识可以补，系统判断力更难速成"：SRE 的分布式/性能/数据流水线经验正是硬通货。另外量化平台岗常要求 <b>Ray</b>（我们未覆盖：一句话定位——分布式 Python 计算框架，地位可类比"Slurm 管批作业、K8s 管容器、Ray 管 Python 分布式应用"，用到再学）。实证 JD（2026-10 猎头帖，港/悉尼）：<a href="https://mp.weixin.qq.com/s/bAyKwQYIaWI-tDUVtL_fDQ">外资 HFT 自营 MLE · 训练系统向</a>——原文"工程导向、做分布式训练系统本身，不做建模"，栈=DDP/FSDP/DeepSpeed/Megatron+NCCL；加分项=CUDA/Triton Kernel、几十到上百卡实战、<b>能讲清收敛/拖尾/OOM 的排查过程</b>（→ <a href="../05_model_training_and_fine_tuning/07_training_debug.html">新页：训练作业排障</a>）；面试流程含两轮 Coding。同帖在招列表明确含"Infra、SRE、DevOps（互联网大厂、量化同业经验）"——<b>线 1 直接对口</b>。
     </div>
   </div>
 
